@@ -380,13 +380,14 @@ function SectionRenderer({
   }
 
   if (section.type === "about") {
+    const aboutBio = (section.content.bioOverride as string) || profile?.bio || "";
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
         <div className="max-w-[1200px] mx-auto grid md:grid-cols-2 gap-16 items-center">
           <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
             <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>About</div>
             <h2 className="text-3xl font-bold tracking-tight mb-6" style={{ color: textColor }}>{section.title}</h2>
-            <p className="leading-relaxed" style={{ color: mutedText }}>{profile?.bio ?? "Add your bio in your profile settings."}</p>
+            <p className="leading-relaxed" style={{ color: mutedText }}>{aboutBio || "Add your bio in your profile settings."}</p>
           </motion.div>
           {profile?.avatarUrl && (
             <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
