@@ -69,7 +69,7 @@ export default async function JobsPage({
       page={page}
       limit={limit}
       savedJobIds={savedJobIds.map((s) => s.jobId)}
-      searchParams={searchParams}
+      searchParams={searchParams as Record<string, string | undefined>}
     />
   );
 }

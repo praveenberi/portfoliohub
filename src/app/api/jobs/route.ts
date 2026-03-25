@@ -63,6 +63,7 @@ export async function POST(req: NextRequest) {
     const job = await prisma.job.create({
       data: {
         ...data,
+        skills: data.skills ? JSON.stringify(data.skills) : undefined,
         recruiterId: session.user.id,
         isApproved: session.user.role === "ADMIN",
       },

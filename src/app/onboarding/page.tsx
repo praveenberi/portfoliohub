@@ -22,5 +22,5 @@ export default async function OnboardingPage() {
     orderBy: { createdAt: "asc" },
   });
 
-  return <OnboardingFlow templates={templates} userName={session.user.name} />;
+  return <OnboardingFlow templates={templates.map(t => ({ ...t, description: t.description ?? "" }))} userName={session.user.name} />;
 }

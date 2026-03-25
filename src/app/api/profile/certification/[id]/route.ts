@@ -24,8 +24,8 @@ export async function PATCH(req: NextRequest, { params }: { params: { id: string
       data: {
         name,
         issuer: issuer || null,
-        issueDate: issueDate ? new Date(issueDate) : null,
-        expiryDate: expiryDate ? new Date(expiryDate) : null,
+        issueDate: issueDate ? new Date(issueDate) : undefined as unknown as Date,
+        expiryDate: expiryDate ? new Date(expiryDate) : undefined,
         credentialId: credentialId || null,
         credentialUrl: credentialUrl || null,
       },
