@@ -647,7 +647,7 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
             {saving ? (
               <div className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              <><FloppyDisk size={14} /> Save changes</>
+              <><FloppyDisk size={14} /> Publish to website</>
             )}
           </button>
         </div>
@@ -684,7 +684,7 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
               className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 active:scale-[0.98] transition-all disabled:opacity-60"
             >
               <FloppyDisk size={13} />
-              {saving ? "Saving..." : "Save"}
+              {saving ? "Publishing..." : "Publish"}
             </button>
           </div>
         </div>
