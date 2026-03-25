@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { prisma } from "@/lib/db";
 import { AdminOverview } from "@/components/admin/overview";
 import type { Metadata } from "next";
