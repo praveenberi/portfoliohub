@@ -9,8 +9,6 @@ import {
   ShieldCheck,
 } from "@phosphor-icons/react";
 import { timeAgo } from "@/lib/utils";
-import type { UserRole } from "@/lib/enums";
-
 interface AdminOverviewProps {
   stats: {
     users: number;
@@ -24,7 +22,7 @@ interface AdminOverviewProps {
     name: string | null;
     email: string;
     createdAt: Date;
-    role: UserRole;
+    role: string;
     isActive: boolean;
   }>;
   topTemplates: Array<{
