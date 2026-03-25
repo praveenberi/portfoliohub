@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import type { ReactNode } from "react";
 
 // Auth pages (login/register) handle their own full-page layouts

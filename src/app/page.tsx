@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { LandingNav } from "@/components/landing/nav";
 import { HeroSection } from "@/components/landing/hero";
 import { FeaturesSection } from "@/components/landing/features";
