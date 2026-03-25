@@ -387,7 +387,7 @@ function SectionRenderer({
           <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className={profile?.avatarUrl ? "" : "w-full"}>
             <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>About</div>
             <h2 className="text-3xl font-bold tracking-tight mb-6" style={{ color: textColor }}>{section.title}</h2>
-            <p className={`leading-relaxed ${profile?.avatarUrl ? "" : "max-w-4xl"}`} style={{ color: mutedText }}>{aboutBio || "Add your bio in your profile settings."}</p>
+            <p className="leading-relaxed text-lg" style={{ color: mutedText }}>{aboutBio || "Add your bio in your profile settings."}</p>
           </motion.div>
           {profile?.avatarUrl && (
             <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
@@ -414,35 +414,26 @@ function SectionRenderer({
         <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Skills</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
-          {displayStyle === "grid" ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-              {skills.map((skill, i) => (
-                <motion.div key={skill} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-                  className="px-4 py-3 text-sm font-medium text-center"
-                  style={{ border: `1px solid ${border}`, color: mutedText, backgroundColor: isMeteors ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)", borderRadius: "var(--cr)" }}>
-                  {skill}
-                </motion.div>
-              ))}
-            </div>
-          ) : displayStyle === "list" ? (
-            <div className="space-y-2 max-w-lg">
+          {displayStyle === "list" ? (
+            <div className="grid md:grid-cols-2 gap-3">
               {skills.map((skill, i) => (
                 <motion.div key={skill} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-                  className="flex items-center gap-3 px-4 py-2.5"
+                  className="flex items-center gap-3 px-5 py-3.5"
                   style={{ border: `1px solid ${border}`, color: textColor, backgroundColor: isMeteors ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.01)", borderRadius: "var(--cr)" }}>
-                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
-                  <span className="text-sm">{skill}</span>
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+                  <span className="text-sm font-medium">{skill}</span>
                 </motion.div>
               ))}
             </div>
           ) : (
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
               {skills.map((skill, i) => (
-                <motion.span key={skill} initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-                  className="px-4 py-2 text-sm font-medium"
+                <motion.div key={skill} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
+                  className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium"
                   style={{ border: `1px solid ${border}`, color: mutedText, backgroundColor: isMeteors ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)", borderRadius: "var(--cr)" }}>
-                  {skill}
-                </motion.span>
+                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+                  <span className="truncate">{skill}</span>
+                </motion.div>
               ))}
             </div>
           )}
