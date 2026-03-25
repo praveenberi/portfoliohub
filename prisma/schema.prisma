@@ -1,0 +1,415 @@
+// Dev: SQLite (no enums, no arrays, JSON as String)
+// Production: Switch to "postgresql", restore enums + String[] + @db.Text
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Auth ────────────────────────────────────────────────────────────────────
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ─── Users ────────────────────────────────────────────────────────────────────
+
+model User {
+  id             String    @id @default(cuid())
+  name           String?
+  email          String    @unique
+  emailVerified  DateTime?
+  image          String?
+  password       String?
+  username       String?   @unique
+  role           String    @default("USER")   // USER | RECRUITER | ADMIN
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  lastLoginAt    DateTime?
+
+  accounts        Account[]
+  sessions        Session[]
+  profile         Profile?
+  portfolio       Portfolio?
+  applications    Application[]
+  savedJobs       SavedJob[]
+  activityLogs    ActivityLog[]
+  postedJobs      Job[]            @relation("RecruiterJobs")
+  contactRequests ContactRequest[]
+
+  @@index([email])
+  @@index([username])
+}
+
+model Profile {
+  id           String   @id @default(cuid())
+  userId       String   @unique
+  firstName    String?
+  lastName     String?
+  headline     String?
+  bio          String?
+  location     String?
+  website      String?
+  phone        String?
+  avatarUrl    String?
+  resumeUrl    String?
+  linkedinUrl  String?
+  githubUrl    String?
+  twitterUrl   String?
+  instagramUrl String?
+  skills       String   @default("[]")
+  technologies String   @default("[]")
+  openToWork   Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  experiences    Experience[]
+  education      Education[]
+  certifications Certification[]
+  projects       Project[]
+  extras         Extra[]
+}
+
+model Experience {
+  id          String    @id @default(cuid())
+  profileId   String
+  company     String
+  title       String
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  description String?
+  skills      String    @default("[]")
+  logoUrl     String?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Education {
+  id          String    @id @default(cuid())
+  profileId   String
+  institution String
+  degree      String
+  field       String?
+  startDate   DateTime
+  endDate     DateTime?
+  isCurrent   Boolean   @default(false)
+  gpa         String?
+  description String?
+  logoUrl     String?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Certification {
+  id            String    @id @default(cuid())
+  profileId     String
+  name          String
+  issuer        String
+  issueDate     DateTime
+  expiryDate    DateTime?
+  credentialId  String?
+  credentialUrl String?
+  logoUrl       String?
+  order         Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Project {
+  id           String    @id @default(cuid())
+  profileId    String
+  title        String
+  description  String?
+  imageUrl     String?
+  liveUrl      String?
+  githubUrl    String?
+  technologies String    @default("[]")
+  startDate    DateTime?
+  endDate      DateTime?
+  featured     Boolean   @default(false)
+  order        Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+model Extra {
+  id          String    @id @default(cuid())
+  profileId   String
+  title       String
+  category    String    @default("Other")
+  subtitle    String?
+  description String?
+  date        DateTime?
+  url         String?
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+}
+
+// ─── Portfolio ────────────────────────────────────────────────────────────────
+
+model Template {
+  id           String   @id @default(cuid())
+  name         String
+  slug         String   @unique
+  description  String?
+  previewUrl   String?
+  thumbnailUrl String?
+  category     String   @default("GENERAL")  // DEVELOPER | DESIGNER | PHOTOGRAPHER | MARKETING | FOUNDER | GENERAL
+  isPremium    Boolean  @default(false)
+  isActive     Boolean  @default(true)
+  config       String   // JSON
+  order        Int      @default(0)
+  usageCount   Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  portfolios Portfolio[]
+}
+
+model Portfolio {
+  id             String    @id @default(cuid())
+  userId         String    @unique
+  templateId     String?
+  slug           String    @unique
+  title          String
+  description    String?
+  isPublished    Boolean   @default(false)
+  customDomain   String?   @unique
+  seoTitle       String?
+  seoDescription String?
+  config         String    // JSON
+  sections       String    // JSON
+  views          Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  publishedAt    DateTime?
+
+  user      User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  template  Template?            @relation(fields: [templateId], references: [id])
+  analytics PortfolioAnalytics[]
+
+  @@index([slug])
+  @@index([userId])
+}
+
+model PortfolioAnalytics {
+  id          String   @id @default(cuid())
+  portfolioId String
+  visitorIp   String?
+  userAgent   String?
+  referrer    String?
+  country     String?
+  city        String?
+  visitedAt   DateTime @default(now())
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+
+  @@index([portfolioId])
+  @@index([visitedAt])
+}
+
+// ─── Jobs ────────────────────────────────────────────────────────────────────
+
+model Job {
+  id             String    @id @default(cuid())
+  recruiterId    String?
+  title          String
+  company        String
+  companyLogo    String?
+  location       String?
+  country        String?
+  workMode       String    @default("ON_SITE")  // REMOTE | HYBRID | ON_SITE
+  type           String    @default("FULL_TIME") // FULL_TIME | PART_TIME | CONTRACT | FREELANCE | INTERNSHIP
+  description    String
+  requirements   String?
+  benefits       String?
+  skills         String    @default("[]")
+  minSalary      Int?
+  maxSalary      Int?
+  currency       String    @default("USD")
+  isApproved     Boolean   @default(false)
+  isActive       Boolean   @default(true)
+  isFeatured     Boolean   @default(false)
+  externalUrl    String?
+  applyUrl       String?
+  views          Int       @default(0)
+  applicantCount Int       @default(0)
+  postedAt       DateTime  @default(now())
+  expiresAt      DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  recruiter    User?         @relation("RecruiterJobs", fields: [recruiterId], references: [id])
+  applications Application[]
+  savedBy      SavedJob[]
+
+  @@index([title])
+  @@index([company])
+  @@index([isApproved, isActive])
+  @@index([postedAt])
+}
+
+model Application {
+  id             String    @id @default(cuid())
+  userId         String
+  jobId          String
+  status         String    @default("APPLIED") // APPLIED | UNDER_REVIEW | INTERVIEW_SCHEDULED | TECHNICAL_TEST | OFFER_RECEIVED | REJECTED | WITHDRAWN | ACCEPTED
+  coverLetter    String?
+  resumeUrl      String?
+  portfolioUrl   String?
+  notes          String?
+  appliedAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  nextFollowUp   DateTime?
+  interviewDate  DateTime?
+  offerAmount    Int?
+  offerCurrency  String?
+  rejectedReason String?
+
+  user      User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job       Job                   @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  timeline  ApplicationTimeline[]
+  reminders ApplicationReminder[]
+
+  @@unique([userId, jobId])
+  @@index([userId])
+  @@index([jobId])
+  @@index([status])
+}
+
+model ApplicationTimeline {
+  id            String   @id @default(cuid())
+  applicationId String
+  status        String
+  note          String?
+  occurredAt    DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model ApplicationReminder {
+  id            String   @id @default(cuid())
+  applicationId String
+  title         String
+  scheduledAt   DateTime
+  isCompleted   Boolean  @default(false)
+  createdAt     DateTime @default(now())
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+}
+
+model SavedJob {
+  id      String   @id @default(cuid())
+  userId  String
+  jobId   String
+  savedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+}
+
+// ─── Admin ───────────────────────────────────────────────────────────────────
+
+model ActivityLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  action     String
+  resource   String?
+  resourceId String?
+  metadata   String?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+}
+
+// ─── Password Reset ───────────────────────────────────────────────────────────
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+}
+
+// ─── Contact Requests ─────────────────────────────────────────────────────────
+
+model ContactRequest {
+  id          String   @id @default(cuid())
+  userId      String
+  type        String   @default("message")  // "message" | "booking"
+  senderName  String
+  senderEmail String
+  senderPhone String?
+  message     String?
+  date        String?
+  time        String?
+  purpose     String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+}
