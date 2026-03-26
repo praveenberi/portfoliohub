@@ -407,7 +407,7 @@ function SectionRenderer({
           </motion.div>
           {profile?.avatarUrl && (
             <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-              <Image src={profile.avatarUrl} alt={user.name ?? ""} width={400} height={400} className="rounded-3xl w-full object-cover" />
+              <Image src={profile.avatarUrl} alt={user.name ?? ""} width={400} height={514} className="rounded-3xl w-full object-cover" style={{ aspectRatio: "400/514" }} />
             </motion.div>
           )}
         </div>
