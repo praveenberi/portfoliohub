@@ -36,11 +36,11 @@ export async function POST() {
   const technologies = parseArr(profile?.technologies ?? "[]").join(", ");
 
   const experiences = (profile?.experiences ?? [])
-    .map((e: any) => `- ${e.title} at ${e.company}${e.description ? `: ${e.description}` : ""}`)
+    .map((e: any) => `- ${e.title} at ${e.company}${e.description ? `: ${e.description.slice(0, 200)}` : ""}`)
     .join("\n");
 
   const projects = (profile?.projects ?? [])
-    .map((p: any) => `- ${p.title}${p.description ? `: ${p.description}` : ""}${p.technologies ? ` [${parseArr(p.technologies).join(", ")}]` : ""}`)
+    .map((p: any) => `- ${p.title}${p.description ? `: ${p.description.slice(0, 200)}` : ""}${p.technologies ? ` [${parseArr(p.technologies).join(", ")}]` : ""}`)
     .join("\n");
 
   const prompt = `You are an expert career coach and portfolio reviewer. Analyze this developer portfolio and return a JSON response with specific, actionable improvements.
@@ -88,11 +88,13 @@ Rules:
   try {
     const message = await client.messages.create({
       model: "claude-haiku-4-5-20251001",
-      max_tokens: 1024,
+      max_tokens: 2048,
       messages: [{ role: "user", content: prompt }],
     });
 
-    const text = (message.content[0] as { type: string; text: string }).text.trim();
+    // Strip markdown code fences if present, then extract JSON object
+    let text = (message.content[0] as { type: string; text: string }).text.trim();
+    text = text.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
 
     let result;
     try {
