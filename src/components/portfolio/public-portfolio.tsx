@@ -474,40 +474,76 @@ function SectionRenderer({
     const customSkills = (section.content.customSkills as string) ?? "";
     const displayStyle = (section.content.displayStyle as string) ?? "tags";
     const profileSkills = [...parseArr(profile?.skills), ...parseArr(profile?.technologies)];
-    const skills = customSkills
-      ? customSkills.split(",").map((s) => s.trim()).filter(Boolean)
-      : profileSkills;
 
-    if (skills.length === 0) return null;
+    // Parse grouped format: ## Header\nskill1, skill2
+    type SkillGroup = { label: string | null; skills: string[] };
+    const groups: SkillGroup[] = (() => {
+      if (!customSkills) return [{ label: null, skills: profileSkills }];
+      if (/^## /m.test(customSkills)) {
+        const result: SkillGroup[] = [];
+        let label: string | null = null;
+        let skills: string[] = [];
+        for (const raw of customSkills.split("\n")) {
+          const line = raw.trim();
+          if (line.startsWith("## ")) {
+            if (label !== null || skills.length) result.push({ label, skills });
+            label = line.slice(3);
+            skills = [];
+          } else if (line) {
+            skills.push(...line.split(",").map((s) => s.trim()).filter(Boolean));
+          }
+        }
+        if (label !== null || skills.length) result.push({ label, skills });
+        return result.filter((g) => g.skills.length > 0);
+      }
+      return [{ label: null, skills: customSkills.split(",").map((s) => s.trim()).filter(Boolean) }];
+    })();
+
+    if (groups.every((g) => g.skills.length === 0)) return null;
+
+    const SkillTag = ({ skill, i }: { skill: string; i: number }) =>
+      displayStyle === "list" ? (
+        <motion.div key={skill} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
+          className="flex items-center gap-3 px-5 py-3.5"
+          style={{ border: `1px solid ${border}`, color: textColor, backgroundColor: isMeteors ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.01)", borderRadius: "var(--cr)" }}>
+          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+          <span className="text-sm font-medium">{skill}</span>
+        </motion.div>
+      ) : (
+        <motion.div key={skill} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
+          className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium"
+          style={{ border: `1px solid ${border}`, color: mutedText, backgroundColor: isMeteors ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)", borderRadius: "var(--cr)" }}>
+          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+          <span className="truncate">{skill}</span>
+        </motion.div>
+      );
 
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Skills</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
-          {displayStyle === "list" ? (
-            <div className="grid md:grid-cols-2 gap-3">
-              {skills.map((skill, i) => (
-                <motion.div key={skill} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-                  className="flex items-center gap-3 px-5 py-3.5"
-                  style={{ border: `1px solid ${border}`, color: textColor, backgroundColor: isMeteors ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.01)", borderRadius: "var(--cr)" }}>
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
-                  <span className="text-sm font-medium">{skill}</span>
-                </motion.div>
-              ))}
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-              {skills.map((skill, i) => (
-                <motion.div key={skill} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-                  className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium"
-                  style={{ border: `1px solid ${border}`, color: mutedText, backgroundColor: isMeteors ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)", borderRadius: "var(--cr)" }}>
-                  <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
-                  <span className="truncate">{skill}</span>
-                </motion.div>
-              ))}
-            </div>
-          )}
+          <div className="space-y-10">
+            {groups.map((group, gi) => (
+              <div key={gi}>
+                {group.label && (
+                  <div className="text-sm font-semibold tracking-wide mb-4 pb-2 border-b"
+                    style={{ color: accent, borderColor: `${accent}30` }}>
+                    {group.label}
+                  </div>
+                )}
+                {displayStyle === "list" ? (
+                  <div className="grid md:grid-cols-2 gap-3">
+                    {group.skills.map((skill, i) => <SkillTag key={skill} skill={skill} i={i} />)}
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                    {group.skills.map((skill, i) => <SkillTag key={skill} skill={skill} i={i} />)}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
       </div>
     );

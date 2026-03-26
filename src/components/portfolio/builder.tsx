@@ -952,14 +952,13 @@ function SkillsEditor({
       </div>
       <div className="space-y-1.5">
         <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Custom skills</label>
-        <textarea
+        <FormattedTextarea
           value={(content.customSkills as string) ?? ""}
-          placeholder={profileSkillsPlaceholder}
-          rows={2}
-          onChange={(e) => onChange({ customSkills: e.target.value || undefined })}
-          className="w-full px-2.5 py-2 rounded-lg border border-zinc-200 text-xs resize-none focus:outline-none focus:border-zinc-400"
+          placeholder={`## Frontend\nReact, TypeScript, Vue\n\n## Backend\nNode.js, Python`}
+          rows={5}
+          onChange={(v) => onChange({ customSkills: v || undefined })}
         />
-        <p className="text-[10px] text-zinc-400">Comma separated. Leave blank to use profile skills.</p>
+        <p className="text-[10px] text-zinc-400">Use ## to add group headers (e.g. ## Frontend). Comma-separate skills below each header. Leave blank to use profile skills.</p>
       </div>
     </div>
   );
