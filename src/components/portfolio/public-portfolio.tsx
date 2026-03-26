@@ -45,6 +45,55 @@ type FullPortfolio = Portfolio & {
   };
 };
 
+// ─── Markdown renderer ────────────────────────────────────────────────────────
+
+function MarkdownText({ text, textColor, mutedText, accent }: { text: string; textColor: string; mutedText: string; accent: string }) {
+  const lines = text.split("\n");
+  const result: React.ReactNode[] = [];
+  let bullets: string[] = [];
+  let key = 0;
+
+  const flush = () => {
+    if (!bullets.length) return;
+    result.push(
+      <ul key={key++} className="space-y-1.5 my-3 ml-1">
+        {bullets.map((b, i) => (
+          <li key={i} className="flex items-start gap-2.5 leading-relaxed" style={{ color: mutedText }}>
+            <span className="mt-2 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+            <span>{b}</span>
+          </li>
+        ))}
+      </ul>
+    );
+    bullets = [];
+  };
+
+  for (const raw of lines) {
+    const line = raw.trimEnd();
+    if (/^## /.test(line)) {
+      flush();
+      result.push(
+        <h3 key={key++} className="font-semibold text-xl mt-6 mb-2" style={{ color: textColor }}>
+          {line.slice(3)}
+        </h3>
+      );
+    } else if (/^[*\-] /.test(line)) {
+      bullets.push(line.slice(2));
+    } else if (line.trim() === "") {
+      flush();
+    } else {
+      flush();
+      result.push(
+        <p key={key++} className="leading-relaxed text-lg" style={{ color: mutedText }}>
+          {line}
+        </p>
+      );
+    }
+  }
+  flush();
+  return <div className="space-y-1">{result}</div>;
+}
+
 // ─── Lightbox ─────────────────────────────────────────────────────────────────
 
 function Lightbox({ images, startIndex, onClose }: { images: string[]; startIndex: number; onClose: () => void }) {
@@ -399,17 +448,23 @@ function SectionRenderer({
     const aboutBio = (section.content.bioOverride as string) || profile?.bio || "";
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
-        <div className={profile?.avatarUrl ? "grid md:grid-cols-2 gap-16 items-center" : ""}>
-          <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className={profile?.avatarUrl ? "" : "w-full"}>
-            <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>About</div>
-            <h2 className="text-3xl font-bold tracking-tight mb-6" style={{ color: textColor }}>{section.title}</h2>
-            <p className="leading-relaxed text-lg" style={{ color: mutedText }}>{aboutBio || "Add your bio in your profile settings."}</p>
-          </motion.div>
-          {profile?.avatarUrl && (
-            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="flex justify-center">
-              <Image src={profile.avatarUrl} alt={user.name ?? ""} width={400} height={514} className="rounded-2xl object-cover" style={{ aspectRatio: "400/514", width: 400, height: 514 }} />
+        <div className="max-w-[1200px] mx-auto">
+          <div className={profile?.avatarUrl ? "grid md:grid-cols-2 gap-16 items-center" : ""}>
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className={profile?.avatarUrl ? "" : "w-full"}>
+              <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>About</div>
+              <h2 className="text-3xl font-bold tracking-tight mb-6" style={{ color: textColor }}>{section.title}</h2>
+              {aboutBio ? (
+                <MarkdownText text={aboutBio} textColor={textColor} mutedText={mutedText} accent={accent} />
+              ) : (
+                <p className="leading-relaxed text-lg" style={{ color: mutedText }}>Add your bio in your profile settings.</p>
+              )}
             </motion.div>
-          )}
+            {profile?.avatarUrl && (
+              <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="flex justify-center">
+                <Image src={profile.avatarUrl} alt={user.name ?? ""} width={400} height={514} className="rounded-2xl object-cover" style={{ aspectRatio: "400/514", width: 400, height: 514 }} />
+              </motion.div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -468,7 +523,7 @@ function SectionRenderer({
 
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
-        <div>
+        <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Work</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
 
@@ -506,7 +561,11 @@ function SectionRenderer({
                         {project.githubUrl && <Link href={project.githubUrl} target="_blank" className="text-xs font-medium flex items-center gap-1" style={{ color: mutedText }}><GithubLogo size={12} /> Code</Link>}
                       </div>
                     </div>
-                    {project.description && <p className="text-sm leading-relaxed mt-1" style={{ color: mutedText }}>{project.description}</p>}
+                    {project.description && (
+                      <div className="text-sm mt-1">
+                        <MarkdownText text={project.description} textColor={textColor} mutedText={mutedText} accent={accent} />
+                      </div>
+                    )}
                     {parseArr(project.technologies).length > 0 && (
                       <div className="flex flex-wrap gap-1.5 mt-3">
                         {parseArr(project.technologies).map((tech) => (
@@ -551,7 +610,11 @@ function SectionRenderer({
                     ) : null}
                     <div className="p-6">
                       <h3 className="font-semibold mb-2" style={{ color: textColor }}>{project.title}</h3>
-                      {project.description && <p className="text-sm leading-relaxed mb-4" style={{ color: mutedText }}>{project.description}</p>}
+                      {project.description && (
+                        <div className="text-sm mb-4">
+                          <MarkdownText text={project.description} textColor={textColor} mutedText={mutedText} accent={accent} />
+                        </div>
+                      )}
                       {parseArr(project.technologies).length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-4">
                           {parseArr(project.technologies).map((tech) => (
@@ -598,7 +661,11 @@ function SectionRenderer({
                       {new Date(exp.startDate).getFullYear()} — {exp.isCurrent ? "Present" : exp.endDate ? new Date(exp.endDate).getFullYear() : ""}
                     </div>
                   </div>
-                  {exp.description && <p className="mt-2 text-sm leading-relaxed" style={{ color: mutedText }}>{exp.description}</p>}
+                  {exp.description && (
+                    <div className="mt-2 text-sm">
+                      <MarkdownText text={exp.description} textColor={textColor} mutedText={mutedText} accent={accent} />
+                    </div>
+                  )}
                   {parseArr(exp.skills).length > 0 && (
                     <div className="mt-3 flex flex-wrap gap-1.5">
                       {parseArr(exp.skills).map((skill) => (

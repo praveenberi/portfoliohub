@@ -804,6 +804,67 @@ function ToggleRow({
   );
 }
 
+// ─── Formatted Textarea (with markdown toolbar) ───────────────────────────────
+
+function FormattedTextarea({
+  value,
+  onChange,
+  placeholder,
+  rows = 4,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  rows?: number;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  function insert(prefix: string) {
+    const el = ref.current;
+    const v = value ?? "";
+    if (!el) {
+      onChange(v + (v && !v.endsWith("\n") ? "\n" : "") + prefix);
+      return;
+    }
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const before = v.slice(0, start);
+    const selected = v.slice(start, end);
+    const after = v.slice(end);
+    const needsNL = before.length > 0 && !before.endsWith("\n");
+    const toInsert = (needsNL ? "\n" : "") + prefix + selected;
+    const next = before + toInsert + after;
+    onChange(next);
+    setTimeout(() => {
+      el.focus();
+      const pos = start + toInsert.length;
+      el.setSelectionRange(pos, pos);
+    }, 0);
+  }
+
+  return (
+    <div>
+      <div className="flex items-center gap-0.5 px-2 py-0.5 bg-zinc-50 border border-zinc-200 border-b-0 rounded-t-lg">
+        <button type="button" onClick={() => insert("## ")} title="Section heading"
+          className="px-2 py-0.5 text-[11px] font-bold text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 rounded transition-colors">H</button>
+        <button type="button" onClick={() => insert("- ")} title="Bullet point"
+          className="px-2 py-0.5 text-[12px] font-bold text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 rounded transition-colors">•</button>
+        <button type="button" onClick={() => insert("\n")} title="New paragraph"
+          className="px-2 py-0.5 text-[11px] text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 rounded transition-colors">¶</button>
+        <span className="ml-auto text-[9px] text-zinc-300 pr-1">markdown</span>
+      </div>
+      <textarea
+        ref={ref}
+        value={value}
+        placeholder={placeholder}
+        rows={rows}
+        onChange={(e) => onChange(e.target.value)}
+        className="w-full px-2.5 py-2 border border-zinc-200 text-xs resize-none focus:outline-none focus:border-zinc-400 rounded-b-lg"
+      />
+    </div>
+  );
+}
+
 // ─── About Editor ─────────────────────────────────────────────────────────────
 
 function AboutEditor({
@@ -835,13 +896,13 @@ function AboutEditor({
       </div>
       <div className="space-y-1.5">
         <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Bio override</label>
-        <textarea
+        <FormattedTextarea
           value={(content.bioOverride as string) ?? ""}
           placeholder="Leave blank to use your profile bio"
-          rows={3}
-          onChange={(e) => onChange({ bioOverride: e.target.value || undefined })}
-          className="w-full px-2.5 py-2 rounded-lg border border-zinc-200 text-xs resize-none focus:outline-none focus:border-zinc-400"
+          rows={4}
+          onChange={(v) => onChange({ bioOverride: v || undefined })}
         />
+        <p className="text-[10px] text-zinc-400">Use ## for headings, - for bullets</p>
       </div>
     </div>
   );
@@ -957,7 +1018,12 @@ function ProjForm({ form, setForm, saving, onSave, onCancel }: {
   return (
     <div className="space-y-2 pt-2">
       <input type="text" value={form.title} placeholder="Project title *" onChange={(e) => setForm({ ...form, title: e.target.value })} className={cls} />
-      <textarea value={form.description} placeholder="Description (bullet points supported)" rows={3} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-2 py-1.5 rounded-md border border-zinc-200 text-xs resize-none focus:outline-none focus:border-zinc-400" />
+      <FormattedTextarea
+        value={form.description}
+        placeholder="Description — use ## for headings, - for bullets"
+        rows={3}
+        onChange={(v) => setForm({ ...form, description: v })}
+      />
 
       {/* Multi-image picker */}
       <div className="space-y-1.5">
@@ -1204,7 +1270,12 @@ function ExpForm({ form, setForm, saving, onSave, onCancel }: {
       <input type="text" value={form.title as string} placeholder="Job title *" onChange={(e) => setForm({ ...form, title: e.target.value })} className={cls} />
       <input type="text" value={form.company as string} placeholder="Company *" onChange={(e) => setForm({ ...form, company: e.target.value })} className={cls} />
       <input type="text" value={form.location as string} placeholder="Location" onChange={(e) => setForm({ ...form, location: e.target.value })} className={cls} />
-      <textarea value={form.description as string} placeholder="Description (bullet points supported)" rows={3} onChange={(e) => setForm({ ...form, description: e.target.value })} className="w-full px-2 py-1.5 rounded-md border border-zinc-200 text-xs resize-none focus:outline-none focus:border-zinc-400" />
+      <FormattedTextarea
+        value={form.description as string}
+        placeholder="Description — use ## for headings, - for bullets"
+        rows={3}
+        onChange={(v) => setForm({ ...form, description: v })}
+      />
       <div className="grid grid-cols-2 gap-1.5">
         <div><p className="text-[10px] text-zinc-400 mb-0.5">Start</p><input type="month" value={form.startDate as string} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className="w-full h-7 px-1.5 rounded-md border border-zinc-200 text-[11px] focus:outline-none focus:border-zinc-400" /></div>
         <div><p className="text-[10px] text-zinc-400 mb-0.5">End</p><input type="month" value={form.endDate as string} disabled={form.isCurrent as boolean} onChange={(e) => setForm({ ...form, endDate: e.target.value })} className="w-full h-7 px-1.5 rounded-md border border-zinc-200 text-[11px] focus:outline-none focus:border-zinc-400 disabled:opacity-40" /></div>
