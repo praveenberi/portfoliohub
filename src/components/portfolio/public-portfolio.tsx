@@ -449,10 +449,10 @@ function SectionRenderer({
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
         <div className="max-w-[1200px] mx-auto">
+          <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>About</div>
+          <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
           <div className={profile?.avatarUrl ? "grid md:grid-cols-2 gap-16 items-center" : ""}>
-            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className={profile?.avatarUrl ? "" : "w-full"}>
-              <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>About</div>
-              <h2 className="text-3xl font-bold tracking-tight mb-6" style={{ color: textColor }}>{section.title}</h2>
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
               {aboutBio ? (
                 <MarkdownText text={aboutBio} textColor={textColor} mutedText={mutedText} accent={accent} />
               ) : (
