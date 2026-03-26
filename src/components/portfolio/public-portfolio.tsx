@@ -406,8 +406,8 @@ function SectionRenderer({
             <p className="leading-relaxed text-lg" style={{ color: mutedText }}>{aboutBio || "Add your bio in your profile settings."}</p>
           </motion.div>
           {profile?.avatarUrl && (
-            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-              <Image src={profile.avatarUrl} alt={user.name ?? ""} width={400} height={514} className="rounded-3xl w-full object-cover" style={{ aspectRatio: "400/514" }} />
+            <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="flex justify-center">
+              <Image src={profile.avatarUrl} alt={user.name ?? ""} width={260} height={334} className="rounded-2xl object-cover" style={{ aspectRatio: "260/334", width: 260, height: 334 }} />
             </motion.div>
           )}
         </div>
