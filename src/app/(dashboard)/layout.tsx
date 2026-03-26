@@ -17,7 +17,7 @@ export default async function DashboardLayout({
     <div className="min-h-[100dvh] bg-zinc-50 flex">
       <DashboardSidebar user={session.user} />
       <div className="flex-1 flex flex-col min-w-0 md:ml-64">
-        <DashboardHeader user={session.user} />
+        <DashboardHeader user={{ ...session.user, username: session.user.username ?? null }} />
         <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6">{children}</main>
       </div>
     </div>

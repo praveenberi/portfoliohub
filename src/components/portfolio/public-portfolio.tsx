@@ -300,16 +300,17 @@ function SectionRenderer({
           />
         )}
 
-        <div className={`max-w-[1200px] mx-auto w-full px-6 md:px-20 py-20 relative z-10 ${isFeatured && hasMedia ? "grid md:grid-cols-2 gap-16 items-center" : ""}`}>
+        {(() => {
+          const showAvatarRight = !hasMedia && !!profile?.avatarUrl;
+          const isTwoCols = (isFeatured && hasMedia) || showAvatarRight;
+          return (
+        <div className={`max-w-[1200px] mx-auto w-full px-6 md:px-20 py-20 relative z-10 ${isTwoCols ? "grid md:grid-cols-2 gap-16 items-center" : ""}`}>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-            className="max-w-2xl"
+            className={isTwoCols ? "" : "max-w-2xl"}
           >
-            {profile?.avatarUrl && !hasMedia && (
-              <Image src={profile.avatarUrl} alt={user.name ?? ""} width={80} height={80} className="rounded-2xl mb-8" />
-            )}
 
             {profile?.openToWork && (
               <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border mb-6"
@@ -374,7 +375,22 @@ function SectionRenderer({
               </div>
             </motion.div>
           )}
+
+          {!hasMedia && profile?.avatarUrl && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="hidden md:block"
+            >
+              <div className="w-full aspect-[4/5] rounded-3xl overflow-hidden shadow-2xl relative">
+                <Image src={profile.avatarUrl} alt={user.name ?? ""} fill className="object-cover" />
+              </div>
+            </motion.div>
+          )}
         </div>
+          );
+        })()}
       </div>
     );
   }
@@ -383,7 +399,7 @@ function SectionRenderer({
     const aboutBio = (section.content.bioOverride as string) || profile?.bio || "";
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
-        <div className={`max-w-[1200px] mx-auto ${profile?.avatarUrl ? "grid md:grid-cols-2 gap-16 items-center" : ""}`}>
+        <div className={profile?.avatarUrl ? "grid md:grid-cols-2 gap-16 items-center" : ""}>
           <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className={profile?.avatarUrl ? "" : "w-full"}>
             <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>About</div>
             <h2 className="text-3xl font-bold tracking-tight mb-6" style={{ color: textColor }}>{section.title}</h2>
@@ -452,7 +468,7 @@ function SectionRenderer({
 
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
-        <div className="max-w-[1200px] mx-auto">
+        <div>
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Work</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
 
@@ -535,7 +551,7 @@ function SectionRenderer({
                     ) : null}
                     <div className="p-6">
                       <h3 className="font-semibold mb-2" style={{ color: textColor }}>{project.title}</h3>
-                      {project.description && <p className="text-sm leading-relaxed mb-4 line-clamp-2" style={{ color: mutedText }}>{project.description}</p>}
+                      {project.description && <p className="text-sm leading-relaxed mb-4" style={{ color: mutedText }}>{project.description}</p>}
                       {parseArr(project.technologies).length > 0 && (
                         <div className="flex flex-wrap gap-1.5 mb-4">
                           {parseArr(project.technologies).map((tech) => (
