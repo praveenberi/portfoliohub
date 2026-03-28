@@ -23,7 +23,7 @@ export function Footer() {
                   <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
                 </svg>
               </div>
-              <span className="font-semibold text-zinc-950 tracking-tight text-sm">PortfolioHub</span>
+              <span className="font-semibold text-zinc-950 tracking-tight text-sm">Showup</span>
             </Link>
             <p className="text-xs text-zinc-500 leading-relaxed max-w-[28ch]">
               Build your portfolio. Find your job. Track your career.
@@ -52,7 +52,7 @@ export function Footer() {
 
         <div className="border-t border-zinc-200 mt-16 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-xs text-zinc-400">
-            {new Date().getFullYear()} PortfolioHub. All rights reserved.
+            {new Date().getFullYear()} Showup. All rights reserved.
           </div>
           <div className="flex items-center gap-6">
             <Link href="#" className="text-xs text-zinc-400 hover:text-zinc-600 transition-colors">Privacy</Link>

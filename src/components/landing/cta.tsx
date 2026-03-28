@@ -37,7 +37,7 @@ export function CtaSection() {
             </h2>
             <p className="text-base text-zinc-500 leading-relaxed max-w-[48ch] mb-10">
               Join thousands of professionals who built their portfolio, found their
-              next role, and accelerated their career with PortfolioHub.
+              next role, and accelerated their career with Showup.
             </p>
             <div className="flex items-center gap-4">
               <Link

@@ -26,7 +26,7 @@ export async function sendEmailNotification({
   console.log(`[notify] Email → TO: ${to}  reply-to: ${replyTo}`);
 
   const result = await resend.emails.send({
-    from: "PortfolioHub <onboarding@resend.dev>",
+    from: "Showup <onboarding@resend.dev>",
     to: [to],
     reply_to: replyTo,
     subject,

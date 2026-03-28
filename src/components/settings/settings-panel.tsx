@@ -177,7 +177,7 @@ export function SettingsPanel({ user }: { user: UserData | null }) {
                         <label className="text-xs font-medium text-zinc-700">Username</label>
                         <div className="flex items-center">
                           <span className="h-10 flex items-center px-3 bg-zinc-50 border border-r-0 border-zinc-200 rounded-l-lg text-sm text-zinc-400">
-                            portfoliohub.com/
+                            showup.com/
                           </span>
                           <input
                             {...accountForm.register("username")}

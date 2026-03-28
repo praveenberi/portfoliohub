@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
 
-export const metadata = { title: "Welcome to PortfolioHub" };
+export const metadata = { title: "Welcome to Showup" };
 
 export default async function OnboardingPage() {
   const session = await auth();

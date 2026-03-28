@@ -375,7 +375,7 @@ export function ChatWidget({ username, ownerName, accentColor = "#22c55e" }: Cha
 
             {/* Footer */}
             <div className="text-center text-[10px] text-zinc-600 py-1.5 bg-zinc-900 border-t border-zinc-800">
-              Powered by PortfolioHub
+              Powered by Showup
             </div>
           </motion.div>
         )}

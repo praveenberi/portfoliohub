@@ -89,7 +89,7 @@ export function DashboardHeader({ user }: HeaderProps) {
       </div>
 
       {/* Mobile: centered logo text */}
-      <span className="md:hidden text-sm font-semibold text-zinc-950">PortfolioHub</span>
+      <span className="md:hidden text-sm font-semibold text-zinc-950">Showup</span>
 
       <div className="hidden md:block flex-1" />
 

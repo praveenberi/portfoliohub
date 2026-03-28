@@ -149,7 +149,7 @@ async function fetchTheMuse(q: string, location: string, page: number): Promise<
 // ── RemoteOK (free, no auth, remote only) ───────────────────────────────────
 async function fetchRemoteOK(q: string, page: number): Promise<ExternalJob[]> {
   const res = await fetch("https://remoteok.com/api", {
-    headers: { "User-Agent": "PortfolioHub/1.0 (Job Browser)" },
+    headers: { "User-Agent": "Showup/1.0 (Job Browser)" },
     next: { revalidate: 300 },
   });
   if (!res.ok) throw new Error(`RemoteOK ${res.status}`);

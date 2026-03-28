@@ -12,10 +12,10 @@ async function main() {
   // Create admin user
   const adminPassword = await bcrypt.hash("admin123!", 12);
   const admin = await prisma.user.upsert({
-    where: { email: "admin@portfoliohub.com" },
+    where: { email: "admin@showup.com" },
     update: {},
     create: {
-      email: "admin@portfoliohub.com",
+      email: "admin@showup.com",
       name: "Admin User",
       username: "admin",
       password: adminPassword,
@@ -29,10 +29,10 @@ async function main() {
   // Create demo user
   const demoPassword = await bcrypt.hash("demo1234!", 12);
   const demo = await prisma.user.upsert({
-    where: { email: "demo@portfoliohub.com" },
+    where: { email: "demo@showup.com" },
     update: {},
     create: {
-      email: "demo@portfoliohub.com",
+      email: "demo@showup.com",
       name: "Alex Kim",
       username: "alexkim",
       password: demoPassword,
@@ -283,8 +283,8 @@ async function main() {
 
   console.log("\nSeeding complete!");
   console.log("───────────────────────────────");
-  console.log("Admin login:  admin@portfoliohub.com / admin123!");
-  console.log("Demo login:   demo@portfoliohub.com  / demo1234!");
+  console.log("Admin login:  admin@showup.com / admin123!");
+  console.log("Demo login:   demo@showup.com  / demo1234!");
   console.log("Demo portfolio: http://localhost:3000/alexkim");
 }
 

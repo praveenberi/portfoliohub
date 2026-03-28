@@ -319,7 +319,7 @@ export function PortfolioManager({ portfolio, templates, username }: PortfolioMa
                 className="text-xs text-zinc-500 hover:text-zinc-950 flex items-center gap-1 transition-colors"
               >
                 <Globe size={12} />
-                portfoliohub.com/{username}
+                showup.com/{username}
               </Link>
             )}
           </div>
@@ -357,7 +357,7 @@ export function PortfolioManager({ portfolio, templates, username }: PortfolioMa
             <div className="w-2.5 h-2.5 rounded-full bg-yellow-400/60" />
             <div className="w-2.5 h-2.5 rounded-full bg-green-400/60" />
             <div className="ml-3 flex-1 bg-zinc-100 rounded-md h-5 max-w-[200px] flex items-center px-2 text-zinc-400 text-[10px]">
-              portfoliohub.com/{username}
+              showup.com/{username}
             </div>
           </div>
           <div className="aspect-video relative">

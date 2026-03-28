@@ -14,8 +14,8 @@ const geistSans = Inter({
 
 export const metadata: Metadata = {
   title: {
-    default: "PortfolioHub — Build Your Career Portfolio",
-    template: "%s | PortfolioHub",
+    default: "Showup — Build Your Career Portfolio",
+    template: "%s | Showup",
   },
   description:
     "Create a stunning professional portfolio, find your next job, and track applications — all in one place.",
@@ -28,14 +28,14 @@ export const metadata: Metadata = {
     "job application tracker",
     "professional portfolio",
   ],
-  authors: [{ name: "PortfolioHub" }],
-  creator: "PortfolioHub",
+  authors: [{ name: "Showup" }],
+  creator: "Showup",
   openGraph: {
     type: "website",
     locale: "en_US",
     url: process.env.NEXT_PUBLIC_APP_URL,
-    siteName: "PortfolioHub",
-    title: "PortfolioHub — Build Your Career Portfolio",
+    siteName: "Showup",
+    title: "Showup — Build Your Career Portfolio",
     description:
       "Create a stunning professional portfolio, find your next job, and track applications — all in one place.",
     images: [
@@ -43,16 +43,16 @@ export const metadata: Metadata = {
         url: `${process.env.NEXT_PUBLIC_APP_URL}/og-image.png`,
         width: 1200,
         height: 630,
-        alt: "PortfolioHub",
+        alt: "Showup",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "PortfolioHub — Build Your Career Portfolio",
+    title: "Showup — Build Your Career Portfolio",
     description:
       "Create a stunning professional portfolio, find your next job, and track applications.",
-    creator: "@portfoliohub",
+    creator: "@showup",
   },
   robots: {
     index: true,

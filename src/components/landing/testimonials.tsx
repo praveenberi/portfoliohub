@@ -6,7 +6,7 @@ import Image from "next/image";
 const testimonials = [
   {
     quote:
-      "I landed three interviews in two weeks after publishing my portfolio on PortfolioHub. The drag-and-drop builder made it incredibly easy to showcase my projects.",
+      "I landed three interviews in two weeks after publishing my portfolio on Showup. The drag-and-drop builder made it incredibly easy to showcase my projects.",
     name: "Marcus Rivera",
     title: "Senior Frontend Engineer at Vercel",
     seed: "marcus",

@@ -34,7 +34,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       <p>Hi ${msg.senderName},</p>
       <p>${replyText.trim().replace(/\n/g, "<br/>")}</p>
       <hr/>
-      <p style="font-size:11px;color:#aaa">Replied by ${owner?.name ?? "Portfolio Owner"} via PortfolioHub</p>
+      <p style="font-size:11px;color:#aaa">Replied by ${owner?.name ?? "Portfolio Owner"} via Showup</p>
     `,
   });
 

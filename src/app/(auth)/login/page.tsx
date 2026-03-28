@@ -71,7 +71,7 @@ export default function LoginPage() {
                 <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
               </svg>
             </div>
-            <span className="font-semibold text-zinc-950 tracking-tight text-sm">PortfolioHub</span>
+            <span className="font-semibold text-zinc-950 tracking-tight text-sm">Showup</span>
           </Link>
 
           <h1 className="text-2xl font-bold tracking-tight text-zinc-950 mb-1">Welcome back</h1>
@@ -193,7 +193,7 @@ export default function LoginPage() {
             <span className="text-accent-500">impress forever.</span>
           </div>
           <p className="text-zinc-500 text-sm leading-relaxed max-w-[36ch] mx-auto">
-            Your portfolio is your career anchor. Make it count with PortfolioHub.
+            Your portfolio is your career anchor. Make it count with Showup.
           </p>
         </div>
       </div>
