@@ -113,7 +113,7 @@ export function ProfileEditor({ profile, user }: Props) {
             transition={{ duration: 0.15 }}
           >
             {activeTab === "basic" && <BasicInfoEditor profile={profile} />}
-            {activeTab === "social" && <SocialLinksEditor profile={profile} />}
+            {activeTab === "social" && <SocialLinksEditor profile={profile} username={user?.username ?? null} />}
             {activeTab === "skills" && <SkillsEditor profile={profile} />}
             {activeTab === "experience" && (
               <ExperienceEditor experiences={profile?.experiences ?? []} profileId={profile?.id} />
@@ -241,15 +241,18 @@ function BasicInfoEditor({ profile }: { profile: FullProfile | null }) {
 
 // ─── Social Links ─────────────────────────────────────────────────────────────
 
-function SocialLinksEditor({ profile }: { profile: FullProfile | null }) {
+function SocialLinksEditor({ profile, username }: { profile: FullProfile | null; username: string | null }) {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    linkedinUrl: profile?.linkedinUrl ?? "",
-    githubUrl: profile?.githubUrl ?? "",
-    twitterUrl: profile?.twitterUrl ?? "",
+    phone:        (profile as any)?.phone        ?? "",
+    linkedinUrl:  profile?.linkedinUrl  ?? "",
+    githubUrl:    profile?.githubUrl    ?? "",
+    twitterUrl:   profile?.twitterUrl   ?? "",
     instagramUrl: (profile as any)?.instagramUrl ?? "",
-    website: profile?.website ?? "",
+    website:      profile?.website      ?? "",
   });
+
+  const portfolioUrl = username ? `${typeof window !== "undefined" ? window.location.origin : ""}/${username}` : null;
 
   async function save() {
     setSaving(true);
@@ -265,6 +268,26 @@ function SocialLinksEditor({ profile }: { profile: FullProfile | null }) {
 
   return (
     <div className="space-y-4">
+      {portfolioUrl && (
+        <div>
+          <label className="text-xs text-zinc-500 mb-1 block">Your Portfolio URL</label>
+          <div className="flex items-center gap-2">
+            <input readOnly value={portfolioUrl} className={`${inputCls} text-accent-400 cursor-default`} />
+            <button
+              type="button"
+              onClick={() => { navigator.clipboard.writeText(portfolioUrl); toast.success("Copied!"); }}
+              className="shrink-0 px-3 py-2 text-xs font-medium bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+            >
+              Copy
+            </button>
+          </div>
+          <p className="text-[11px] text-zinc-600 mt-1">This is your public Showup portfolio link.</p>
+        </div>
+      )}
+      <div>
+        <label className="text-xs text-zinc-500 mb-1 block">Phone / Mobile</label>
+        <input value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} className={inputCls} placeholder="+1 555 000 0000" />
+      </div>
       <div>
         <label className="text-xs text-zinc-500 mb-1 block">LinkedIn</label>
         <input value={form.linkedinUrl} onChange={(e) => setForm({ ...form, linkedinUrl: e.target.value })} className={inputCls} placeholder="https://linkedin.com/in/username" />
