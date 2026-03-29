@@ -119,6 +119,7 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
   <style>
     html, body { margin: 0; padding: 0; background: white; }
     @page { margin: 0; size: A4; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   </style>
 </head>
 <body>${resumeEl.outerHTML}</body>
