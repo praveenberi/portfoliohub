@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Printer, DownloadSimple } from "@phosphor-icons/react";
+import Link from "next/link";
+import { Printer, DownloadSimple, Warning } from "@phosphor-icons/react";
 import { ClassicTemplate } from "./templates/classic";
 import { ModernTemplate } from "./templates/modern";
 import { ExecutiveTemplate } from "./templates/executive";
@@ -90,6 +91,13 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
   const [active, setActive]           = useState<TemplateId>("classic");
   const [accentColor, setAccentColor] = useState("#0D9488");
 
+  const allSkills = [...data.skills, ...data.technologies].filter(Boolean);
+  const missing: string[] = [
+    !data.phone                                           && "Phone",
+    allSkills.length === 0                                && "Skills",
+    !data.linkedinUrl && !data.githubUrl && !data.website && "Links (LinkedIn / GitHub / Website)",
+  ].filter(Boolean) as string[];
+
   const handlePrint = () => {
     const resumeEl = document.getElementById("resume-print");
     if (!resumeEl) { window.print(); return; }
@@ -136,6 +144,22 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
             Download PDF
           </button>
         </div>
+
+        {/* ── Missing fields banner ── */}
+        {missing.length > 0 && (
+          <div className="flex items-start gap-3 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm print:hidden">
+            <Warning size={16} className="shrink-0 mt-0.5 text-amber-500" />
+            <span className="text-amber-800">
+              <span className="font-semibold">Missing from resume: </span>
+              {missing.join(" · ")}
+              {" — "}
+              <Link href="/dashboard/profile" className="underline font-semibold hover:text-amber-900">
+                Fill in Profile Settings
+              </Link>
+              {" (Basic + Social + Skills tabs)"}
+            </span>
+          </div>
+        )}
 
         {/* ── Template switcher ── */}
         <div className="flex gap-3 print:hidden">
