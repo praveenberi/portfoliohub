@@ -86,25 +86,6 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
           </Section>
         )}
 
-        {/* ── Education ── */}
-        {data.education.length > 0 && (
-          <Section title="Education" accentColor={accentColor}>
-            <div className="space-y-3">
-              {data.education.map((e) => (
-                <div key={e.id} className="flex justify-between">
-                  <div>
-                    <p className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</p>
-                    <p className="text-zinc-500 text-[12px]">{e.institution}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
-                  </div>
-                  <span className="text-[11px] text-zinc-400 whitespace-nowrap ml-6 tabular-nums">
-                    {e.startDate} – {e.endDate}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </Section>
-        )}
-
         {/* ── Projects — full width ── */}
         {data.projects.length > 0 && (
           <Section title="Projects" accentColor={accentColor}>
@@ -123,6 +104,25 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
                     )}
                   </div>
                   {p.description && <p className="text-zinc-600 text-[12px] mt-0.5 leading-relaxed">{p.description}</p>}
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
+
+        {/* ── Education ── */}
+        {data.education.length > 0 && (
+          <Section title="Education" accentColor={accentColor}>
+            <div className="space-y-3">
+              {data.education.map((e) => (
+                <div key={e.id} className="flex justify-between">
+                  <div>
+                    <p className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</p>
+                    <p className="text-zinc-500 text-[12px]">{e.institution}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
+                  </div>
+                  <span className="text-[11px] text-zinc-400 whitespace-nowrap ml-6 tabular-nums">
+                    {e.startDate} – {e.endDate}
+                  </span>
                 </div>
               ))}
             </div>
