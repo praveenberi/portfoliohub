@@ -32,6 +32,7 @@ export default async function ResumePage() {
 
   const data = {
     name: [profile?.firstName, profile?.lastName].filter(Boolean).join(" ") || user?.name || "Your Name",
+    avatarUrl: profile?.avatarUrl ?? "",
     email: user?.email ?? "",
     headline: profile?.headline ?? "",
     bio: profile?.bio ?? "",

@@ -8,6 +8,7 @@ import { ExecutiveTemplate } from "./templates/executive";
 
 export interface ResumeData {
   name: string;
+  avatarUrl: string;
   email: string;
   headline: string;
   bio: string;
@@ -56,9 +57,9 @@ export interface ResumeData {
 }
 
 const templates = [
-  { id: "classic", label: "Classic", description: "ATS-friendly, traditional layout" },
-  { id: "modern", label: "Modern", description: "Dark sidebar, two-column" },
-  { id: "executive", label: "Executive", description: "Clean typographic style" },
+  { id: "classic", label: "Classic", description: "ATS-friendly serif, centered header" },
+  { id: "modern", label: "Sidebar", description: "Teal sidebar with photo & skill bars" },
+  { id: "executive", label: "Executive", description: "Green accent, modern two-column" },
 ] as const;
 
 type TemplateId = (typeof templates)[number]["id"];

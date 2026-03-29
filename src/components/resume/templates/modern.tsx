@@ -1,88 +1,130 @@
+import Image from "next/image";
 import type { ResumeData } from "../resume-viewer";
+
+const TEAL = "#0D9488"; // teal-600
 
 export function ModernTemplate({ data }: { data: ResumeData }) {
   const allSkills = Array.from(new Set([...data.skills, ...data.technologies])).filter(Boolean);
 
   return (
-    <div className="bg-white text-[13px] leading-relaxed flex min-h-[297mm]" style={{ fontFamily: "'Inter', 'Helvetica Neue', sans-serif" }}>
-      {/* Sidebar */}
-      <div className="w-[220px] shrink-0 bg-zinc-950 text-white p-8 flex flex-col gap-6">
-        {/* Name */}
-        <div>
-          <h1 className="text-xl font-bold leading-tight text-white">{data.name}</h1>
-          {data.headline && <p className="text-xs text-green-400 mt-1 leading-snug">{data.headline}</p>}
+    <div className="bg-white flex min-h-[297mm] text-[12.5px] leading-relaxed" style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
+
+      {/* ── Sidebar ─────────────────────────────────────────── */}
+      <div className="w-[220px] shrink-0 flex flex-col" style={{ backgroundColor: TEAL, color: "#fff" }}>
+
+        {/* Photo */}
+        <div className="flex justify-center pt-8 pb-4">
+          {data.avatarUrl ? (
+            <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-white/30">
+              <Image src={data.avatarUrl} alt={data.name} width={96} height={96} className="object-cover" />
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-full border-4 border-white/30 flex items-center justify-center bg-white/10">
+              <span className="text-2xl font-bold text-white/80">{data.name.charAt(0)}</span>
+            </div>
+          )}
         </div>
 
-        {/* Contact */}
-        <div className="space-y-1.5">
-          <SideLabel>Contact</SideLabel>
-          {data.email && <SideItem>{data.email}</SideItem>}
-          {data.phone && <SideItem>{data.phone}</SideItem>}
-          {data.location && <SideItem>{data.location}</SideItem>}
-          {data.website && <SideItem>{data.website.replace(/^https?:\/\//, "")}</SideItem>}
-          {data.linkedinUrl && <SideItem>{data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "in/")}</SideItem>}
-          {data.githubUrl && <SideItem>{data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "gh/")}</SideItem>}
+        <div className="flex-1 px-6 pb-8 space-y-5">
+
+          {/* Contact */}
+          <SideSection title="CONTACT">
+            <div className="space-y-1.5">
+              {data.email && <ContactRow icon="✉" text={data.email} />}
+              {data.phone && <ContactRow icon="☎" text={data.phone} />}
+              {data.location && <ContactRow icon="◎" text={data.location} />}
+              {data.website && <ContactRow icon="⊕" text={data.website.replace(/^https?:\/\//, "")} />}
+              {data.linkedinUrl && (
+                <ContactRow icon="in" text={data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "")} />
+              )}
+              {data.githubUrl && (
+                <ContactRow icon="gh" text={data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "")} />
+              )}
+            </div>
+          </SideSection>
+
+          {/* Skills */}
+          {allSkills.length > 0 && (
+            <SideSection title="SKILLS">
+              <div className="space-y-2">
+                {allSkills.slice(0, 10).map((skill, i) => (
+                  <div key={i}>
+                    <p className="text-[11px] text-white mb-0.5">{skill}</p>
+                    <div className="h-1 bg-white/20 rounded-full">
+                      <div
+                        className="h-1 rounded-full bg-white"
+                        style={{ width: `${100 - (i % 3) * 15}%` }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </SideSection>
+          )}
+
+          {/* Extra skills as tags */}
+          {allSkills.length > 10 && (
+            <SideSection title="MORE SKILLS">
+              <div className="flex flex-wrap gap-1">
+                {allSkills.slice(10).map((s, i) => (
+                  <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/15 text-white">{s}</span>
+                ))}
+              </div>
+            </SideSection>
+          )}
+
+          {/* Certifications */}
+          {data.certifications.length > 0 && (
+            <SideSection title="CERTIFICATIONS">
+              <div className="space-y-2">
+                {data.certifications.map((c) => (
+                  <div key={c.id}>
+                    <p className="text-[11px] font-semibold text-white leading-snug">{c.name}</p>
+                    <p className="text-[10px] text-white/70">{c.issuer}</p>
+                    <p className="text-[10px] text-white/50">{c.issueDate}</p>
+                  </div>
+                ))}
+              </div>
+            </SideSection>
+          )}
         </div>
-
-        {/* Skills */}
-        {allSkills.length > 0 && (
-          <div>
-            <SideLabel>Skills</SideLabel>
-            <div className="flex flex-wrap gap-1 mt-2">
-              {allSkills.map((s, i) => (
-                <span key={i} className="px-2 py-0.5 bg-white/10 text-white text-[10px] rounded">{s}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Certifications */}
-        {data.certifications.length > 0 && (
-          <div>
-            <SideLabel>Certifications</SideLabel>
-            <div className="space-y-2 mt-2">
-              {data.certifications.map((c) => (
-                <div key={c.id}>
-                  <p className="text-[11px] text-white font-semibold leading-snug">{c.name}</p>
-                  <p className="text-[10px] text-zinc-400">{c.issuer} · {c.issueDate}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
 
-      {/* Main content */}
-      <div className="flex-1 p-8 space-y-6">
-        {/* Summary */}
-        {data.bio && (
-          <MainSection title="About">
-            <p className="text-zinc-600">{data.bio}</p>
-          </MainSection>
-        )}
+      {/* ── Main ────────────────────────────────────────────── */}
+      <div className="flex-1 px-8 py-8">
+
+        {/* Name + headline */}
+        <div className="mb-5">
+          <h1 className="text-3xl font-bold text-zinc-950 leading-tight">{data.name}</h1>
+          {data.headline && (
+            <p className="text-sm font-medium mt-0.5" style={{ color: TEAL }}>{data.headline}</p>
+          )}
+          {data.bio && (
+            <p className="text-zinc-600 mt-3 text-[12px] leading-relaxed border-t border-zinc-100 pt-3">{data.bio}</p>
+          )}
+        </div>
 
         {/* Experience */}
         {data.experiences.length > 0 && (
-          <MainSection title="Experience">
+          <MainSection title="WORK EXPERIENCE" color={TEAL}>
             <div className="space-y-5">
               {data.experiences.map((e) => (
                 <div key={e.id}>
-                  <div className="flex justify-between items-start mb-0.5">
-                    <div>
-                      <p className="font-bold text-zinc-950">{e.title}</p>
-                      <p className="text-zinc-500 text-xs">{e.company}{e.location ? ` · ${e.location}` : ""}</p>
-                    </div>
-                    <span className="text-[11px] text-zinc-400 whitespace-nowrap ml-4 mt-0.5">{e.startDate} – {e.endDate}</span>
+                  <p className="font-bold text-zinc-950" style={{ color: TEAL }}>{e.title}</p>
+                  <p className="font-semibold text-zinc-700 text-[12px]">{e.company}</p>
+                  <div className="flex justify-between text-[11px] text-zinc-400 italic mb-1">
+                    <span>{e.startDate} – {e.endDate}</span>
+                    {e.location && <span>{e.location}</span>}
                   </div>
                   {e.description && (
-                    <div className="mt-1.5 space-y-0.5">
+                    <ul className="space-y-0.5 mt-1">
                       {e.description.split("\n").filter(Boolean).map((line, i) => (
-                        <div key={i} className="flex gap-2 text-zinc-600">
-                          <span className="text-green-500 mt-0.5 shrink-0">▸</span>
-                          <span>{line.replace(/^[-•▸]\s*/, "")}</span>
-                        </div>
+                        <li key={i} className="flex gap-2 text-zinc-600">
+                          <span className="mt-1 shrink-0" style={{ color: TEAL }}>▪</span>
+                          <span>{line.replace(/^[-•▪]\s*/, "")}</span>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
                 </div>
               ))}
@@ -92,15 +134,13 @@ export function ModernTemplate({ data }: { data: ResumeData }) {
 
         {/* Education */}
         {data.education.length > 0 && (
-          <MainSection title="Education">
+          <MainSection title="EDUCATION" color={TEAL}>
             <div className="space-y-3">
               {data.education.map((e) => (
-                <div key={e.id} className="flex justify-between">
-                  <div>
-                    <p className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</p>
-                    <p className="text-zinc-500 text-xs">{e.institution}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
-                  </div>
-                  <span className="text-[11px] text-zinc-400 whitespace-nowrap ml-4">{e.startDate} – {e.endDate}</span>
+                <div key={e.id}>
+                  <p className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</p>
+                  <p className="text-zinc-600 text-[12px]">{e.institution}</p>
+                  <p className="text-zinc-400 italic text-[11px]">{e.startDate} – {e.endDate}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
                 </div>
               ))}
             </div>
@@ -109,20 +149,15 @@ export function ModernTemplate({ data }: { data: ResumeData }) {
 
         {/* Projects */}
         {data.projects.length > 0 && (
-          <MainSection title="Projects">
+          <MainSection title="PROJECTS" color={TEAL}>
             <div className="space-y-3">
               {data.projects.map((p) => (
                 <div key={p.id}>
-                  <div className="flex items-center gap-2">
-                    <p className="font-bold text-zinc-950">{p.title}</p>
-                    {p.technologies.length > 0 && (
-                      <span className="text-[10px] text-zinc-400">{p.technologies.join(", ")}</span>
-                    )}
-                  </div>
-                  {p.description && <p className="text-zinc-600 mt-0.5">{p.description}</p>}
-                  {(p.liveUrl || p.githubUrl) && (
-                    <p className="text-[11px] text-green-600 mt-0.5">{(p.liveUrl || p.githubUrl || "").replace(/^https?:\/\//, "")}</p>
+                  <p className="font-bold text-zinc-950">{p.title}</p>
+                  {p.technologies.length > 0 && (
+                    <p className="text-[11px]" style={{ color: TEAL }}>{p.technologies.join(", ")}</p>
                   )}
+                  {p.description && <p className="text-zinc-600 text-[12px] mt-0.5">{p.description}</p>}
                 </div>
               ))}
             </div>
@@ -133,18 +168,30 @@ export function ModernTemplate({ data }: { data: ResumeData }) {
   );
 }
 
-function SideLabel({ children }: { children: React.ReactNode }) {
-  return <p className="text-[10px] font-bold uppercase tracking-widest text-green-400 mb-1">{children}</p>;
-}
-function SideItem({ children }: { children: React.ReactNode }) {
-  return <p className="text-[11px] text-zinc-300 break-all">{children}</p>;
-}
-function MainSection({ title, children }: { title: string; children: React.ReactNode }) {
+function SideSection({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div>
-      <div className="flex items-center gap-3 mb-3">
-        <h2 className="text-xs font-bold uppercase tracking-widest text-zinc-950">{title}</h2>
-        <div className="flex-1 h-px bg-zinc-200" />
+      <p className="text-[9px] font-bold tracking-[0.2em] text-white/60 mb-1.5 uppercase">{title}</p>
+      <div className="border-t border-white/20 pt-2">{children}</div>
+    </div>
+  );
+}
+
+function ContactRow({ icon, text }: { icon: string; text: string }) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="text-[10px] text-white/60 mt-0.5 w-4 shrink-0 text-center">{icon}</span>
+      <span className="text-[10px] text-white/85 break-all">{text}</span>
+    </div>
+  );
+}
+
+function MainSection({ title, children, color }: { title: string; children: React.ReactNode; color: string }) {
+  return (
+    <div className="mb-5">
+      <div className="flex items-center gap-2 mb-2">
+        <h2 className="text-[10px] font-bold tracking-[0.15em]" style={{ color }}>{title}</h2>
+        <div className="flex-1 h-px" style={{ backgroundColor: color }} />
       </div>
       {children}
     </div>
