@@ -28,6 +28,23 @@ function mapEmploymentType(type: string): string {
   return map[type?.toUpperCase()] ?? "FULL_TIME";
 }
 
+function mapMcfEmploymentType(type: string): string {
+  const map: Record<string, string> = {
+    "PERMANENT": "FULL_TIME",
+    "CONTRACT": "CONTRACT",
+    "PART TIME": "PART_TIME",
+    "TEMPORARY": "CONTRACT",
+    "INTERNSHIP / ATTACHMENT": "INTERNSHIP",
+    "FLEXI WORK": "PART_TIME",
+  };
+  return map[type?.toUpperCase().trim()] ?? "FULL_TIME";
+}
+
+function isSingaporeLocation(location: string): boolean {
+  const l = location.toLowerCase().trim();
+  return !l || l.includes("singapore") || l === "sg" || l.endsWith(", sg");
+}
+
 function safeDate(value: unknown): string {
   try {
     if (!value) return new Date().toISOString();
@@ -37,6 +54,49 @@ function safeDate(value: unknown): string {
     if (!isNaN(d.getTime())) return d.toISOString();
   } catch {}
   return new Date().toISOString();
+}
+
+// ── MyCareersFuture.gov.sg (free, Singapore gov job portal) ─────────────────
+async function fetchMyCareersFuture(q: string, page: number): Promise<ExternalJob[]> {
+  const params = new URLSearchParams({
+    limit: "12",
+    page: String(page - 1), // 0-indexed
+  });
+  if (q) params.set("search", q);
+
+  const res = await fetch(`https://api.mycareersfuture.gov.sg/v2/jobs?${params}`, {
+    headers: {
+      "User-Agent": "Showup/1.0 (Job Browser)",
+      "Accept": "application/json",
+    },
+    next: { revalidate: 300 },
+  });
+  if (!res.ok) throw new Error(`MyCareersFuture ${res.status}`);
+  const data = await res.json();
+
+  return (data.results ?? []).map((j: any) => {
+    const minSalary = j.salary?.minimum;
+    const maxSalary = j.salary?.maximum;
+    const salaryType = j.salary?.type === "monthly" ? "/mo" : j.salary?.type === "annual" ? "/yr" : "";
+    return {
+      id: j.uuid,
+      title: j.title,
+      company: j.postedCompany?.name ?? "Unknown",
+      location: "Singapore",
+      workMode: "ON_SITE" as const,
+      type: mapMcfEmploymentType(j.employmentTypes?.[0]?.employmentType ?? ""),
+      description: (j.categories ?? []).map((c: any) => c.category).join(" · ") || "",
+      skills: (j.skills ?? []).map((s: any) => s.skill),
+      postedAt: j.metadata?.newPostingDate ?? j.createdAt ?? new Date().toISOString(),
+      applyUrl: `https://www.mycareersfuture.gov.sg/job-detail/${j.uuid}`,
+      source: "MyCareersFuture",
+      companyLogo: j.postedCompany?.logoUrl ?? undefined,
+      salary:
+        minSalary
+          ? `SGD ${(minSalary / 1000).toFixed(0)}k – ${(maxSalary / 1000).toFixed(0)}k${salaryType}`
+          : undefined,
+    };
+  });
 }
 
 // ── JSearch (RapidAPI) ──────────────────────────────────────────────────────
@@ -79,16 +139,18 @@ async function fetchJSearch(q: string, location: string, page: number): Promise<
 
 // ── Adzuna ──────────────────────────────────────────────────────────────────
 async function fetchAdzuna(q: string, location: string, page: number): Promise<ExternalJob[]> {
+  const country = isSingaporeLocation(location) ? "sg" : "us";
+  const currencySymbol = country === "sg" ? "SGD " : "$";
   const params = new URLSearchParams({
     app_id: process.env.ADZUNA_APP_ID!,
     app_key: process.env.ADZUNA_API_KEY!,
     results_per_page: "12",
     what: q || "developer",
-    where: location || "",
+    where: country === "sg" ? "Singapore" : (location || ""),
     content_type: "application/json",
   });
   const res = await fetch(
-    `https://api.adzuna.com/v1/api/jobs/us/search/${page}?${params}`,
+    `https://api.adzuna.com/v1/api/jobs/${country}/search/${page}?${params}`,
     { next: { revalidate: 300 } }
   );
   if (!res.ok) throw new Error(`Adzuna ${res.status}`);
@@ -97,7 +159,7 @@ async function fetchAdzuna(q: string, location: string, page: number): Promise<E
     id: String(j.id),
     title: j.title,
     company: j.company?.display_name ?? "Unknown",
-    location: j.location?.display_name ?? "",
+    location: j.location?.display_name ?? (country === "sg" ? "Singapore" : ""),
     workMode: "ON_SITE" as const,
     type: "FULL_TIME",
     description: (j.description ?? "").slice(0, 400),
@@ -107,7 +169,7 @@ async function fetchAdzuna(q: string, location: string, page: number): Promise<E
     source: "Adzuna",
     salary:
       j.salary_min
-        ? `$${Math.round(j.salary_min / 1000)}k – $${Math.round((j.salary_max ?? j.salary_min) / 1000)}k`
+        ? `${currencySymbol}${Math.round(j.salary_min / 1000)}k – ${currencySymbol}${Math.round((j.salary_max ?? j.salary_min) / 1000)}k`
         : undefined,
   }));
 }
@@ -194,42 +256,58 @@ export async function GET(req: NextRequest) {
   const q = searchParams.get("q") ?? "";
   const location = searchParams.get("location") ?? "";
   const page = Math.max(1, parseInt(searchParams.get("page") ?? "1"));
+  const isSG = isSingaporeLocation(location);
 
-  // 1. JSearch — location-aware, aggregates LinkedIn/Indeed/Glassdoor
+  // 1. JSearch — location-aware, aggregates LinkedIn/Indeed/Glassdoor/JobStreet
   if (process.env.RAPIDAPI_KEY) {
     try {
-      const jobs = await fetchJSearch(q, location, page);
+      const loc = isSG ? "Singapore" : location;
+      const jobs = await fetchJSearch(q, loc, page);
       if (jobs.length > 0) {
-        return NextResponse.json({ success: true, data: jobs, source: "JSearch (LinkedIn · Indeed · Glassdoor)" });
+        return NextResponse.json({ success: true, data: jobs, source: "LinkedIn · Indeed · JobStreet (via JSearch)" });
       }
     } catch (e) {
       console.error("JSearch failed:", e);
     }
   }
 
-  // 2. Adzuna — location-aware (US-centric)
+  // 2. MyCareersFuture — free Singapore gov portal, always available for SG searches
+  if (isSG) {
+    try {
+      const jobs = await fetchMyCareersFuture(q, page);
+      if (jobs.length > 0) {
+        return NextResponse.json({ success: true, data: jobs, source: "MyCareersFuture.gov.sg" });
+      }
+    } catch (e) {
+      console.error("MyCareersFuture failed:", e);
+    }
+  }
+
+  // 3. Adzuna — uses sg endpoint for Singapore, us for others
   if (process.env.ADZUNA_APP_ID && process.env.ADZUNA_API_KEY) {
     try {
       const jobs = await fetchAdzuna(q, location, page);
       if (jobs.length > 0) {
-        return NextResponse.json({ success: true, data: jobs, source: "Adzuna" });
+        return NextResponse.json({ success: true, data: jobs, source: `Adzuna${isSG ? " Singapore" : ""}` });
       }
     } catch (e) {
       console.error("Adzuna failed:", e);
     }
   }
 
-  // 3. The Muse — free, no key, global locations including Singapore
-  try {
-    const jobs = await fetchTheMuse(q, location, page);
-    if (jobs.length > 0) {
-      return NextResponse.json({ success: true, data: jobs, source: "The Muse" });
+  // 4. The Muse — free, no key, global locations
+  if (!isSG) {
+    try {
+      const jobs = await fetchTheMuse(q, location, page);
+      if (jobs.length > 0) {
+        return NextResponse.json({ success: true, data: jobs, source: "The Muse" });
+      }
+    } catch (e) {
+      console.error("TheMuse failed:", e);
     }
-  } catch (e) {
-    console.error("TheMuse failed:", e);
   }
 
-  // 4. RemoteOK — only if no specific location requested
+  // 5. RemoteOK — only if no specific location or remote requested
   const locLower = location.toLowerCase().trim();
   const wantsRemote = !locLower || locLower.includes("remote") || locLower.includes("worldwide");
   if (wantsRemote) {

@@ -261,9 +261,17 @@ function InternalJobsTab({
 
 // ─── Live Jobs Tab ─────────────────────────────────────────────────────────────
 
+const SG_QUICK_FILTERS = [
+  { label: "All Singapore", location: "Singapore" },
+  { label: "Central", location: "Central, Singapore" },
+  { label: "East", location: "East Singapore" },
+  { label: "West / Jurong", location: "Jurong, Singapore" },
+  { label: "Remote", location: "Remote" },
+];
+
 function LiveJobsTab() {
   const [q, setQ] = useState("");
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState("Singapore");
   const [page, setPage] = useState(1);
   const [jobs, setJobs] = useState<ExternalJob[]>([]);
   const [source, setSource] = useState("");
@@ -316,6 +324,23 @@ function LiveJobsTab() {
         showFilters={false}
         onToggleFilters={() => {}}
       />
+
+      {/* Quick region chips */}
+      <div className="flex flex-wrap gap-2">
+        {SG_QUICK_FILTERS.map((f) => (
+          <button
+            key={f.label}
+            onClick={() => { setLocation(f.location); setPage(1); }}
+            className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+              location === f.location
+                ? "bg-zinc-950 text-white border-zinc-950"
+                : "bg-white text-zinc-600 border-zinc-200 hover:border-zinc-400"
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
+      </div>
 
       {source && (
         <div className="flex items-center gap-2 text-xs text-zinc-400">
@@ -452,7 +477,7 @@ export function JobSearch(props: JobSearchProps) {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-zinc-950">Browse Jobs</h1>
-        <p className="text-sm text-zinc-500 mt-1">Find your next opportunity.</p>
+        <p className="text-sm text-zinc-500 mt-1">Live jobs from Singapore and worldwide — sourced from JobStreet, LinkedIn, Indeed, MyCareersFuture and more.</p>
       </div>
 
       {/* Tabs */}

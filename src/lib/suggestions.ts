@@ -2,8 +2,13 @@
 export const LOCATION_SUGGESTIONS = [
   // Remote
   "Remote", "Worldwide",
+  // Singapore districts
+  "Singapore", "Central, Singapore", "Orchard, Singapore", "CBD, Singapore",
+  "East Singapore", "West Singapore", "North Singapore",
+  "Jurong, Singapore", "Tampines, Singapore", "Woodlands, Singapore",
+  "Toa Payoh, Singapore", "Bishan, Singapore", "Punggol, Singapore",
   // Asia
-  "Singapore", "Bangalore, India", "Mumbai, India", "Delhi, India", "Hyderabad, India",
+  "Bangalore, India", "Mumbai, India", "Delhi, India", "Hyderabad, India",
   "Chennai, India", "Pune, India", "Tokyo, Japan", "Osaka, Japan", "Seoul, South Korea",
   "Beijing, China", "Shanghai, China", "Shenzhen, China", "Hong Kong", "Taipei, Taiwan",
   "Bangkok, Thailand", "Kuala Lumpur, Malaysia", "Jakarta, Indonesia", "Manila, Philippines",
