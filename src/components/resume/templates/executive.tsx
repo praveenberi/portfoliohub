@@ -1,43 +1,60 @@
 import type { ResumeData } from "../resume-viewer";
 
-const ACCENT = "#22c55e"; // brand green
+interface Props { data: ResumeData; accentColor: string; }
 
-export function ExecutiveTemplate({ data }: { data: ResumeData }) {
+export function ExecutiveTemplate({ data, accentColor }: Props) {
   const allSkills = Array.from(new Set([...data.skills, ...data.technologies])).filter(Boolean);
+
+  // Derive a very light tint for skill chips
+  const chipBg = accentColor + "18"; // 10% opacity hex trick
 
   return (
     <div className="bg-white text-zinc-900 text-[12.5px] leading-relaxed min-h-[297mm]"
       style={{ fontFamily: "'Helvetica Neue', Arial, sans-serif" }}>
 
       {/* ── Top bar ── */}
-      <div className="px-12 pt-10 pb-7" style={{ borderBottom: `3px solid ${ACCENT}` }}>
-        <div className="flex items-end justify-between">
+      <div className="px-12 pt-10 pb-7" style={{ borderBottom: `3px solid ${accentColor}` }}>
+        <div className="flex items-end justify-between gap-6">
           <div>
             <h1 className="text-[38px] font-light tracking-tight text-zinc-950 leading-none">{data.name}</h1>
             {data.headline && (
-              <p className="text-sm font-semibold mt-1 tracking-wide" style={{ color: ACCENT }}>{data.headline}</p>
+              <p className="text-sm font-semibold mt-1 tracking-wide" style={{ color: accentColor }}>{data.headline}</p>
             )}
           </div>
           {/* Contact block */}
-          <div className="text-right text-[11px] text-zinc-500 space-y-0.5">
-            {data.email && <p>{data.email}</p>}
-            {data.phone && <p>{data.phone}</p>}
-            {data.location && <p>{data.location}</p>}
-            {data.website && <p>{data.website.replace(/^https?:\/\//, "")}</p>}
+          <div className="text-right text-[11px] text-zinc-500 space-y-0.5 shrink-0">
+            {data.email       && <p>{data.email}</p>}
+            {data.phone       && <p>{data.phone}</p>}
+            {data.location    && <p>{data.location}</p>}
+            {data.website     && <p>{data.website.replace(/^https?:\/\//, "")}</p>}
             {data.linkedinUrl && <p>{data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "linkedin.com/in/")}</p>}
-            {data.githubUrl && <p>{data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github.com/")}</p>}
+            {data.githubUrl   && <p>{data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github.com/")}</p>}
           </div>
         </div>
         {data.bio && (
-          <p className="text-zinc-600 mt-4 leading-relaxed max-w-2xl text-[12px]">{data.bio}</p>
+          <p className="text-zinc-600 mt-4 leading-relaxed text-[12px]">{data.bio}</p>
         )}
       </div>
 
       <div className="px-12 py-8 space-y-6">
 
+        {/* ── Skills ── */}
+        {allSkills.length > 0 && (
+          <Section title="Core Skills" accentColor={accentColor}>
+            <div className="flex flex-wrap gap-1.5">
+              {allSkills.map((s, i) => (
+                <span key={i} className="px-2.5 py-0.5 text-[11px] rounded border font-medium"
+                  style={{ borderColor: accentColor + "55", backgroundColor: chipBg, color: accentColor }}>
+                  {s}
+                </span>
+              ))}
+            </div>
+          </Section>
+        )}
+
         {/* ── Experience ── */}
         {data.experiences.length > 0 && (
-          <Section title="Professional Experience" accent={ACCENT}>
+          <Section title="Professional Experience" accentColor={accentColor}>
             <div className="space-y-6">
               {data.experiences.map((e) => (
                 <div key={e.id}>
@@ -54,7 +71,8 @@ export function ExecutiveTemplate({ data }: { data: ResumeData }) {
                     <ul className="mt-2 space-y-1 ml-3">
                       {e.description.split("\n").filter(Boolean).map((line, i) => (
                         <li key={i} className="flex gap-2 text-zinc-600">
-                          <span className="shrink-0 mt-1 w-1 h-1 rounded-full bg-zinc-400 inline-block" />
+                          <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full inline-block"
+                            style={{ backgroundColor: accentColor }} />
                           <span>{line.replace(/^[-•]\s*/, "")}</span>
                         </li>
                       ))}
@@ -66,55 +84,43 @@ export function ExecutiveTemplate({ data }: { data: ResumeData }) {
           </Section>
         )}
 
-        {/* ── 2-col: Education + Skills ── */}
-        <div className="grid grid-cols-2 gap-8">
-          {data.education.length > 0 && (
-            <Section title="Education" accent={ACCENT}>
-              <div className="space-y-3">
-                {data.education.map((e) => (
-                  <div key={e.id}>
+        {/* ── Education ── */}
+        {data.education.length > 0 && (
+          <Section title="Education" accentColor={accentColor}>
+            <div className="space-y-3">
+              {data.education.map((e) => (
+                <div key={e.id} className="flex justify-between">
+                  <div>
                     <p className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</p>
-                    <p className="text-zinc-500 text-[12px]">{e.institution}</p>
-                    <p className="text-zinc-400 text-[11px]">
-                      {e.startDate} – {e.endDate}{e.gpa ? ` · GPA ${e.gpa}` : ""}
-                    </p>
+                    <p className="text-zinc-500 text-[12px]">{e.institution}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
                   </div>
-                ))}
-              </div>
-            </Section>
-          )}
-
-          {allSkills.length > 0 && (
-            <Section title="Core Competencies" accent={ACCENT}>
-              <div className="flex flex-wrap gap-1.5">
-                {allSkills.map((s, i) => (
-                  <span key={i}
-                    className="px-2 py-0.5 text-[11px] rounded border text-zinc-700"
-                    style={{ borderColor: "#d1fae5", backgroundColor: "#f0fdf4" }}>
-                    {s}
+                  <span className="text-[11px] text-zinc-400 whitespace-nowrap ml-6 tabular-nums">
+                    {e.startDate} – {e.endDate}
                   </span>
-                ))}
-              </div>
-            </Section>
-          )}
-        </div>
+                </div>
+              ))}
+            </div>
+          </Section>
+        )}
 
-        {/* ── Projects ── */}
+        {/* ── Projects — full width ── */}
         {data.projects.length > 0 && (
-          <Section title="Notable Projects" accent={ACCENT}>
-            <div className="grid grid-cols-2 gap-4">
+          <Section title="Projects" accentColor={accentColor}>
+            <div className="space-y-4">
               {data.projects.map((p) => (
-                <div key={p.id} className="pl-3" style={{ borderLeft: `2px solid ${ACCENT}` }}>
-                  <p className="font-bold text-zinc-950">{p.title}</p>
-                  {p.technologies.length > 0 && (
-                    <p className="text-[11px] text-zinc-400 mb-0.5">{p.technologies.join(", ")}</p>
-                  )}
-                  {p.description && <p className="text-zinc-600 text-[12px]">{p.description}</p>}
-                  {(p.liveUrl || p.githubUrl) && (
-                    <p className="text-[11px] mt-0.5" style={{ color: ACCENT }}>
-                      {(p.liveUrl || p.githubUrl || "").replace(/^https?:\/\//, "")}
-                    </p>
-                  )}
+                <div key={p.id} className="pl-4" style={{ borderLeft: `3px solid ${accentColor}` }}>
+                  <div className="flex items-baseline gap-3 flex-wrap">
+                    <p className="font-bold text-zinc-950">{p.title}</p>
+                    {p.technologies.length > 0 && (
+                      <span className="text-[11px]" style={{ color: accentColor }}>{p.technologies.join(", ")}</span>
+                    )}
+                    {(p.liveUrl || p.githubUrl) && (
+                      <span className="text-[11px] text-zinc-400">
+                        {(p.liveUrl || p.githubUrl || "").replace(/^https?:\/\//, "")}
+                      </span>
+                    )}
+                  </div>
+                  {p.description && <p className="text-zinc-600 text-[12px] mt-0.5 leading-relaxed">{p.description}</p>}
                 </div>
               ))}
             </div>
@@ -123,12 +129,15 @@ export function ExecutiveTemplate({ data }: { data: ResumeData }) {
 
         {/* ── Certifications ── */}
         {data.certifications.length > 0 && (
-          <Section title="Certifications" accent={ACCENT}>
-            <div className="flex flex-wrap gap-x-8 gap-y-2">
+          <Section title="Certifications" accentColor={accentColor}>
+            <div className="space-y-1.5">
               {data.certifications.map((c) => (
-                <div key={c.id}>
-                  <span className="font-semibold text-zinc-950">{c.name}</span>
-                  <span className="text-zinc-400 text-[11px]"> · {c.issuer} · {c.issueDate}</span>
+                <div key={c.id} className="flex justify-between">
+                  <span>
+                    <span className="font-semibold text-zinc-950">{c.name}</span>
+                    <span className="text-zinc-500 text-[12px]"> — {c.issuer}</span>
+                  </span>
+                  <span className="text-[11px] text-zinc-400 whitespace-nowrap ml-4">{c.issueDate}</span>
                 </div>
               ))}
             </div>
@@ -139,11 +148,11 @@ export function ExecutiveTemplate({ data }: { data: ResumeData }) {
   );
 }
 
-function Section({ title, children, accent }: { title: string; children: React.ReactNode; accent: string }) {
+function Section({ title, children, accentColor }: { title: string; children: React.ReactNode; accentColor: string }) {
   return (
     <div>
       <div className="flex items-center gap-3 mb-3">
-        <h2 className="text-[10px] font-bold uppercase tracking-[0.18em]" style={{ color: accent }}>{title}</h2>
+        <h2 className="text-[10px] font-bold uppercase tracking-[0.18em] shrink-0" style={{ color: accentColor }}>{title}</h2>
         <div className="flex-1 h-px bg-zinc-100" />
       </div>
       {children}
