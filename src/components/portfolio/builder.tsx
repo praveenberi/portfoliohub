@@ -922,6 +922,31 @@ function SkillsEditor({
   const displayStyle = (content.displayStyle as string) ?? "tags";
   const profileSkillsPlaceholder = parseArr(profile?.skills).slice(0, 4).join(", ") || "React, TypeScript, Node.js";
   const hasProfileSkills = parseArr(profile?.skills).length > 0 || parseArr(profile?.technologies).length > 0;
+  const [syncing, setSyncing] = React.useState(false);
+  const [synced, setSynced] = React.useState(false);
+
+  async function syncToProfile() {
+    const raw = (content.customSkills as string) ?? "";
+    if (!raw.trim()) return;
+    // Parse grouped format into flat list
+    const skills = raw
+      .split("\n")
+      .filter((l) => !l.trim().startsWith("##") && l.trim())
+      .flatMap((l) => l.split(",").map((s) => s.trim()))
+      .filter(Boolean);
+    setSyncing(true);
+    try {
+      await fetch("/api/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skills }),
+      });
+      setSynced(true);
+      setTimeout(() => setSynced(false), 2500);
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   return (
     <div className="space-y-3">
@@ -959,6 +984,15 @@ function SkillsEditor({
           onChange={(v) => onChange({ customSkills: v || undefined })}
         />
         <p className="text-[10px] text-zinc-400">Use ## to add group headers (e.g. ## Frontend). Comma-separate skills below each header. Leave blank to use profile skills.</p>
+        {(content.customSkills as string) && (
+          <button
+            onClick={syncToProfile}
+            disabled={syncing}
+            className="w-full py-1.5 rounded-lg border border-zinc-200 text-[11px] font-medium text-zinc-600 hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-all disabled:opacity-50"
+          >
+            {syncing ? "Syncing…" : synced ? "✓ Synced to Profile" : "↑ Sync skills to Profile"}
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1819,6 +1853,7 @@ function ContactEditor({
   onProfileUpdate: React.Dispatch<React.SetStateAction<BuilderProps["profile"]>>;
   onChange: (c: Record<string, unknown>) => void;
 }) {
+  const [phone, setPhone] = React.useState((profile as any)?.phone ?? "");
   const [links, setLinks] = React.useState({
     linkedinUrl: profile?.linkedinUrl ?? "",
     githubUrl: profile?.githubUrl ?? "",
@@ -1835,6 +1870,7 @@ function ContactEditor({
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          phone: phone || null,
           linkedinUrl: links.linkedinUrl || null,
           githubUrl: links.githubUrl || null,
           twitterUrl: links.twitterUrl || null,
@@ -1878,7 +1914,19 @@ function ContactEditor({
         onChange={(v) => onChange({ showSocials: v })}
       />
       <div className="space-y-1.5">
-        <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Social links</p>
+        <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide">Contact info</p>
+        <div className="space-y-0.5">
+          <label className="text-[10px] text-zinc-400">Phone / Mobile</label>
+          <input
+            type="tel"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            onBlur={saveLinks}
+            placeholder="+1 555 000 0000"
+            className="w-full h-7 px-2 rounded-lg border border-zinc-200 text-[11px] focus:outline-none focus:border-zinc-400"
+          />
+        </div>
+        <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wide mt-2">Social links</p>
         {SOCIAL_FIELDS.map(({ key, label, placeholder }) => (
           <div key={key} className="space-y-0.5">
             <label className="text-[10px] text-zinc-400">{label}</label>

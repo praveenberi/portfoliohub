@@ -39,9 +39,9 @@ export default async function ResumePage() {
   let skills = parseArr(profile?.skills ?? "[]");
   let technologies = parseArr(profile?.technologies ?? "[]");
   if (skills.length === 0 && technologies.length === 0) {
-    const customSkills = sectionOf("skills").skills as string | undefined;
+    // Fall back to portfolio Skills section customSkills
+    const customSkills = sectionOf("skills").customSkills as string | undefined;
     if (customSkills) {
-      // Strip grouped-format ## headers; split comma-separated skills
       skills = customSkills
         .split("\n")
         .filter((line) => !line.trim().startsWith("##") && line.trim())
@@ -49,7 +49,6 @@ export default async function ResumePage() {
         .filter(Boolean);
     }
   } else {
-    // Filter out any ## header entries that may have been stored in profile.skills
     skills = skills.filter((s) => !s.trim().startsWith("##"));
     technologies = technologies.filter((s) => !s.trim().startsWith("##"));
   }
