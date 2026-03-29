@@ -90,20 +90,37 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
   const [active, setActive]           = useState<TemplateId>("classic");
   const [accentColor, setAccentColor] = useState("#0D9488");
 
-  const handlePrint = () => window.print();
+  const handlePrint = () => {
+    const resumeEl = document.getElementById("resume-print");
+    if (!resumeEl) { window.print(); return; }
+
+    const win = window.open("", "_blank");
+    if (!win) { window.print(); return; }
+
+    const styleLinks = Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+      .map((el) => el.outerHTML).join("\n");
+    const styleBlocks = Array.from(document.querySelectorAll("head > style"))
+      .map((el) => el.outerHTML).join("\n");
+
+    win.document.write(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  ${styleLinks}
+  ${styleBlocks}
+  <style>
+    html, body { margin: 0; padding: 0; background: white; }
+    @page { margin: 0; size: A4; }
+  </style>
+</head>
+<body>${resumeEl.outerHTML}</body>
+</html>`);
+    win.document.close();
+    setTimeout(() => { win.focus(); win.print(); win.close(); }, 600);
+  };
 
   return (
     <>
-      {/* Print CSS */}
-      <style>{`
-        @media print {
-          body * { visibility: hidden; }
-          #resume-print, #resume-print * { visibility: visible; }
-          #resume-print { position: fixed; top: 0; left: 0; width: 100%; }
-          @page { margin: 0; size: A4; }
-        }
-      `}</style>
-
       <div className="space-y-5">
         {/* ── Top bar ── */}
         <div className="flex items-start justify-between gap-4 print:hidden">
@@ -175,7 +192,7 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
         </div>
 
         {/* ── Resume preview ── */}
-        <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm print:shadow-none print:border-0 print:rounded-none">
+        <div className="bg-white rounded-2xl border border-zinc-200 overflow-hidden shadow-sm print:shadow-none print:border-0 print:rounded-none print:overflow-visible">
           {/* Mock browser bar */}
           <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-zinc-100 bg-zinc-50/60 print:hidden">
             <div className="w-2.5 h-2.5 rounded-full bg-red-400/60" />
