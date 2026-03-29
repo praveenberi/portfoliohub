@@ -54,13 +54,19 @@ function AIModal({ result, onClose }: { result: AIResult; onClose: () => void })
     result.score >= 50 ? "text-yellow-600" : "text-red-500";
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50">
       <motion.div
-        initial={{ opacity: 0, scale: 0.96, y: 8 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.96, y: 8 }}
-        className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[85vh] flex flex-col"
+        initial={{ opacity: 0, y: 40 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 40 }}
+        transition={{ type: "spring", stiffness: 300, damping: 30 }}
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-2xl max-h-[90svh] sm:max-h-[85vh] flex flex-col"
       >
+        {/* Mobile drag handle */}
+        <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-zinc-200" />
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-zinc-100">
           <div className="flex items-center gap-3">
@@ -104,7 +110,7 @@ function AIModal({ result, onClose }: { result: AIResult; onClose: () => void })
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto px-5 py-3 space-y-3">
+        <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-3 space-y-3">
           {tab === "suggestions" ? (
             result.suggestions.map((s, i) => (
               <div key={i} className="border border-zinc-100 rounded-xl p-4">
@@ -360,23 +366,20 @@ export function PortfolioManager({ portfolio, templates, username }: PortfolioMa
               showup.com/{username}
             </div>
           </div>
-          <div className="aspect-video relative">
+          <Link href="/dashboard/portfolio/builder" className="block aspect-video relative group">
             <Image
               src={`https://picsum.photos/seed/${portfolio.templateId}/800/450`}
               alt="Portfolio preview"
               fill
-              className="object-cover"
+              className="object-cover pointer-events-none"
             />
-            <div className="absolute inset-0 flex items-center justify-center bg-black/10">
-              <Link
-                href="/dashboard/portfolio/builder"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-white rounded-xl text-sm font-semibold text-zinc-950 shadow-lg hover:bg-zinc-50 active:scale-[0.98] transition-all"
-              >
+            <div className="absolute inset-0 flex items-center justify-center bg-black/10 group-hover:bg-black/20 transition-colors">
+              <span className="inline-flex items-center gap-2 px-5 py-2.5 bg-white rounded-xl text-sm font-semibold text-zinc-950 shadow-lg group-active:scale-[0.98] transition-all">
                 <PencilSimple size={14} />
                 Open builder
-              </Link>
+              </span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Actions */}

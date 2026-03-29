@@ -99,6 +99,12 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
   ].filter(Boolean) as string[];
 
   const handlePrint = () => {
+    // On mobile, window.open() + document.write() produces a blank page.
+    // Sidebar is hidden (hidden md:flex), header/tab bar have print:hidden —
+    // so window.print() directly works cleanly on mobile.
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+    if (isMobile) { window.print(); return; }
+
     const resumeEl = document.getElementById("resume-print");
     if (!resumeEl) { window.print(); return; }
 
