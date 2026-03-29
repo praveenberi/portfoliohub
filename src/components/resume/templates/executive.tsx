@@ -33,12 +33,16 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
             {data.instagramUrl && <p>{data.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, "ig/")}</p>}
           </div>
         </div>
-        {data.bio && (
-          <p className="text-zinc-600 mt-4 leading-relaxed text-[12px]">{data.bio}</p>
-        )}
       </div>
 
       <div className="px-12 py-8 space-y-6">
+
+        {/* ── About Me ── */}
+        {data.bio && (
+          <Section title="About Me" accentColor={accentColor}>
+            <p className="text-zinc-600 leading-relaxed text-[12px]">{data.bio}</p>
+          </Section>
+        )}
 
         {/* ── Skills ── */}
         {allSkills.length > 0 && (

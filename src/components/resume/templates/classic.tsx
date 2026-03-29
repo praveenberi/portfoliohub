@@ -36,6 +36,20 @@ export function ClassicTemplate({ data, accentColor }: Props) {
         </Section>
       )}
 
+      {/* ── Skills ── */}
+      {allSkills.length > 0 && (
+        <Section title="Skills & Technologies" accentColor={accentColor}>
+          <div className="flex flex-wrap gap-x-1 gap-y-1">
+            {allSkills.map((s, i) => (
+              <span key={i}>
+                <span className="text-zinc-700">{s}</span>
+                {i < allSkills.length - 1 && <span className="text-zinc-300 mx-1">·</span>}
+              </span>
+            ))}
+          </div>
+        </Section>
+      )}
+
       {/* ── Experience ── */}
       {data.experiences.length > 0 && (
         <Section title="Work Experience" accentColor={accentColor}>
@@ -63,20 +77,6 @@ export function ClassicTemplate({ data, accentColor }: Props) {
                   </ul>
                 )}
               </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* ── Skills ── */}
-      {allSkills.length > 0 && (
-        <Section title="Skills & Technologies" accentColor={accentColor}>
-          <div className="flex flex-wrap gap-x-1 gap-y-1">
-            {allSkills.map((s, i) => (
-              <span key={i}>
-                <span className="text-zinc-700">{s}</span>
-                {i < allSkills.length - 1 && <span className="text-zinc-300 mx-1">·</span>}
-              </span>
             ))}
           </div>
         </Section>
