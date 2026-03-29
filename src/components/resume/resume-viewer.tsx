@@ -17,6 +17,8 @@ export interface ResumeData {
   phone: string;
   linkedinUrl: string;
   githubUrl: string;
+  twitterUrl: string;
+  instagramUrl: string;
   skills: string[];
   technologies: string[];
   experiences: {
@@ -53,6 +55,15 @@ export interface ResumeData {
     name: string;
     issuer: string;
     issueDate: string;
+  }[];
+  extras: {
+    id: string;
+    title: string;
+    category: string;
+    subtitle: string;
+    description: string;
+    date: string;
+    url: string;
   }[];
 }
 

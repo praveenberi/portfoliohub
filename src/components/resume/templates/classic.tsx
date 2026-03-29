@@ -21,8 +21,10 @@ export function ClassicTemplate({ data, accentColor }: Props) {
           {data.phone    && <><Pipe /><span>{data.phone}</span></>}
           {data.location && <><Pipe /><span>{data.location}</span></>}
           {data.website  && <><Pipe /><span>{data.website.replace(/^https?:\/\//, "")}</span></>}
-          {data.linkedinUrl && <><Pipe /><span>{data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "linkedin/")}</span></>}
-          {data.githubUrl   && <><Pipe /><span>{data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github/")}</span></>}
+          {data.linkedinUrl  && <><Pipe /><span>{data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "linkedin/")}</span></>}
+          {data.githubUrl    && <><Pipe /><span>{data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github/")}</span></>}
+          {data.twitterUrl   && <><Pipe /><span>{data.twitterUrl.replace(/^https?:\/\/(www\.)?twitter\.com\//, "@").replace(/^https?:\/\/(www\.)?x\.com\//, "@")}</span></>}
+          {data.instagramUrl && <><Pipe /><span>{data.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, "ig/")}</span></>}
         </div>
         <div className="mt-4 border-t-2 border-zinc-950" />
       </div>
@@ -141,6 +143,31 @@ export function ClassicTemplate({ data, accentColor }: Props) {
             ))}
           </div>
         </Section>
+      )}
+
+      {/* ── Extras (grouped by category) ── */}
+      {data.extras.length > 0 && (
+        <>
+          {Array.from(new Set(data.extras.map((x) => x.category))).map((cat) => (
+            <Section key={cat} title={cat} accentColor={accentColor}>
+              <div className="space-y-2">
+                {data.extras.filter((x) => x.category === cat).map((x) => (
+                  <div key={x.id}>
+                    <div className="flex justify-between items-baseline">
+                      <div>
+                        <span className="font-semibold text-zinc-950">{x.title}</span>
+                        {x.subtitle && <span className="text-zinc-500"> — {x.subtitle}</span>}
+                      </div>
+                      {x.date && <span className="text-[11px] text-zinc-400 italic whitespace-nowrap ml-4">{x.date}</span>}
+                    </div>
+                    {x.description && <p className="text-zinc-600 mt-0.5">{x.description}</p>}
+                    {x.url && <p className="text-[11px] mt-0.5" style={{ color: accentColor }}>{x.url.replace(/^https?:\/\//, "")}</p>}
+                  </div>
+                ))}
+              </div>
+            </Section>
+          ))}
+        </>
       )}
     </div>
   );

@@ -27,8 +27,10 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
             {data.phone       && <p>{data.phone}</p>}
             {data.location    && <p>{data.location}</p>}
             {data.website     && <p>{data.website.replace(/^https?:\/\//, "")}</p>}
-            {data.linkedinUrl && <p>{data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "linkedin.com/in/")}</p>}
-            {data.githubUrl   && <p>{data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github.com/")}</p>}
+            {data.linkedinUrl  && <p>{data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "linkedin.com/in/")}</p>}
+            {data.githubUrl    && <p>{data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github.com/")}</p>}
+            {data.twitterUrl   && <p>{data.twitterUrl.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//, "@")}</p>}
+            {data.instagramUrl && <p>{data.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, "ig/")}</p>}
           </div>
         </div>
         {data.bio && (
@@ -143,6 +145,25 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
             </div>
           </Section>
         )}
+
+        {/* Extras grouped by category */}
+        {data.extras.length > 0 && Array.from(new Set(data.extras.map((x) => x.category))).map((cat) => (
+          <Section key={cat} title={cat} accentColor={accentColor}>
+            <div className="space-y-3">
+              {data.extras.filter((x) => x.category === cat).map((x) => (
+                <div key={x.id} className="pl-4" style={{ borderLeft: `3px solid ${accentColor}` }}>
+                  <div className="flex justify-between items-baseline flex-wrap gap-2">
+                    <p className="font-bold text-zinc-950">{x.title}</p>
+                    {x.date && <span className="text-[11px] text-zinc-400 tabular-nums">{x.date}</span>}
+                  </div>
+                  {x.subtitle && <p className="text-zinc-500 text-[12px]">{x.subtitle}</p>}
+                  {x.description && <p className="text-zinc-600 text-[12px] mt-0.5 leading-relaxed">{x.description}</p>}
+                  {x.url && <p className="text-[11px] mt-0.5" style={{ color: accentColor }}>{x.url.replace(/^https?:\/\//, "")}</p>}
+                </div>
+              ))}
+            </div>
+          </Section>
+        ))}
       </div>
     </div>
   );

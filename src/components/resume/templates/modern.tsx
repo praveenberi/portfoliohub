@@ -35,8 +35,10 @@ export function ModernTemplate({ data, accentColor }: Props) {
               {data.phone       && <ContactRow icon="☎" text={data.phone} />}
               {data.location    && <ContactRow icon="◎" text={data.location} />}
               {data.website     && <ContactRow icon="⊕" text={data.website.replace(/^https?:\/\//, "")} />}
-              {data.linkedinUrl && <ContactRow icon="in" text={data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "linkedin.com/in/")} />}
-              {data.githubUrl   && <ContactRow icon="gh" text={data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github.com/")} />}
+              {data.linkedinUrl  && <ContactRow icon="in" text={data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "linkedin.com/in/")} />}
+              {data.githubUrl    && <ContactRow icon="gh" text={data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github.com/")} />}
+              {data.twitterUrl   && <ContactRow icon="𝕏"  text={data.twitterUrl.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//, "@")} />}
+              {data.instagramUrl && <ContactRow icon="ig" text={data.instagramUrl.replace(/^https?:\/\/(www\.)?instagram\.com\//, "ig/")} />}
             </div>
           </SideSection>
 
@@ -166,6 +168,25 @@ export function ModernTemplate({ data, accentColor }: Props) {
             </div>
           </MainSection>
         )}
+
+        {/* Extras grouped by category */}
+        {data.extras.length > 0 && Array.from(new Set(data.extras.map((x) => x.category))).map((cat) => (
+          <MainSection key={cat} title={cat.toUpperCase()} color={accentColor}>
+            <div className="space-y-3">
+              {data.extras.filter((x) => x.category === cat).map((x) => (
+                <div key={x.id}>
+                  <div className="flex justify-between items-baseline flex-wrap gap-1">
+                    <p className="font-bold text-zinc-950">{x.title}</p>
+                    {x.date && <span className="text-[11px] text-zinc-400 italic">{x.date}</span>}
+                  </div>
+                  {x.subtitle && <p className="text-zinc-500 text-[12px]">{x.subtitle}</p>}
+                  {x.description && <p className="text-zinc-600 text-[12px] mt-0.5 leading-relaxed">{x.description}</p>}
+                  {x.url && <p className="text-[11px] mt-0.5" style={{ color: accentColor }}>{x.url.replace(/^https?:\/\//, "")}</p>}
+                </div>
+              ))}
+            </div>
+          </MainSection>
+        ))}
       </div>
     </div>
   );
