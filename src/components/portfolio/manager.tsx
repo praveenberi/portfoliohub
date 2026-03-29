@@ -427,21 +427,33 @@ export function PortfolioManager({ portfolio, templates, username }: PortfolioMa
             </button>
           </div>
 
-          {/* Preview */}
-          <Link
-            href={`/${username}`}
-            target="_blank"
-            className="flex items-center gap-3 bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-300 transition-colors"
-          >
-            <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
-              <Eye size={18} className="text-blue-600" />
+          {/* Preview — only active when published */}
+          {portfolio.isPublished ? (
+            <Link
+              href={`/${username}`}
+              target="_blank"
+              className="flex items-center gap-3 bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-300 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-xl bg-blue-50 flex items-center justify-center">
+                <Eye size={18} className="text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-zinc-950">View live portfolio</div>
+                <div className="text-xs text-zinc-400 mt-0.5">Opens in new tab</div>
+              </div>
+              <ArrowRight size={14} className="text-zinc-400" />
+            </Link>
+          ) : (
+            <div className="flex items-center gap-3 bg-zinc-50 rounded-2xl border border-zinc-200 p-5 cursor-not-allowed">
+              <div className="w-9 h-9 rounded-xl bg-zinc-100 flex items-center justify-center">
+                <Eye size={18} className="text-zinc-400" />
+              </div>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-zinc-400">View live portfolio</div>
+                <div className="text-xs text-zinc-400 mt-0.5">Publish your portfolio to view it live</div>
+              </div>
             </div>
-            <div className="flex-1">
-              <div className="text-sm font-medium text-zinc-950">View live portfolio</div>
-              <div className="text-xs text-zinc-400 mt-0.5">Opens in new tab</div>
-            </div>
-            <ArrowRight size={14} className="text-zinc-400" />
-          </Link>
+          )}
         </div>
       </div>
 
