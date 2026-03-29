@@ -156,6 +156,14 @@
   }
 }
 
+/* Print — preserve background colors (sidebar, chips, etc.) on all browsers/devices */
+@media print {
+  * {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+}
+
 /* Builder drag & drop */
 .drag-handle {
   cursor: grab;
