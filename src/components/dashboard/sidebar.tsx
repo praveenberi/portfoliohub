@@ -17,6 +17,7 @@ import {
   EnvelopeSimple,
   X,
   List,
+  Article,
 } from "@phosphor-icons/react";
 import { cn, getInitials } from "@/lib/utils";
 import type { UserRole } from "@/lib/enums";
@@ -36,6 +37,7 @@ interface SidebarProps {
 const navItems = [
   { href: "/dashboard", icon: SquaresFour, label: "Overview" },
   { href: "/dashboard/portfolio", icon: Layout, label: "Portfolio" },
+  { href: "/dashboard/resume", icon: Article, label: "Resume" },
   { href: "/dashboard/jobs", icon: Briefcase, label: "Browse Jobs" },
   { href: "/dashboard/tracker", icon: ChartBar, label: "Applications" },
   { href: "/dashboard/messages", icon: EnvelopeSimple, label: "Messages" },
@@ -171,14 +173,14 @@ export function DashboardSidebar({ user }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-zinc-200 flex-col z-40 hidden md:flex">
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-zinc-200 flex-col z-40 hidden md:flex print:hidden">
         <SidebarContent />
       </aside>
 
       {/* Mobile hamburger button (in top-left of page) */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-zinc-200 shadow-sm"
+        className="md:hidden print:hidden fixed top-4 left-4 z-50 w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-zinc-200 shadow-sm"
       >
         <List size={18} className="text-zinc-700" />
       </button>
@@ -208,7 +210,7 @@ export function DashboardSidebar({ user }: SidebarProps) {
       </AnimatePresence>
 
       {/* Mobile bottom tab bar */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 z-40 flex items-center justify-around px-2 pb-safe">
+      <nav className="md:hidden print:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 z-40 flex items-center justify-around px-2 pb-safe">
         {mobileTabItems.map((item) => {
           const isActive =
             item.href === "/dashboard"

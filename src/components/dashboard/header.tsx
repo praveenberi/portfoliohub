@@ -65,7 +65,7 @@ export function DashboardHeader({ user }: HeaderProps) {
   }
 
   return (
-    <header className="h-16 border-b border-zinc-200 bg-white flex items-center justify-between px-4 md:px-6 sticky top-0 z-30">
+    <header className="h-16 border-b border-zinc-200 bg-white flex items-center justify-between px-4 md:px-6 sticky top-0 z-30 print:hidden">
       {/* Mobile: spacer for hamburger button */}
       <div className="w-10 md:hidden" />
 
