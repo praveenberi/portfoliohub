@@ -45,22 +45,12 @@ export function ModernTemplate({ data, accentColor }: Props) {
           {/* Skills */}
           {allSkills.length > 0 && (
             <SideSection title="SKILLS">
-              <div className="space-y-2">
-                {allSkills.slice(0, 10).map((skill, i) => (
-                  <div key={i}>
-                    <p className="text-[11px] text-white mb-0.5">{skill}</p>
-                    <div className="h-1 bg-white/20 rounded-full">
-                      <div className="h-1 rounded-full bg-white" style={{ width: `${100 - (i % 3) * 15}%` }} />
-                    </div>
-                  </div>
+              <div className="flex flex-wrap gap-1">
+                {allSkills.map((skill, i) => (
+                  <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-white/15 text-white font-medium">
+                    {skill}
+                  </span>
                 ))}
-                {allSkills.length > 10 && (
-                  <div className="flex flex-wrap gap-1 mt-1">
-                    {allSkills.slice(10).map((s, i) => (
-                      <span key={i} className="text-[10px] px-1.5 py-0.5 rounded bg-white/15 text-white">{s}</span>
-                    ))}
-                  </div>
-                )}
               </div>
             </SideSection>
           )}
@@ -128,23 +118,6 @@ export function ModernTemplate({ data, accentColor }: Props) {
           </MainSection>
         )}
 
-        {/* Education */}
-        {data.education.length > 0 && (
-          <MainSection title="EDUCATION" color={accentColor}>
-            <div className="space-y-3">
-              {data.education.map((e) => (
-                <div key={e.id}>
-                  <div className="flex justify-between">
-                    <p className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</p>
-                    <span className="text-[11px] text-zinc-400 italic whitespace-nowrap ml-4">{e.startDate} – {e.endDate}</span>
-                  </div>
-                  <p className="text-zinc-500 text-[12px]">{e.institution}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
-                </div>
-              ))}
-            </div>
-          </MainSection>
-        )}
-
         {/* Projects — full width */}
         {data.projects.length > 0 && (
           <MainSection title="PROJECTS" color={accentColor}>
@@ -163,6 +136,23 @@ export function ModernTemplate({ data, accentColor }: Props) {
                       {(p.liveUrl || p.githubUrl || "").replace(/^https?:\/\//, "")}
                     </p>
                   )}
+                </div>
+              ))}
+            </div>
+          </MainSection>
+        )}
+
+        {/* Education */}
+        {data.education.length > 0 && (
+          <MainSection title="EDUCATION" color={accentColor}>
+            <div className="space-y-3">
+              {data.education.map((e) => (
+                <div key={e.id}>
+                  <div className="flex justify-between">
+                    <p className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</p>
+                    <span className="text-[11px] text-zinc-400 italic whitespace-nowrap ml-4">{e.startDate} – {e.endDate}</span>
+                  </div>
+                  <p className="text-zinc-500 text-[12px]">{e.institution}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
                 </div>
               ))}
             </div>
