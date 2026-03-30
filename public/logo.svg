@@ -32,7 +32,7 @@
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect width="400" height="400" fill="#ffffff"/>
+  <rect width="400" height="400" fill="transparent"/>
   <radialGradient id="vignette" cx="50%" cy="45%" r="55%">
     <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:0.3"/>
     <stop offset="100%" style="stop-color:#000000;stop-opacity:0"/>
