@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata, Viewport } from "next";
-import { Inter, Dancing_Script, Amita, Anta, Aoboshi_One } from "next/font/google";
+import { Inter, Dancing_Script, Amita, Anta, Aoboshi_One, Aref_Ruqaa } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/providers";
@@ -34,6 +34,12 @@ const aoboshiOne = Aoboshi_One({
   variable: "--font-aoboshi",
   subsets: ["latin"],
   weight: ["400"],
+});
+
+const arefRuqaa = Aref_Ruqaa({
+  variable: "--font-aref",
+  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -105,7 +111,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${dancingScript.variable} ${amita.variable} ${anta.variable} ${aoboshiOne.variable} font-sans antialiased`}>
+      <body className={`${geistSans.variable} ${dancingScript.variable} ${amita.variable} ${anta.variable} ${aoboshiOne.variable} ${arefRuqaa.variable} font-sans antialiased`}>
         <Providers>
           {children}
           <Toaster
