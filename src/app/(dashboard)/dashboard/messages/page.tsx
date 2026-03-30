@@ -279,7 +279,37 @@ export default function MessagesPage() {
                   {/* Reply CTA */}
                   <div className="mt-5 pt-4 border-t border-zinc-100 flex items-center gap-2">
                     <a
-                      href={`https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(selected.senderEmail)}&su=${encodeURIComponent(`Re: Your ${selected.type === "booking" ? "meeting request" : "message"}`)}`}
+                      href={(() => {
+                        const subject = `Re: Your ${selected.type === "booking" ? "meeting request" : "message"}`;
+                        const receivedDate = new Date(selected.createdAt).toLocaleDateString("en-US", {
+                          weekday: "short", month: "short", day: "numeric", year: "numeric",
+                          hour: "2-digit", minute: "2-digit",
+                        });
+                        const body = selected.type === "booking"
+                          ? [
+                              `Hi ${selected.senderName},`,
+                              "",
+                              "",
+                              "",
+                              "---",
+                              "Meeting Request Details:",
+                              selected.date && selected.time ? `📅 Date: ${selected.date} at ${selected.time}` :
+                                selected.date ? `📅 Date: ${selected.date}` :
+                                selected.time ? `⏰ Time: ${selected.time}` : "",
+                              selected.purpose ? `Purpose: ${selected.purpose}` : "",
+                              `Received: ${receivedDate}`,
+                            ].filter((l) => l !== undefined && !(l === "" && false)).join("\n")
+                          : [
+                              `Hi ${selected.senderName},`,
+                              "",
+                              "",
+                              "",
+                              "---",
+                              `On ${receivedDate}, ${selected.senderName} wrote:`,
+                              `"${selected.message}"`,
+                            ].join("\n");
+                        return `https://mail.google.com/mail/?view=cm&to=${encodeURIComponent(selected.senderEmail)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+                      })()}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 text-sm font-medium bg-zinc-950 text-white px-4 py-2 rounded-xl hover:bg-zinc-800 transition-colors"
@@ -289,7 +319,12 @@ export default function MessagesPage() {
                     </a>
                     {selected.senderPhone && (
                       <a
-                        href={`https://wa.me/${selected.senderPhone.replace(/[^\d]/g, "")}`}
+                        href={(() => {
+                          const text = selected.type === "booking"
+                            ? `Hi ${selected.senderName}! I received your meeting request${selected.date ? ` for ${selected.date}` : ""}${selected.time ? ` at ${selected.time}` : ""}${selected.purpose ? ` regarding "${selected.purpose}"` : ""}. `
+                            : `Hi ${selected.senderName}! I received your message via my portfolio: "${selected.message?.slice(0, 100)}${(selected.message?.length ?? 0) > 100 ? "…" : ""}". `;
+                          return `https://wa.me/${selected.senderPhone!.replace(/[^\d]/g, "")}?text=${encodeURIComponent(text)}`;
+                        })()}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-2 text-sm font-medium bg-[#25D366] text-white px-4 py-2 rounded-xl hover:bg-[#1ebe5d] transition-colors"
