@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import type { UserRole } from "@/lib/enums";
+import { Logo } from "@/components/logo";
 
 interface HeaderProps {
   user: {
@@ -88,8 +89,8 @@ export function DashboardHeader({ user }: HeaderProps) {
         </button>
       </div>
 
-      {/* Mobile: centered logo text */}
-      <span className="md:hidden text-sm font-semibold text-zinc-950">myskillspage</span>
+      {/* Mobile: centered logo */}
+      <span className="md:hidden"><Logo size={26} withText textClassName="text-zinc-950 text-sm" /></span>
 
       <div className="hidden md:block flex-1" />
 

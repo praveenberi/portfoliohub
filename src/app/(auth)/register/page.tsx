@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeSlash, GoogleLogo, ArrowRight, CheckCircle } from "@phosphor-icons/react";
 import { registerSchema, type RegisterInput } from "@/lib/validations";
 import axios from "axios";
+import { Logo } from "@/components/logo";
 import toast from "react-hot-toast";
 
 const perks = [
@@ -62,16 +63,8 @@ export default function RegisterPage() {
           }}
         />
         <div className="relative z-10">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg bg-white/10 flex items-center justify-center">
-              <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
-                <rect x="2" y="2" width="6" height="6" rx="1" fill="white" />
-                <rect x="10" y="2" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-                <rect x="2" y="10" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-                <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
-              </svg>
-            </div>
-            <span className="font-semibold text-white tracking-tight text-sm">myskillspage</span>
+          <Link href="/" className="inline-flex">
+            <Logo size={26} withText textClassName="text-white text-sm" />
           </Link>
         </div>
 

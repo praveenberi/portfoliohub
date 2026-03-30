@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400">
+  <defs>
+    <linearGradient id="neonBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF2D55;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#FF5E1A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF2D55;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="badgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#FF7A1A;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#FF3060;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="pageFill" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1C1C1C;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#111111;stop-opacity:1" />
+    </linearGradient>
+    <filter id="outerGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="6" result="blur1"/>
+      <feColorMatrix in="blur1" type="matrix" values="2 0 0 0 1 0 0.3 0 0 0.1 0 0 0 0 0 0 0 0 1 0" result="colored"/>
+      <feMerge><feMergeNode in="colored"/><feMergeNode in="colored"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="badgeGlow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feColorMatrix in="blur" type="matrix" values="2 0 0 0 1 0 0.5 0 0 0.2 0 0 0 0 0 0 0 0 1 0" result="colored"/>
+      <feMerge><feMergeNode in="colored"/><feMergeNode in="colored"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="borderGlow" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="4" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="lineGlow">
+      <feGaussianBlur stdDeviation="2" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <rect width="400" height="400" fill="#0A0A0A"/>
+  <radialGradient id="vignette" cx="50%" cy="45%" r="55%">
+    <stop offset="0%" style="stop-color:#1a1a2e;stop-opacity:0.3"/>
+    <stop offset="100%" style="stop-color:#000000;stop-opacity:0"/>
+  </radialGradient>
+  <rect width="400" height="400" fill="url(#vignette)"/>
+  <rect x="112" y="72" width="186" height="232" rx="16" fill="none" stroke="#2a2a2a" stroke-width="1.5" transform="rotate(6, 205, 188)"/>
+  <rect x="108" y="68" width="186" height="232" rx="16" fill="none" stroke="#333333" stroke-width="1.5" transform="rotate(3, 205, 184)"/>
+  <rect x="98" y="62" width="200" height="248" rx="18" fill="#FF4020" opacity="0.08" filter="url(#outerGlow)"/>
+  <rect x="100" y="64" width="200" height="248" rx="16" fill="url(#pageFill)"/>
+  <rect x="100" y="64" width="200" height="248" rx="16" fill="none" stroke="url(#neonBorder)" stroke-width="3" filter="url(#borderGlow)" opacity="1"/>
+  <rect x="100" y="64" width="200" height="248" rx="16" fill="none" stroke="url(#neonBorder)" stroke-width="1.5"/>
+  <rect x="128" y="112" width="120" height="6" rx="3" fill="#FF6030" opacity="0.9" filter="url(#lineGlow)"/>
+  <rect x="128" y="134" width="90" height="4" rx="2" fill="#ffffff" opacity="0.25"/>
+  <rect x="128" y="152" width="108" height="4" rx="2" fill="#ffffff" opacity="0.18"/>
+  <rect x="128" y="170" width="76" height="4" rx="2" fill="#ffffff" opacity="0.14"/>
+  <rect x="128" y="190" width="144" height="1" rx="0.5" fill="#ffffff" opacity="0.08"/>
+  <rect x="128" y="204" width="100" height="4" rx="2" fill="#ffffff" opacity="0.14"/>
+  <rect x="128" y="220" width="80" height="4" rx="2" fill="#ffffff" opacity="0.10"/>
+  <circle cx="222" cy="294" r="34" fill="#FF5020" opacity="0.25" filter="url(#badgeGlow)"/>
+  <circle cx="222" cy="294" r="26" fill="url(#badgeGrad)"/>
+  <circle cx="222" cy="294" r="26" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.2"/>
+  <g transform="translate(222, 294)" filter="url(#lineGlow)">
+    <polygon points="0,-13 3,-3 13,0 3,3 0,13 -3,3 -13,0 -3,-3" fill="white" opacity="0.95"/>
+  </g>
+</svg>

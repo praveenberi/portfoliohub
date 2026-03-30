@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 const links = {
   Product: ["Features", "Templates", "Pricing", "Changelog"],
@@ -14,16 +15,8 @@ export function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-5 gap-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="flex items-center gap-2.5 mb-4">
-              <div className="w-7 h-7 rounded-lg bg-zinc-950 flex items-center justify-center">
-                <svg width="15" height="15" viewBox="0 0 18 18" fill="none">
-                  <rect x="2" y="2" width="6" height="6" rx="1" fill="white" />
-                  <rect x="10" y="2" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-                  <rect x="2" y="10" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-                  <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
-                </svg>
-              </div>
-              <span className="font-semibold text-zinc-950 tracking-tight text-sm">myskillspage</span>
+            <Link href="/" className="inline-flex mb-4">
+              <Logo size={26} withText textClassName="text-zinc-950 text-sm" />
             </Link>
             <p className="text-xs text-zinc-500 leading-relaxed max-w-[28ch]">
               Build your portfolio. Find your job. Track your career.

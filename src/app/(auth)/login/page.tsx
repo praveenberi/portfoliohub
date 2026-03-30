@@ -12,6 +12,7 @@ import { motion } from "framer-motion";
 import { Eye, EyeSlash, GoogleLogo, ArrowRight } from "@phosphor-icons/react";
 import { loginSchema, type LoginInput } from "@/lib/validations";
 import toast from "react-hot-toast";
+import { Logo } from "@/components/logo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -62,16 +63,8 @@ export default function LoginPage() {
           className="w-full max-w-sm"
         >
           {/* Logo */}
-          <Link href="/" className="inline-flex items-center gap-2 mb-10">
-            <div className="w-7 h-7 rounded-lg bg-zinc-950 flex items-center justify-center">
-              <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
-                <rect x="2" y="2" width="6" height="6" rx="1" fill="white" />
-                <rect x="10" y="2" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-                <rect x="2" y="10" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-                <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
-              </svg>
-            </div>
-            <span className="font-semibold text-zinc-950 tracking-tight text-sm">myskillspage</span>
+          <Link href="/" className="inline-flex mb-10">
+            <Logo size={26} withText textClassName="text-zinc-950 text-sm" />
           </Link>
 
           <h1 className="text-2xl font-bold tracking-tight text-zinc-950 mb-1">Welcome back</h1>

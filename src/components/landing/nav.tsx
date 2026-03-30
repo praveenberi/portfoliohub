@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { List, X } from "@phosphor-icons/react";
+import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
@@ -39,18 +40,8 @@ export function LandingNav() {
     >
       <nav className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-lg bg-zinc-950 flex items-center justify-center group-hover:scale-95 transition-transform duration-200">
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-              <rect x="2" y="2" width="6" height="6" rx="1" fill="white" />
-              <rect x="10" y="2" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-              <rect x="2" y="10" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-              <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
-            </svg>
-          </div>
-          <span className="font-semibold text-zinc-950 tracking-tight">
-            myskillspage
-          </span>
+        <Link href="/" className="flex items-center gap-2.5 group hover:opacity-90 transition-opacity">
+          <Logo size={32} withText textClassName="text-zinc-950 text-base" />
         </Link>
 
         {/* Desktop links */}
