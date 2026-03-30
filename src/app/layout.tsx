@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata, Viewport } from "next";
-import { Inter, Dancing_Script, Amita, Anta, Aoboshi_One, Aref_Ruqaa, Bellefair } from "next/font/google";
+import { Inter, Dancing_Script, Amita, Anta, Aoboshi_One, Aref_Ruqaa, Bellefair, Cabin_Sketch } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/providers";
@@ -46,6 +46,12 @@ const bellefair = Bellefair({
   variable: "--font-bellefair",
   subsets: ["latin"],
   weight: ["400"],
+});
+
+const cabinSketch = Cabin_Sketch({
+  variable: "--font-cabin-sketch",
+  subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -117,7 +123,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${dancingScript.variable} ${amita.variable} ${anta.variable} ${aoboshiOne.variable} ${arefRuqaa.variable} ${bellefair.variable} font-sans antialiased`}>
+      <body className={`${geistSans.variable} ${dancingScript.variable} ${amita.variable} ${anta.variable} ${aoboshiOne.variable} ${arefRuqaa.variable} ${bellefair.variable} ${cabinSketch.variable} font-sans antialiased`}>
         <Providers>
           {children}
           <Toaster
