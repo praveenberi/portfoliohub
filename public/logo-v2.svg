@@ -32,7 +32,7 @@
       <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
     </filter>
   </defs>
-  <rect width="400" height="400" fill="#FFFFFF"/>
+  <rect width="400" height="400" fill="#000000"/>
   <rect x="112" y="72" width="186" height="232" rx="16" fill="none" stroke="#cccccc" stroke-width="1.5" transform="rotate(6, 205, 188)"/>
   <rect x="108" y="68" width="186" height="232" rx="16" fill="none" stroke="#bbbbbb" stroke-width="1.5" transform="rotate(3, 205, 184)"/>
   <rect x="98" y="62" width="200" height="248" rx="18" fill="#FF4020" opacity="0.08" filter="url(#outerGlow)"/>
