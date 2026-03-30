@@ -64,7 +64,7 @@ export default function LoginPage() {
         >
           {/* Logo */}
           <Link href="/" className="inline-flex mb-10">
-            <Logo size={44} withText textSize="xl" />
+            <Logo size={56} withText textSize="4xl" />
           </Link>
 
           <h1 className="text-2xl font-bold tracking-tight text-zinc-950 mb-1">Welcome back</h1>
