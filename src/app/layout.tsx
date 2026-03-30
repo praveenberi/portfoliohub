@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import type { Metadata, Viewport } from "next";
-import { Inter, Dancing_Script, Amita } from "next/font/google";
+import { Inter, Dancing_Script, Amita, Anta } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "react-hot-toast";
 import { Providers } from "@/components/providers";
@@ -22,6 +22,12 @@ const amita = Amita({
   variable: "--font-amita",
   subsets: ["latin"],
   weight: ["400", "700"],
+});
+
+const anta = Anta({
+  variable: "--font-anta",
+  subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
@@ -93,7 +99,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${dancingScript.variable} ${amita.variable} font-sans antialiased`}>
+      <body className={`${geistSans.variable} ${dancingScript.variable} ${amita.variable} ${anta.variable} font-sans antialiased`}>
         <Providers>
           {children}
           <Toaster
