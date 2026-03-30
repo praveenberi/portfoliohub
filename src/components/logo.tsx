@@ -28,7 +28,7 @@ export function BrandName({ size = "base" }: { size?: "sm" | "base" | "lg" | "xl
         My
       </span>
       <span
-        className={`${s.skills} font-black tracking-tight uppercase`}
+        className={`${s.skills} font-bold tracking-tight uppercase`}
         style={{ color: "#1a1a2e" }}
       >
         SKILLS
