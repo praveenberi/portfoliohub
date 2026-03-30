@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       const buffer = Buffer.from(bytes);
       const dataUri = `data:${file.type};base64,${buffer.toString("base64")}`;
       const result = await cloudinary.uploader.upload(dataUri, {
-        folder: `showup/${session.user.id}`,
+        folder: `myskillspage/${session.user.id}`,
         resource_type: isVideo ? "video" : "image",
         transformation: isVideo ? [] : [{ quality: "auto", fetch_format: "auto" }],
       });

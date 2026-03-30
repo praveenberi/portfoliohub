@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
 
     // ── WhatsApp ───────────────────────────────────────────────────────────
     const whatsappBody = isBooking
-      ? `📅 *Showup — Meeting Request*\n\n*From:* ${senderName} (${senderEmail})${phoneLine}\n*Date:* ${date || "Not specified"}\n*Time:* ${time || "Not specified"}\n*Purpose:* ${purpose || "Not specified"}\n\nReply to their email to confirm.`
-      : `💬 *Showup — New Message*\n\n*From:* ${senderName} (${senderEmail})${phoneLine}\n\n${message || ""}`;
+      ? `📅 *myskillspage — Meeting Request*\n\n*From:* ${senderName} (${senderEmail})${phoneLine}\n*Date:* ${date || "Not specified"}\n*Time:* ${time || "Not specified"}\n*Purpose:* ${purpose || "Not specified"}\n\nReply to their email to confirm.`
+      : `💬 *myskillspage — New Message*\n\n*From:* ${senderName} (${senderEmail})${phoneLine}\n\n${message || ""}`;
 
     await sendWhatsAppNotification({
       ownerPhone: user.profile?.phone,

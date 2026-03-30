@@ -6,7 +6,7 @@ import { parseArr, parseJson } from "@/lib/utils";
 import { ResumeViewer } from "@/components/resume/resume-viewer";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Resume — Showup" };
+export const metadata: Metadata = { title: "Resume — myskillspage" };
 
 export default async function ResumePage() {
   const session = await auth();

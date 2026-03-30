@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     await sendEmailNotification({
       toEmail: user.email,
       replyTo: user.email,
-      subject: "Reset your Showup password",
+      subject: "Reset your myskillspage password",
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
           <h2 style="font-size:20px;font-weight:700;color:#09090b">Reset your password</h2>

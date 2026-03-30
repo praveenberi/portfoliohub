@@ -206,7 +206,7 @@ export function DashboardOverview({ stats, portfolio, recentApplications, user }
                 target="_blank"
                 className="text-xs text-zinc-400 hover:text-white transition-colors flex items-center gap-1"
               >
-                showup.com/{user.username}
+                myskillspage.com/{user.username}
                 <ArrowRight size={10} />
               </Link>
               <div className="mt-3 text-xs text-zinc-500 flex items-center gap-1.5">

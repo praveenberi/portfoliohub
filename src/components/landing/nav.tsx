@@ -49,7 +49,7 @@ export function LandingNav() {
             </svg>
           </div>
           <span className="font-semibold text-zinc-950 tracking-tight">
-            Showup
+            myskillspage
           </span>
         </Link>
 

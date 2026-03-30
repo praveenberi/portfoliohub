@@ -81,7 +81,7 @@ export function DashboardSidebar({ user }: SidebarProps) {
               <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
             </svg>
           </div>
-          <span className="font-semibold text-zinc-950 tracking-tight text-sm">Showup</span>
+          <span className="font-semibold text-zinc-950 tracking-tight text-sm">myskillspage</span>
         </Link>
         <button onClick={() => setMobileOpen(false)} className="md:hidden p-1 rounded-lg hover:bg-zinc-100">
           <X size={18} className="text-zinc-500" />

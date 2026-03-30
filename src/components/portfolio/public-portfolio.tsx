@@ -273,7 +273,7 @@ export function PublicPortfolio({ portfolio }: { portfolio: FullPortfolio }) {
         <p className="text-xs" style={{ color: isMeteors ? "rgba(255,255,255,0.3)" : "rgb(161,161,170)" }}>
           Built with{" "}
           <Link href="/" className="transition-colors hover:opacity-80" style={{ color: isMeteors ? "rgba(255,255,255,0.5)" : "rgb(113,113,122)" }}>
-            Showup
+            myskillspage
           </Link>
         </p>
       </footer>

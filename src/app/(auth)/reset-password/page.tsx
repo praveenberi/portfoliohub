@@ -156,7 +156,7 @@ export default function ResetPasswordPage() {
               <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
             </svg>
           </div>
-          <span className="font-semibold text-zinc-950 tracking-tight text-sm">Showup</span>
+          <span className="font-semibold text-zinc-950 tracking-tight text-sm">myskillspage</span>
         </Link>
         <Suspense>
           <ResetPasswordForm />

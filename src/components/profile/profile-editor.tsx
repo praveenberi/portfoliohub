@@ -281,7 +281,7 @@ function SocialLinksEditor({ profile, username }: { profile: FullProfile | null;
               Copy
             </button>
           </div>
-          <p className="text-[11px] text-zinc-600 mt-1">This is your public Showup portfolio link.</p>
+          <p className="text-[11px] text-zinc-600 mt-1">This is your public myskillspage portfolio link.</p>
         </div>
       )}
       <div>

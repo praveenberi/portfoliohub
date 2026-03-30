@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { SettingsPanel } from "@/components/settings/settings-panel";
 
-export const metadata = { title: "Settings — Showup" };
+export const metadata = { title: "Settings — myskillspage" };
 
 export default async function SettingsPage() {
   const session = await auth();

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { redirect } from "next/navigation";
 import { ProfileEditor } from "@/components/profile/profile-editor";
 
-export const metadata = { title: "Edit Profile — Showup" };
+export const metadata = { title: "Edit Profile — myskillspage" };
 
 export default async function ProfilePage() {
   const session = await auth();

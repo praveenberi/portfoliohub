@@ -66,7 +66,7 @@ async function fetchMyCareersFuture(q: string, page: number): Promise<ExternalJo
 
   const res = await fetch(`https://api.mycareersfuture.gov.sg/v2/jobs?${params}`, {
     headers: {
-      "User-Agent": "Showup/1.0 (Job Browser)",
+      "User-Agent": "myskillspage/1.0 (Job Browser)",
       "Accept": "application/json",
     },
     next: { revalidate: 300 },
@@ -211,7 +211,7 @@ async function fetchTheMuse(q: string, location: string, page: number): Promise<
 // ── RemoteOK (free, no auth, remote only) ───────────────────────────────────
 async function fetchRemoteOK(q: string, page: number): Promise<ExternalJob[]> {
   const res = await fetch("https://remoteok.com/api", {
-    headers: { "User-Agent": "Showup/1.0 (Job Browser)" },
+    headers: { "User-Agent": "myskillspage/1.0 (Job Browser)" },
     next: { revalidate: 300 },
   });
   if (!res.ok) throw new Error(`RemoteOK ${res.status}`);

@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     // ── WhatsApp ───────────────────────────────────────────────────────────
     await sendWhatsAppNotification({
       ownerPhone: user.profile?.phone,
-      body: `💬 *Showup — New Message*\n\n*From:* ${name} (${email})\n\n${message}`,
+      body: `💬 *myskillspage — New Message*\n\n*From:* ${name} (${email})\n\n${message}`,
     });
 
     return NextResponse.json({ success: true });

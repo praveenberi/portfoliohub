@@ -73,7 +73,7 @@ export function FeaturesSection() {
           </div>
           <div className="flex items-end pb-2">
             <p className="text-zinc-500 text-base leading-relaxed max-w-[52ch]">
-              Showup combines a professional portfolio builder, a job board,
+              myskillspage combines a professional portfolio builder, a job board,
               and an application tracker into one cohesive experience. No switching
               between tools.
             </p>

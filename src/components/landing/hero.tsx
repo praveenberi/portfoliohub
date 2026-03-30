@@ -125,7 +125,7 @@ export function HeroSection({ stats }: HeroProps) {
                 <div className="w-3 h-3 rounded-full bg-yellow-400/60" />
                 <div className="w-3 h-3 rounded-full bg-green-400/60" />
                 <div className="ml-4 flex-1 bg-zinc-100 rounded-md h-5 max-w-[200px] text-zinc-400 text-[10px] flex items-center px-2">
-                  showup.com/alexkim
+                  myskillspage.com/alexkim
                 </div>
               </div>
 
