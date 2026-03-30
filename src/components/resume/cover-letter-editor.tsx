@@ -70,10 +70,11 @@ export function CoverLetterEditor({ data, accentColor }: CoverLetterEditorProps)
         body > * { visibility: hidden !important; }
         #cover-letter-print, #cover-letter-print * { visibility: visible !important; }
         #cover-letter-print {
-          position: fixed !important;
-          inset: 0 !important;
+          position: absolute !important;
+          top: 0 !important;
+          left: 0 !important;
+          right: 0 !important;
           padding: 18mm 20mm !important;
-          width: 100% !important;
           box-sizing: border-box !important;
         }
         @page { margin: 0; size: A4; }
