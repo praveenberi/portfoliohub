@@ -64,7 +64,7 @@ export default function RegisterPage() {
         />
         <div className="relative z-10">
           <Link href="/" className="inline-flex">
-            <Logo size={26} withText textClassName="text-white text-sm" />
+            <Logo size={26} withText textSize="sm" />
           </Link>
         </div>
 

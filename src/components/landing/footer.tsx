@@ -16,7 +16,7 @@ export function Footer() {
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
             <Link href="/" className="inline-flex mb-4">
-              <Logo size={26} withText textClassName="text-zinc-950 text-sm" />
+              <Logo size={26} withText textSize="sm" />
             </Link>
             <p className="text-xs text-zinc-500 leading-relaxed max-w-[28ch]">
               Build your portfolio. Find your job. Track your career.
