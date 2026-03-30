@@ -12,7 +12,7 @@ export function Logo({ size = 28, className = "", withText = false, textClassNam
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
       <Image
-        src="/logo.svg"
+        src="/logo-v2.svg"
         alt="myskillspage logo"
         width={size}
         height={size}
