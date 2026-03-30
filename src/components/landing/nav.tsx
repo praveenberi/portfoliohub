@@ -41,7 +41,7 @@ export function LandingNav() {
       <nav className="max-w-[1400px] mx-auto px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group hover:opacity-90 transition-opacity">
-          <Logo size={32} withText textSize="lg" />
+          <Logo size={36} withText textSize="2xl" />
         </Link>
 
         {/* Desktop links */}

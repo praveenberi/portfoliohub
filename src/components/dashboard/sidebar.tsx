@@ -74,7 +74,7 @@ export function DashboardSidebar({ user }: SidebarProps) {
       {/* Logo */}
       <div className="px-5 h-16 flex items-center justify-between border-b border-zinc-100">
         <Link href="/">
-          <Logo size={26} withText textSize="sm" />
+          <Logo size={30} withText textSize="lg" />
         </Link>
         <button onClick={() => setMobileOpen(false)} className="md:hidden p-1 rounded-lg hover:bg-zinc-100">
           <X size={18} className="text-zinc-500" />

@@ -90,7 +90,7 @@ export function DashboardHeader({ user }: HeaderProps) {
       </div>
 
       {/* Mobile: centered logo */}
-      <span className="md:hidden"><Logo size={26} withText textSize="sm" /></span>
+      <span className="md:hidden"><Logo size={30} withText textSize="lg" /></span>
 
       <div className="hidden md:block flex-1" />
 
