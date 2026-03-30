@@ -23,19 +23,19 @@ export function BrandName({ size = "base" }: { size?: "sm" | "base" | "lg" | "xl
     <span className="inline-flex items-baseline gap-0 leading-none select-none">
       <span
         className={`${s.my} font-bold`}
-        style={{ fontFamily: "var(--font-dancing)", color: "#FF5E1A" }}
+        style={{ fontFamily: "var(--font-dancing)", color: "#C9A84C" }}
       >
         My
       </span>
       <span
-        className={`${s.skills} font-black tracking-tight uppercase`}
-        style={{ color: "#1a1a2e" }}
+        className="font-black tracking-tight uppercase"
+        style={{ color: "#1a1a2e", fontSize: "0.8em" }}
       >
         SKILLS
       </span>
       <span
         className={`${s.page} font-bold`}
-        style={{ fontFamily: "var(--font-dancing)", color: "#FF2D55" }}
+        style={{ fontFamily: "var(--font-dancing)", color: "#C9A84C" }}
       >
         page
       </span>
