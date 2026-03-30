@@ -22,8 +22,8 @@ export function BrandName({ size = "base" }: { size?: "sm" | "base" | "lg" | "xl
   return (
     <span className="inline-flex items-baseline gap-0 leading-none select-none">
       <span
-        className={`${s.my} font-bold`}
-        style={{ fontFamily: "var(--font-dancing)", color: "#C9A84C" }}
+        className={`${s.my} font-extrabold`}
+        style={{ fontFamily: "var(--font-dancing)", color: "#FF5E1A" }}
       >
         My
       </span>
@@ -34,8 +34,8 @@ export function BrandName({ size = "base" }: { size?: "sm" | "base" | "lg" | "xl
         SKILLS
       </span>
       <span
-        className={`${s.page} font-bold`}
-        style={{ fontFamily: "var(--font-dancing)", color: "#C9A84C" }}
+        className={`${s.page} font-extrabold`}
+        style={{ fontFamily: "var(--font-dancing)", color: "#FF2D55" }}
       >
         page
       </span>
