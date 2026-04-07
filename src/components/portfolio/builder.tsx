@@ -232,12 +232,22 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
   };
 
   const handleSave = async () => {
+    if (!user.username?.trim()) {
+      toast.error("Set a username in Settings → Account before publishing");
+      window.location.href = "/dashboard/settings";
+      return;
+    }
     setSaving(true);
     try {
-      await axios.patch(`/api/portfolios/${portfolio.id}`, { sections, config });
-      toast.success("Portfolio saved");
-    } catch {
-      toast.error("Failed to save");
+      await axios.patch(`/api/portfolios/${portfolio.id}`, {
+        sections,
+        config,
+        isPublished: true,
+      });
+      toast.success("Portfolio published!");
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to publish";
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -682,10 +692,9 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 active:scale-[0.98] transition-all disabled:opacity-60"
+              className="flex items-center gap-1.5 px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg border border-transparent hover:bg-green-400 active:scale-[0.98] transition-all disabled:opacity-60"
             >
-              <FloppyDisk size={13} />
-              {saving ? "Publishing..." : "Publish"}
+              {saving ? "..." : "Publish"}
             </button>
           </div>
         </div>
