@@ -31,6 +31,17 @@ export async function PATCH(
     );
 
     if (body.isPublished === true && !portfolio.isPublished) {
+      // Require username before allowing publish
+      const user = await prisma.user.findUnique({
+        where: { id: portfolio.userId },
+        select: { username: true },
+      });
+      if (!user?.username?.trim()) {
+        return NextResponse.json(
+          { error: "Username is required before publishing. Set one in your profile." },
+          { status: 400 }
+        );
+      }
       (updateData as Record<string, unknown>).publishedAt = new Date();
     }
 

@@ -222,6 +222,12 @@ export function PortfolioManager({ portfolio, templates, username }: PortfolioMa
 
   const handleTogglePublish = async () => {
     if (!portfolio) return;
+    // Require a username before publishing
+    if (!portfolio.isPublished && !username?.trim()) {
+      toast.error("Set a username in Profile → Social before publishing");
+      router.push("/dashboard/profile");
+      return;
+    }
     setPublishing(true);
     try {
       await axios.patch(`/api/portfolios/${portfolio.id}`, {
@@ -229,8 +235,9 @@ export function PortfolioManager({ portfolio, templates, username }: PortfolioMa
       });
       toast.success(portfolio.isPublished ? "Portfolio unpublished" : "Portfolio published!");
       router.refresh();
-    } catch {
-      toast.error("Failed to update portfolio");
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to update portfolio";
+      toast.error(msg);
     } finally {
       setPublishing(false);
     }
