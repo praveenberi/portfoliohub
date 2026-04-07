@@ -85,6 +85,9 @@ export function ProfileEditor({ profile, user }: Props) {
           <p className="text-sm text-zinc-500 mt-1">Keep your information up to date</p>
         </div>
 
+        {/* Resume import */}
+        <ResumeImport />
+
         {/* Tab bar */}
         <div className="flex gap-1 mb-8 overflow-x-auto pb-1 scrollbar-hide">
           {TABS.map(({ id, label, icon: Icon }) => (
@@ -129,6 +132,82 @@ export function ProfileEditor({ profile, user }: Props) {
             )}
           </motion.div>
         </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+// ─── Resume Import ────────────────────────────────────────────────────────────
+
+function ResumeImport() {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Please upload a PDF file");
+      return;
+    }
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const id = toast.loading("Reading your resume…");
+    try {
+      const res = await axios.post("/api/profile/import-resume", fd);
+      const c = res.data.counts;
+      toast.success(
+        `Imported: ${c.experiences} experiences, ${c.education} education, ${c.projects} projects, ${c.certifications} certifications`,
+        { id, duration: 5000 }
+      );
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.error || "Failed to import resume", { id });
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <div className="mb-8 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-5">
+      <div className="flex items-start gap-4">
+        <div className="w-10 h-10 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
+          <CloudArrowUp size={18} className="text-green-400" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="text-sm font-semibold text-zinc-100">Import from resume</h3>
+          <p className="text-xs text-zinc-500 mt-0.5">
+            Upload your PDF resume — we&apos;ll auto-fill your profile sections (experience, education, skills, projects, certifications).
+          </p>
+          <div className="mt-3">
+            <label className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors cursor-pointer ${uploading ? "bg-zinc-800 text-zinc-500 cursor-wait" : "bg-green-500 text-white hover:bg-green-600"}`}>
+              {uploading ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                  Parsing resume…
+                </>
+              ) : (
+                <>
+                  <CloudArrowUp size={14} weight="bold" />
+                  Upload PDF resume
+                </>
+              )}
+              <input
+                ref={inputRef}
+                type="file"
+                accept="application/pdf,.pdf"
+                className="hidden"
+                disabled={uploading}
+                onChange={handleFile}
+              />
+            </label>
+            <p className="text-[10px] text-zinc-600 mt-2">
+              Existing experience, education, projects, and certifications will be replaced.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
