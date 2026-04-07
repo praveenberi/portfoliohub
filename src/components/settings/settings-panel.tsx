@@ -65,7 +65,8 @@ const tabs = [
   { id: "danger", label: "Danger Zone", icon: Warning },
 ];
 
-export function SettingsPanel({ user }: { user: UserData | null }) {
+export function SettingsPanel({ user, isPublished = false }: { user: UserData | null; isPublished?: boolean }) {
+  const usernameLocked = isPublished && !!user?.username;
   const [activeTab, setActiveTab] = useState("account");
   const [saving, setSaving] = useState(false);
   const [showCurrent, setShowCurrent] = useState(false);
@@ -181,12 +182,19 @@ export function SettingsPanel({ user }: { user: UserData | null }) {
                           </span>
                           <input
                             {...accountForm.register("username")}
-                            className="flex-1 h-10 px-3 rounded-r-lg border border-zinc-200 text-sm text-zinc-950 bg-white focus:outline-none focus:border-zinc-400 transition-colors"
+                            disabled={usernameLocked}
+                            readOnly={usernameLocked}
+                            className={`flex-1 h-10 px-3 rounded-r-lg border border-zinc-200 text-sm text-zinc-950 focus:outline-none focus:border-zinc-400 transition-colors ${usernameLocked ? "bg-zinc-50 text-zinc-500 cursor-not-allowed" : "bg-white"}`}
                             placeholder="yourname"
                           />
                         </div>
                         {accountForm.formState.errors.username && (
                           <p className="text-xs text-red-500">{accountForm.formState.errors.username.message}</p>
+                        )}
+                        {usernameLocked && (
+                          <p className="text-xs text-amber-600">
+                            Username is locked because your portfolio is published. Unpublish from the Portfolio page to change it.
+                          </p>
                         )}
                         {user?.username && (
                           <p className="text-xs text-zinc-400 flex items-center gap-1">

@@ -23,6 +23,24 @@ export async function PATCH(req: NextRequest) {
     const body = await req.json();
     const { name, username, email } = schema.parse(body);
 
+    // If portfolio is already published, lock the username
+    const currentUser = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { username: true },
+    });
+    if (currentUser?.username && currentUser.username !== username) {
+      const portfolio = await prisma.portfolio.findUnique({
+        where: { userId: session.user.id },
+        select: { isPublished: true },
+      });
+      if (portfolio?.isPublished) {
+        return NextResponse.json(
+          { error: "Username is locked while your portfolio is published. Unpublish first to change it." },
+          { status: 403 }
+        );
+      }
+    }
+
     // Check username uniqueness
     const existingUsername = await prisma.user.findFirst({
       where: { username, NOT: { id: session.user.id } },

@@ -11,10 +11,16 @@ export default async function SettingsPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const user = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    select: { id: true, name: true, email: true, username: true, image: true, role: true, createdAt: true },
-  });
+  const [user, portfolio] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { id: true, name: true, email: true, username: true, image: true, role: true, createdAt: true },
+    }),
+    prisma.portfolio.findUnique({
+      where: { userId: session.user.id },
+      select: { isPublished: true },
+    }),
+  ]);
 
-  return <SettingsPanel user={user} />;
+  return <SettingsPanel user={user} isPublished={portfolio?.isPublished ?? false} />;
 }
