@@ -11,7 +11,7 @@ export default async function PortfolioPage() {
   const session = await auth();
   const userId = session!.user.id;
 
-  const [portfolio, templates] = await Promise.all([
+  const [portfolio, templates, user] = await Promise.all([
     prisma.portfolio.findUnique({
       where: { userId },
       include: { template: true },
@@ -20,13 +20,17 @@ export default async function PortfolioPage() {
       where: { isActive: true },
       orderBy: { order: "asc" },
     }),
+    prisma.user.findUnique({
+      where: { id: userId },
+      select: { username: true },
+    }),
   ]);
 
   return (
     <PortfolioManager
       portfolio={portfolio}
       templates={templates}
-      username={session!.user.username ?? ""}
+      username={user?.username ?? ""}
     />
   );
 }
