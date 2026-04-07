@@ -280,6 +280,7 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
           {/* ── Sections panel ── */}
           {activePanel === "sections" && (
             <div className="space-y-4">
+              <ResumeImportButton />
               <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-1">
                 Active sections
               </div>
@@ -701,6 +702,65 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
         </div>
       </div>
     </div>
+  );
+}
+
+// ─── Resume Import Button ─────────────────────────────────────────────────────
+
+function ResumeImportButton() {
+  const [uploading, setUploading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith(".pdf")) {
+      toast.error("Please upload a PDF file");
+      return;
+    }
+    setUploading(true);
+    const fd = new FormData();
+    fd.append("file", file);
+    const id = toast.loading("Reading your resume…");
+    try {
+      const res = await axios.post("/api/profile/import-resume", fd);
+      const c = res.data.counts;
+      toast.success(
+        `Imported: ${c.experiences} exp, ${c.education} edu, ${c.projects} projects, ${c.certifications} certs`,
+        { id, duration: 4000 }
+      );
+      setTimeout(() => window.location.reload(), 800);
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to import resume";
+      toast.error(msg, { id });
+    } finally {
+      setUploading(false);
+      if (inputRef.current) inputRef.current.value = "";
+    }
+  }
+
+  return (
+    <label className={`flex items-center justify-center gap-1.5 w-full h-9 rounded-lg text-xs font-semibold transition-all ${uploading ? "bg-zinc-100 text-zinc-400 cursor-wait" : "bg-green-500 text-white hover:bg-green-600 cursor-pointer active:scale-[0.98]"}`}>
+      {uploading ? (
+        <>
+          <div className="w-3 h-3 border-2 border-zinc-400/40 border-t-zinc-500 rounded-full animate-spin" />
+          Parsing resume…
+        </>
+      ) : (
+        <>
+          <CloudArrowUp size={13} weight="bold" />
+          Upload PDF resume
+        </>
+      )}
+      <input
+        ref={inputRef}
+        type="file"
+        accept="application/pdf,.pdf"
+        className="hidden"
+        disabled={uploading}
+        onChange={handleFile}
+      />
+    </label>
   );
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, MagnifyingGlass, ArrowClockwise, X, User, SignOut, Camera, ArrowSquareOut } from "@phosphor-icons/react";
+import { Bell, MagnifyingGlass, ArrowClockwise, X, User, SignOut, Camera, ArrowSquareOut, Copy, Check } from "@phosphor-icons/react";
 import { getInitials } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -25,6 +25,7 @@ export function DashboardHeader({ user }: HeaderProps) {
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -96,16 +97,33 @@ export function DashboardHeader({ user }: HeaderProps) {
 
       {/* Right actions */}
       <div className="flex items-center gap-2">
-        {/* View Portfolio link */}
+        {/* Published portfolio link */}
         {user.username && (
-          <Link
-            href={`/${user.username}`}
-            target="_blank"
-            className="hidden md:flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-950 border border-zinc-200 rounded-lg hover:bg-zinc-50 transition-colors"
-          >
-            <ArrowSquareOut size={13} />
-            View Portfolio
-          </Link>
+          <div className="hidden md:flex items-center gap-1 pl-3 pr-1 py-1 border border-zinc-200 rounded-lg bg-zinc-50/60 max-w-[260px]">
+            <Link
+              href={`/${user.username}`}
+              target="_blank"
+              className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 hover:text-green-600 transition-colors min-w-0"
+              title="Open published portfolio"
+            >
+              <ArrowSquareOut size={12} className="shrink-0" />
+              <span className="truncate">/{user.username}</span>
+            </Link>
+            <button
+              onClick={async () => {
+                const url = `${window.location.origin}/${user.username}`;
+                try {
+                  await navigator.clipboard.writeText(url);
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 1500);
+                } catch {}
+              }}
+              className="p-1 rounded hover:bg-zinc-200 text-zinc-500 hover:text-zinc-900 transition-colors shrink-0"
+              title="Copy link"
+            >
+              {copied ? <Check size={12} weight="bold" className="text-green-600" /> : <Copy size={12} />}
+            </button>
+          </div>
         )}
 
         {/* Bell with dropdown */}
