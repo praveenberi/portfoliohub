@@ -38,7 +38,7 @@ export async function PATCH(
       });
       if (!user?.username?.trim()) {
         return NextResponse.json(
-          { error: "Username is required before publishing. Set one in your profile." },
+          { error: "Username is required before publishing. Set one in Settings → Account." },
           { status: 400 }
         );
       }

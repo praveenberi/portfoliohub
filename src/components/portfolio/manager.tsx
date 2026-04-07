@@ -224,8 +224,8 @@ export function PortfolioManager({ portfolio, templates, username }: PortfolioMa
     if (!portfolio) return;
     // Require a username before publishing
     if (!portfolio.isPublished && !username?.trim()) {
-      toast.error("Set a username in Profile → Social before publishing");
-      router.push("/dashboard/profile");
+      toast.error("Set a username in Settings → Account before publishing");
+      router.push("/dashboard/settings");
       return;
     }
     setPublishing(true);
