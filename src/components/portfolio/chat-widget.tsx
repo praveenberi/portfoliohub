@@ -165,7 +165,7 @@ function BookingForm({ name, setName, email, setEmail, phone, setPhone, date, se
         ) : (
           <CalendarBlank size={14} weight="fill" />
         )}
-        {sending ? "Sending…" : "Request Meeting"}
+        {sending ? "Sending…" : "Request Appointment"}
       </button>
     </div>
   );
@@ -294,7 +294,7 @@ export function ChatWidget({ username, ownerName, accentColor = "#22c55e" }: Cha
                   Get in touch with {ownerName}
                 </p>
                 <p className="text-[11px] text-white/70">
-                  Send a message or book a meeting
+                  Send a message or book an appointment
                 </p>
               </div>
             </div>
@@ -317,7 +317,7 @@ export function ChatWidget({ username, ownerName, accentColor = "#22c55e" }: Cha
                   ) : (
                     <CalendarBlank size={13} />
                   )}
-                  {t === "message" ? "Send Message" : "Book Meeting"}
+                  {t === "message" ? "Send Message" : "Book Appointment"}
                 </button>
               ))}
             </div>
@@ -331,12 +331,12 @@ export function ChatWidget({ username, ownerName, accentColor = "#22c55e" }: Cha
                 <div className="flex flex-col items-center justify-center py-8 gap-3 text-center">
                   <CheckCircle size={40} weight="fill" style={{ color: accentColor }} />
                   <p className="text-white font-medium">
-                    {tab === "message" ? "Message sent!" : "Meeting request sent!"}
+                    {tab === "message" ? "Message sent!" : "Appointment request sent!"}
                   </p>
                   <p className="text-zinc-400 text-xs leading-relaxed">
                     {tab === "message"
                       ? `${ownerName} will get back to you soon.`
-                      : `${ownerName} will confirm your meeting shortly.`}
+                      : `${ownerName} will confirm your appointment shortly.`}
                   </p>
                   <button
                     onClick={() => { setStatus("idle"); setError(""); }}
