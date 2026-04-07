@@ -28,11 +28,25 @@ export default async function BuilderPage() {
     },
   });
 
+  // Read fresh user data from DB so username updates from Settings are reflected
+  const dbUser = await prisma.user.findUnique({
+    where: { id: session!.user.id },
+    select: { id: true, name: true, email: true, username: true, role: true },
+  });
+
+  type SessionRole = NonNullable<typeof session>["user"]["role"];
+
   return (
     <PortfolioBuilder
       portfolio={portfolio}
       profile={profile}
-      user={session!.user}
+      user={{
+        id: dbUser!.id,
+        name: dbUser!.name,
+        email: dbUser!.email,
+        username: dbUser!.username,
+        role: dbUser!.role as SessionRole,
+      }}
     />
   );
 }
