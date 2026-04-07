@@ -1,6 +1,6 @@
 "use client";
 
-import { Bell, MagnifyingGlass, ArrowClockwise, X, User, SignOut, Camera, ArrowSquareOut, Copy, Check } from "@phosphor-icons/react";
+import { Bell, MagnifyingGlass, ArrowClockwise, X, User, SignOut, Camera, ArrowSquareOut, Eye, ArrowRight } from "@phosphor-icons/react";
 import { getInitials } from "@/lib/utils";
 import Image from "next/image";
 import Link from "next/link";
@@ -18,14 +18,14 @@ interface HeaderProps {
     role: UserRole;
     username?: string | null;
   };
+  isPublished?: boolean;
 }
 
-export function DashboardHeader({ user }: HeaderProps) {
+export function DashboardHeader({ user, isPublished = false }: HeaderProps) {
   const router = useRouter();
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [copied, setCopied] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -97,33 +97,23 @@ export function DashboardHeader({ user }: HeaderProps) {
 
       {/* Right actions */}
       <div className="flex items-center gap-2">
-        {/* Published portfolio link */}
-        {user.username && (
-          <div className="hidden md:flex items-center gap-1 pl-3 pr-1 py-1 border border-zinc-200 rounded-lg bg-zinc-50/60 max-w-[260px]">
-            <Link
-              href={`/${user.username}`}
-              target="_blank"
-              className="flex items-center gap-1.5 text-xs font-medium text-zinc-700 hover:text-green-600 transition-colors min-w-0"
-              title="Open published portfolio"
-            >
-              <ArrowSquareOut size={12} className="shrink-0" />
-              <span className="truncate">/{user.username}</span>
-            </Link>
-            <button
-              onClick={async () => {
-                const url = `${window.location.origin}/${user.username}`;
-                try {
-                  await navigator.clipboard.writeText(url);
-                  setCopied(true);
-                  setTimeout(() => setCopied(false), 1500);
-                } catch {}
-              }}
-              className="p-1 rounded hover:bg-zinc-200 text-zinc-500 hover:text-zinc-900 transition-colors shrink-0"
-              title="Copy link"
-            >
-              {copied ? <Check size={12} weight="bold" className="text-green-600" /> : <Copy size={12} />}
-            </button>
-          </div>
+        {/* View live portfolio card — only visible once published */}
+        {isPublished && user.username && (
+          <Link
+            href={`/${user.username}`}
+            target="_blank"
+            className="hidden md:flex items-center gap-3 pl-2 pr-3 py-1.5 border border-zinc-200 rounded-xl bg-white hover:bg-zinc-50 hover:border-zinc-300 transition-colors group"
+            title={`Open /${user.username} in new tab`}
+          >
+            <span className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
+              <Eye size={16} weight="fill" className="text-blue-600" />
+            </span>
+            <span className="flex flex-col items-start leading-tight">
+              <span className="text-[13px] font-semibold text-zinc-950">View live portfolio</span>
+              <span className="text-[11px] text-zinc-400">Opens in new tab</span>
+            </span>
+            <ArrowRight size={14} className="text-zinc-400 group-hover:text-zinc-700 group-hover:translate-x-0.5 transition-all" />
+          </Link>
         )}
 
         {/* Bell with dropdown */}
