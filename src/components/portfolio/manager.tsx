@@ -16,6 +16,8 @@ import {
   ArrowClockwise,
   Warning,
   Star,
+  Check,
+  Copy,
 } from "@phosphor-icons/react";
 import type { Portfolio, Template } from "@prisma/client";
 import axios from "axios";
@@ -42,7 +44,72 @@ export interface AIResult {
 }
 
 export function AIModal({ result, onClose }: { result: AIResult; onClose: () => void }) {
+  const router = useRouter();
   const [tab, setTab] = useState<"suggestions" | "seo">("suggestions");
+  const [applied, setApplied] = useState<Record<number, "applied" | "copied">>({});
+  const [applying, setApplying] = useState<number | null>(null);
+
+  const sectionLower = (s: string) => (s || "").toLowerCase().trim();
+  const isApplicable = (s: string) => ["bio", "headline", "skills"].includes(sectionLower(s));
+
+  async function applySuggestion(index: number, section: string, improved: string) {
+    const key = sectionLower(section);
+    setApplying(index);
+    try {
+      if (key === "bio" || key === "headline") {
+        const value = key === "headline" ? improved.slice(0, 160) : improved.slice(0, 2000);
+        await axios.patch("/api/profile", { [key]: value });
+      } else if (key === "skills") {
+        // Parse the suggested skills — accept commas, pipes, or bullets
+        const items = improved
+          .split(/[,|•\n]/)
+          .map((s) => s.replace(/^[\s\-•]+|[\s.]+$/g, "").trim())
+          .filter((s) => s.length > 0 && s.length < 40);
+        if (items.length === 0) throw new Error("No parseable skills in suggestion");
+        // Fetch existing skills and merge (deduped, case-insensitive)
+        const existing = (await axios.get("/api/profile")).data?.data?.skills;
+        const existingArr: string[] = Array.isArray(existing)
+          ? existing
+          : typeof existing === "string"
+          ? JSON.parse(existing || "[]")
+          : [];
+        const seen = new Set(existingArr.map((s) => s.toLowerCase()));
+        const merged = [...existingArr];
+        for (const item of items) {
+          if (!seen.has(item.toLowerCase())) {
+            merged.push(item);
+            seen.add(item.toLowerCase());
+          }
+        }
+        await axios.patch("/api/profile", { skills: merged });
+      }
+      setApplied((prev) => ({ ...prev, [index]: "applied" }));
+      toast.success("Applied — click Publish to make it live");
+      router.refresh();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } }; message?: string };
+      toast.error(e?.response?.data?.error || e?.message || "Failed to apply");
+    } finally {
+      setApplying(null);
+    }
+  }
+
+  async function copySuggestion(index: number, improved: string) {
+    try {
+      await navigator.clipboard.writeText(improved);
+      setApplied((prev) => ({ ...prev, [index]: "copied" }));
+      toast.success("Copied — paste into the profile editor");
+      setTimeout(() => {
+        setApplied((prev) => {
+          const next = { ...prev };
+          if (next[index] === "copied") delete next[index];
+          return next;
+        });
+      }, 2000);
+    } catch {
+      toast.error("Failed to copy");
+    }
+  }
 
   const priorityColor = (p: string) =>
     p === "high" ? "text-red-600 bg-red-50 border-red-200" :
@@ -128,9 +195,49 @@ export function AIModal({ result, onClose }: { result: AIResult; onClose: () => 
                   <p className="text-xs text-zinc-500">{s.issue}</p>
                 </div>
                 <div className="bg-accent-50 border border-accent-200/60 rounded-lg p-3">
-                  <div className="flex items-center gap-1 mb-1">
-                    <Star size={11} weight="fill" className="text-accent-500" />
-                    <span className="text-[10px] font-semibold text-accent-700">Suggested</span>
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-1">
+                      <Star size={11} weight="fill" className="text-accent-500" />
+                      <span className="text-[10px] font-semibold text-accent-700">Suggested</span>
+                    </div>
+                    {applied[i] === "applied" ? (
+                      <span className="flex items-center gap-1 text-[10px] font-semibold text-accent-700 px-2 py-1">
+                        <Check size={11} weight="bold" /> Applied
+                      </span>
+                    ) : isApplicable(s.section) ? (
+                      <button
+                        onClick={() => applySuggestion(i, s.section, s.improved)}
+                        disabled={applying === i}
+                        className="flex items-center gap-1 text-[10px] font-semibold text-white bg-accent-500 hover:bg-accent-400 active:scale-[0.98] disabled:opacity-60 px-2.5 py-1 rounded-md transition-all"
+                      >
+                        {applying === i ? (
+                          <>
+                            <div className="w-2.5 h-2.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                            Applying
+                          </>
+                        ) : (
+                          <>
+                            <Check size={11} weight="bold" /> Apply
+                          </>
+                        )}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => copySuggestion(i, s.improved)}
+                        className="flex items-center gap-1 text-[10px] font-semibold text-zinc-700 bg-white hover:bg-zinc-50 border border-zinc-200 px-2.5 py-1 rounded-md transition-colors"
+                        title="Copy to clipboard — edit this section in the profile editor"
+                      >
+                        {applied[i] === "copied" ? (
+                          <>
+                            <Check size={11} weight="bold" /> Copied
+                          </>
+                        ) : (
+                          <>
+                            <Copy size={11} /> Copy
+                          </>
+                        )}
+                      </button>
+                    )}
                   </div>
                   <p className="text-xs text-zinc-700 leading-relaxed">{s.improved}</p>
                 </div>
