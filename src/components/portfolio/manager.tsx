@@ -22,7 +22,7 @@ import axios from "axios";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 
-interface AISuggestion {
+export interface AISuggestion {
   section: string;
   priority: "high" | "medium" | "low";
   title: string;
@@ -30,7 +30,7 @@ interface AISuggestion {
   improved: string;
 }
 
-interface AIResult {
+export interface AIResult {
   score: number;
   summary: string;
   suggestions: AISuggestion[];
@@ -41,7 +41,7 @@ interface AIResult {
   };
 }
 
-function AIModal({ result, onClose }: { result: AIResult; onClose: () => void }) {
+export function AIModal({ result, onClose }: { result: AIResult; onClose: () => void }) {
   const [tab, setTab] = useState<"suggestions" | "seo">("suggestions");
 
   const priorityColor = (p: string) =>

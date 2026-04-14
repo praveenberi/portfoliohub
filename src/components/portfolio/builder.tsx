@@ -47,6 +47,7 @@ import type { UserRole } from "@/lib/enums";
 import type { SectionConfig, SectionType, PortfolioConfig, HeroContent, BackgroundStyle } from "@/types";
 import { parseArr, parseJson, parseProjectImages } from "@/lib/utils";
 import { GridBackground, DotBackground, AuroraBackground, Meteors } from "./animations";
+import { AIModal, type AIResult } from "./manager";
 
 const AVAILABLE_SECTIONS: { type: SectionType; label: string; description: string }[] = [
   { type: "hero", label: "Hero", description: "Full-width intro with your name and headline" },
@@ -183,6 +184,29 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
   const [activeDragId, setActiveDragId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiResult, setAiResult] = useState<AIResult | null>(null);
+
+  const handleAnalyze = async () => {
+    setAnalyzing(true);
+    try {
+      const res = await axios.post("/api/ai/analyze");
+      if (res.data?.data) {
+        setAiResult(res.data.data);
+      } else {
+        toast.error("AI returned no data. Try again.");
+      }
+    } catch (err: unknown) {
+      const e = err as { response?: { status?: number; data?: { error?: string } } };
+      const status = e?.response?.status;
+      const msg = e?.response?.data?.error;
+      if (status === 503) toast.error("AI not configured on server.");
+      else if (status === 500) toast.error(msg || "AI analysis failed — check server logs.");
+      else toast.error(msg || `Error ${status ?? "unknown"}`);
+    } finally {
+      setAnalyzing(false);
+    }
+  };
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -686,8 +710,21 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
             </button>
           </div>
           <div className="flex items-center gap-2">
-            <button className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-950 transition-colors">
-              <Sparkle size={13} /> AI assist
+            <button
+              onClick={handleAnalyze}
+              disabled={analyzing}
+              className="flex items-center gap-1.5 text-xs font-medium text-zinc-600 hover:text-zinc-950 transition-colors disabled:opacity-60"
+            >
+              {analyzing ? (
+                <>
+                  <div className="w-3 h-3 border-2 border-zinc-300 border-t-zinc-700 rounded-full animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Sparkle size={13} /> AI assist
+                </>
+              )}
             </button>
             <button
               onClick={handleSave}
@@ -710,6 +747,10 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {aiResult && <AIModal result={aiResult} onClose={() => setAiResult(null)} />}
+      </AnimatePresence>
     </div>
   );
 }
