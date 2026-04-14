@@ -19,9 +19,10 @@ interface HeaderProps {
     username?: string | null;
   };
   isPublished?: boolean;
+  unreadCount?: number;
 }
 
-export function DashboardHeader({ user, isPublished = false }: HeaderProps) {
+export function DashboardHeader({ user, isPublished = false, unreadCount = 0 }: HeaderProps) {
   const router = useRouter();
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -123,7 +124,9 @@ export function DashboardHeader({ user, isPublished = false }: HeaderProps) {
             className="relative w-9 h-9 flex items-center justify-center rounded-xl hover:bg-zinc-50 border border-zinc-200 transition-colors"
           >
             <Bell size={16} className="text-zinc-600" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500" />
+            {unreadCount > 0 && (
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500" />
+            )}
           </button>
 
           {bellOpen && (
@@ -134,10 +137,28 @@ export function DashboardHeader({ user, isPublished = false }: HeaderProps) {
                   <X size={14} className="text-zinc-500" />
                 </button>
               </div>
-              <div className="py-8 text-center">
-                <Bell size={28} className="text-zinc-300 mx-auto mb-2" />
-                <p className="text-sm text-zinc-400">No new notifications</p>
-              </div>
+              {unreadCount > 0 ? (
+                <Link
+                  href="/dashboard/messages"
+                  onClick={() => setBellOpen(false)}
+                  className="flex items-center gap-3 px-4 py-4 hover:bg-zinc-50 transition-colors"
+                >
+                  <span className="w-9 h-9 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+                    <Bell size={16} weight="fill" className="text-green-600" />
+                  </span>
+                  <span className="flex-1">
+                    <span className="block text-sm font-medium text-zinc-950">
+                      {unreadCount} new {unreadCount === 1 ? "message" : "messages"}
+                    </span>
+                    <span className="block text-xs text-zinc-400">View in messages</span>
+                  </span>
+                </Link>
+              ) : (
+                <div className="py-8 text-center">
+                  <Bell size={28} className="text-zinc-300 mx-auto mb-2" />
+                  <p className="text-sm text-zinc-400">No new notifications</p>
+                </div>
+              )}
             </div>
           )}
         </div>

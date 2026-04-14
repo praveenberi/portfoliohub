@@ -15,7 +15,7 @@ export default async function DashboardLayout({
   if (!session?.user) redirect("/login?callbackUrl=/dashboard");
 
   // Read fresh username + portfolio publish status from DB (JWT may be stale)
-  const [dbUser, portfolio] = await Promise.all([
+  const [dbUser, portfolio, unreadCount] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
       select: { username: true },
@@ -23,6 +23,9 @@ export default async function DashboardLayout({
     prisma.portfolio.findUnique({
       where: { userId: session.user.id },
       select: { isPublished: true },
+    }),
+    prisma.contactRequest.count({
+      where: { userId: session.user.id, isRead: false },
     }),
   ]);
 
@@ -33,6 +36,7 @@ export default async function DashboardLayout({
         <DashboardHeader
           user={{ ...session.user, username: dbUser?.username ?? null }}
           isPublished={portfolio?.isPublished ?? false}
+          unreadCount={unreadCount}
         />
         <main className="flex-1 p-4 md:p-6 pb-24 md:pb-6 print:p-0">{children}</main>
       </div>
