@@ -50,11 +50,14 @@ export function DashboardHeader({ user, isPublished = false, unreadCount: initia
     }
     const interval = setInterval(fetchCount, 30000);
     const onFocus = () => fetchCount();
+    const onRefresh = () => fetchCount();
     window.addEventListener("focus", onFocus);
+    window.addEventListener("unread-count:refresh", onRefresh);
     return () => {
       cancelled = true;
       clearInterval(interval);
       window.removeEventListener("focus", onFocus);
+      window.removeEventListener("unread-count:refresh", onRefresh);
     };
   }, []);
 

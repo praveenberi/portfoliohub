@@ -60,10 +60,27 @@ export function DashboardSidebar({ user }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    fetch("/api/messages/unread-count")
-      .then((r) => r.json())
-      .then((d) => setUnreadCount(d.count ?? 0))
-      .catch(() => {});
+    let cancelled = false;
+    async function fetchCount() {
+      try {
+        const r = await fetch("/api/messages/unread-count", { cache: "no-store" });
+        if (!r.ok) return;
+        const d = await r.json();
+        if (!cancelled) setUnreadCount(d.count ?? 0);
+      } catch {}
+    }
+    fetchCount();
+    const interval = setInterval(fetchCount, 30000);
+    const onFocus = () => fetchCount();
+    const onRefresh = () => fetchCount();
+    window.addEventListener("focus", onFocus);
+    window.addEventListener("unread-count:refresh", onRefresh);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+      window.removeEventListener("unread-count:refresh", onRefresh);
+    };
   }, [pathname]);
 
   // Close drawer on navigation

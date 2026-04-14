@@ -41,6 +41,7 @@ export default function MessagesPage() {
         const hasUnread = Array.isArray(data) && data.some((m: ContactRequest) => !m.isRead);
         if (hasUnread) {
           await fetch("/api/messages", { method: "PATCH" });
+          window.dispatchEvent(new Event("unread-count:refresh"));
           router.refresh();
         }
       } finally {
@@ -55,6 +56,7 @@ export default function MessagesPage() {
       prev.map((m) => (m.id === id ? { ...m, isRead: true } : m))
     );
     if (selected?.id === id) setSelected((s) => s ? { ...s, isRead: true } : s);
+    window.dispatchEvent(new Event("unread-count:refresh"));
     router.refresh();
   }
 
@@ -62,6 +64,7 @@ export default function MessagesPage() {
     await fetch(`/api/messages/${id}/read`, { method: "DELETE" });
     setMessages((prev) => prev.filter((m) => m.id !== id));
     if (selected?.id === id) setSelected(null);
+    window.dispatchEvent(new Event("unread-count:refresh"));
     router.refresh();
   }
 
