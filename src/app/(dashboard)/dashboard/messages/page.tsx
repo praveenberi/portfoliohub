@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   EnvelopeSimple, CalendarBlank, Phone, Trash, CheckCircle,
@@ -24,20 +25,29 @@ interface ContactRequest {
 }
 
 export default function MessagesPage() {
+  const router = useRouter();
   const [messages, setMessages] = useState<ContactRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState<ContactRequest | null>(null);
   const [filter, setFilter] = useState<"all" | "unread" | "message" | "booking">("all");
 
   useEffect(() => {
-    fetch("/api/messages")
-      .then((r) => r.json())
-      .then((data) => {
+    (async () => {
+      try {
+        const r = await fetch("/api/messages");
+        const data = await r.json();
         setMessages(Array.isArray(data) ? data : []);
+        // Viewing the Messages page clears the bell notification
+        const hasUnread = Array.isArray(data) && data.some((m: ContactRequest) => !m.isRead);
+        if (hasUnread) {
+          await fetch("/api/messages", { method: "PATCH" });
+          router.refresh();
+        }
+      } finally {
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+      }
+    })();
+  }, [router]);
 
   async function markRead(id: string) {
     await fetch(`/api/messages/${id}/read`, { method: "PATCH" });
@@ -45,12 +55,14 @@ export default function MessagesPage() {
       prev.map((m) => (m.id === id ? { ...m, isRead: true } : m))
     );
     if (selected?.id === id) setSelected((s) => s ? { ...s, isRead: true } : s);
+    router.refresh();
   }
 
   async function deleteMsg(id: string) {
     await fetch(`/api/messages/${id}/read`, { method: "DELETE" });
     setMessages((prev) => prev.filter((m) => m.id !== id));
     if (selected?.id === id) setSelected(null);
+    router.refresh();
   }
 
   function openMessage(msg: ContactRequest) {

@@ -18,3 +18,18 @@ export async function GET(req: NextRequest) {
 
   return Response.json(messages);
 }
+
+// PATCH /api/messages — mark all messages as read for the logged-in user
+export async function PATCH() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
+  }
+
+  await prisma.contactRequest.updateMany({
+    where: { userId: session.user.id, isRead: false },
+    data: { isRead: true },
+  });
+
+  return Response.json({ success: true });
+}
