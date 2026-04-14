@@ -1805,6 +1805,7 @@ function CertificationsEditor({
   onChange: (c: Record<string, unknown>) => void;
 }) {
   const hiddenIds = (content.hiddenIds as string[]) ?? [];
+  const layout = (content.layout as string) ?? "grid";
   const certs = profile?.certifications ?? [];
   const [editingId, setEditingId] = useState<string | null>(null);
   const [addingNew, setAddingNew] = useState(false);
@@ -1847,7 +1848,20 @@ function CertificationsEditor({
   }
 
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-3">
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Layout</label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {(["grid", "list"] as const).map((l) => (
+            <button key={l} onClick={() => onChange({ layout: l })}
+              className={`py-1.5 text-[11px] font-medium rounded-lg border transition-all ${layout === l ? "border-green-500 bg-green-50 text-green-700" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}>
+              {l === "grid" ? "Grid" : "List"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
       <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Profile certifications</label>
       {certs.length === 0 && !addingNew && <p className="text-[10px] text-zinc-400">No certifications yet. Add one below.</p>}
       {certs.map((c) => (
@@ -1872,6 +1886,7 @@ function CertificationsEditor({
           <Plus size={12} /> Add certification
         </button>
       )}
+      </div>
     </div>
   );
 }
@@ -2930,12 +2945,13 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
   // ── Certifications ────────────────────────────────────────────────────────
   if (section.type === "certifications") {
     const hiddenIds = (section.content.hiddenIds as string[]) ?? [];
+    const certLayout = (section.content.layout as string) ?? "grid";
     const certs = (profile?.certifications ?? []).filter((c) => !hiddenIds.includes(c.id));
     return (
       <div className={`px-10 py-12 border-b ${borderColor}`}>
         <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: textColor }}>{sectionTitle}</h2>
         {certs.length > 0 ? (
-          <div className="grid grid-cols-2 gap-4">
+          <div className={certLayout === "list" ? "space-y-3" : "grid grid-cols-2 gap-4"}>
             {certs.map((cert) => (
               <div key={cert.id} className={`p-4 border ${borderColor}`} style={{ borderRadius: "var(--cr)" }}>
                 <div className="font-semibold text-sm" style={{ color: textColor }}>{cert.name}</div>

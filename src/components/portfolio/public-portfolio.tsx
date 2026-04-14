@@ -761,14 +761,16 @@ function SectionRenderer({
   }
 
   if (section.type === "certifications") {
-    const certs = profile?.certifications ?? [];
+    const hiddenIds = (section.content.hiddenIds as string[]) ?? [];
+    const layout = (section.content.layout as string) ?? "grid";
+    const certs = (profile?.certifications ?? []).filter((c) => !hiddenIds.includes(c.id));
     if (certs.length === 0) return null;
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Certifications</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
-          <div className="grid md:grid-cols-2 gap-4">
+          <div className={layout === "list" ? "space-y-3" : "grid md:grid-cols-2 gap-4"}>
             {certs.map((cert, i) => (
               <motion.div key={cert.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.08 }}
                 className="flex items-start gap-4 p-5" style={{ border: `1px solid ${border}`, borderRadius: "var(--cr)" }}>
