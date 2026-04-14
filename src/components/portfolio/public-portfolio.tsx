@@ -189,6 +189,7 @@ export function PublicPortfolio({ portfolio }: { portfolio: FullPortfolio }) {
   const cardRadius = radiusMap[config.borderRadius as keyof typeof radiusMap] ?? "16px";
 
   const sortedSections = [...sections].filter((s) => s.visible).sort((a, b) => a.order - b.order);
+  const hasAboutSection = sortedSections.some((s) => s.type === "about");
   const fontEntry = FONT_MAP[config.fontFamily ?? "geist"] ?? FONT_MAP.geist;
 
   const [lightbox, setLightbox] = useState<{ images: string[]; index: number } | null>(null);
@@ -261,6 +262,7 @@ export function PublicPortfolio({ portfolio }: { portfolio: FullPortfolio }) {
               textColor={textColor}
               isMeteors={isMeteors}
               onImageClick={openLightbox}
+              hasAboutSection={hasAboutSection}
             />
           </section>
         ))}
@@ -306,7 +308,7 @@ function HeroVideo({ src, className }: { src: string; className: string }) {
 }
 
 function SectionRenderer({
-  section, portfolio, config, accent, textColor, isMeteors, onImageClick,
+  section, portfolio, config, accent, textColor, isMeteors, onImageClick, hasAboutSection,
 }: {
   section: SectionConfig;
   portfolio: FullPortfolio;
@@ -315,6 +317,7 @@ function SectionRenderer({
   textColor: string;
   isMeteors: boolean;
   onImageClick: (images: string[], index: number) => void;
+  hasAboutSection: boolean;
 }) {
   const profile = portfolio.user.profile;
   const user = portfolio.user;
@@ -380,7 +383,7 @@ function SectionRenderer({
               </p>
             )}
 
-            {profile?.bio && (
+            {profile?.bio && !hasAboutSection && (
               <p className="text-base leading-relaxed max-w-[60ch] mb-8"
                 style={{ color: hasMedia && isBackground ? "rgba(255,255,255,0.6)" : mutedText }}>
                 {profile.bio}
