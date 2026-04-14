@@ -1450,6 +1450,7 @@ function ExperienceEditor({
 }) {
   const hiddenIds = (content.hiddenIds as string[]) ?? [];
   const maxItems = (content.maxItems as number) ?? 5;
+  const layout = (content.layout as string) ?? "grid";
   const experiences = profile?.experiences ?? [];
 
   const blankForm = { title: "", company: "", location: "", description: "", startDate: "", endDate: "", isCurrent: false };
@@ -1507,6 +1508,18 @@ function ExperienceEditor({
 
   return (
     <div className="space-y-3">
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Layout</label>
+        <div className="grid grid-cols-2 gap-1.5">
+          {(["grid", "list"] as const).map((l) => (
+            <button key={l} onClick={() => onChange({ layout: l })}
+              className={`py-1.5 text-[11px] font-medium rounded-lg border transition-all ${layout === l ? "border-green-500 bg-green-50 text-green-700" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"}`}>
+              {l === "grid" ? "Grid" : "List"}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="space-y-1.5">
         <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Max entries shown</label>
         <div className="grid grid-cols-4 gap-1">
@@ -2825,6 +2838,7 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
   if (section.type === "experience") {
     const hiddenIds = (section.content.hiddenIds as string[]) ?? [];
     const maxItems = (section.content.maxItems as number) ?? 5;
+    const expLayout = (section.content.layout as string) ?? "grid";
     type ExpItem = { id: string; title: string; company: string; location?: string | null; description?: string | null; startDate: Date | string | null; endDate?: Date | string | null; isCurrent: boolean };
     const merged: ExpItem[] = (profile?.experiences ?? [])
       .filter((e) => !hiddenIds.includes(e.id))
@@ -2845,7 +2859,7 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
       <div className={`px-10 py-12 border-b ${borderColor}`}>
         <h2 className="text-xl font-bold tracking-tight mb-6" style={{ color: textColor }}>{sectionTitle}</h2>
         {merged.length > 0 ? (
-          <div className="space-y-5">
+          <div className={expLayout === "list" ? "space-y-5" : "grid grid-cols-1 md:grid-cols-2 gap-5"}>
             {merged.map((exp) => (
               <div key={exp.id} className="flex gap-4">
                 <div className={`w-10 h-10 rounded-lg flex-shrink-0 flex items-center justify-center text-[10px] font-bold ${isMeteors ? "bg-white/10 text-white/50" : "bg-zinc-100 text-zinc-400"}`}>

@@ -677,13 +677,18 @@ function SectionRenderer({
   }
 
   if (section.type === "experience") {
-    const experiences = profile?.experiences ?? [];
+    const hiddenIds = (section.content.hiddenIds as string[]) ?? [];
+    const maxItems = (section.content.maxItems as number) ?? 5;
+    const layout = (section.content.layout as string) ?? "grid";
+    const experiences = (profile?.experiences ?? [])
+      .filter((e) => !hiddenIds.includes(e.id))
+      .slice(0, maxItems);
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Career</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
-          <div className="grid md:grid-cols-2 gap-6">
+          <div className={layout === "list" ? "space-y-4" : "grid md:grid-cols-2 gap-6"}>
             {experiences.map((exp, i) => (
               <motion.div key={exp.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
                 className="flex gap-4 p-5" style={{ border: `1px solid ${border}`, borderRadius: "var(--cr)" }}>
