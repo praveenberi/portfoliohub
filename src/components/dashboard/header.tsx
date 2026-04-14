@@ -22,14 +22,41 @@ interface HeaderProps {
   unreadCount?: number;
 }
 
-export function DashboardHeader({ user, isPublished = false, unreadCount = 0 }: HeaderProps) {
+export function DashboardHeader({ user, isPublished = false, unreadCount: initialUnread = 0 }: HeaderProps) {
   const router = useRouter();
   const [bellOpen, setBellOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(initialUnread);
   const bellRef = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Keep the displayed count in sync with server-rendered value on navigation
+  useEffect(() => {
+    setUnreadCount(initialUnread);
+  }, [initialUnread]);
+
+  // Poll for new messages so the bell count updates without a manual refresh
+  useEffect(() => {
+    let cancelled = false;
+    async function fetchCount() {
+      try {
+        const r = await fetch("/api/messages/unread-count", { cache: "no-store" });
+        if (!r.ok) return;
+        const data = await r.json();
+        if (!cancelled && typeof data?.count === "number") setUnreadCount(data.count);
+      } catch {}
+    }
+    const interval = setInterval(fetchCount, 30000);
+    const onFocus = () => fetchCount();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -125,7 +152,9 @@ export function DashboardHeader({ user, isPublished = false, unreadCount = 0 }: 
           >
             <Bell size={16} className="text-zinc-600" />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-green-500" />
+              <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] px-1 rounded-full bg-green-500 text-white text-[10px] font-semibold leading-none flex items-center justify-center border-2 border-white">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
             )}
           </button>
 
