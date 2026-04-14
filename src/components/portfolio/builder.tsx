@@ -278,7 +278,6 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
   };
 
   const activeDragSection = sections.find((s) => s.id === activeDragId);
-  const selectedSection = sections.find((s) => s.id === selectedSectionId);
   const isMeteorBg = config.backgroundStyle === "meteors" || config.backgroundStyle === "image";
 
   // Scroll preview to the selected section
@@ -329,16 +328,38 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
                   <div className="space-y-1.5">
                     <AnimatePresence>
                       {sections.map((section) => (
-                        <SortableSectionItem
-                          key={section.id}
-                          section={section}
-                          isSelected={selectedSectionId === section.id}
-                          onSelect={() =>
-                            setSelectedSectionId(selectedSectionId === section.id ? null : section.id)
-                          }
-                          onToggleVisible={() => toggleSectionVisibility(section.id)}
-                          onRemove={() => removeSection(section.id)}
-                        />
+                        <React.Fragment key={section.id}>
+                          <SortableSectionItem
+                            section={section}
+                            isSelected={selectedSectionId === section.id}
+                            onSelect={() =>
+                              setSelectedSectionId(selectedSectionId === section.id ? null : section.id)
+                            }
+                            onToggleVisible={() => toggleSectionVisibility(section.id)}
+                            onRemove={() => removeSection(section.id)}
+                          />
+                          <AnimatePresence initial={false}>
+                            {selectedSectionId === section.id && (
+                              <motion.div
+                                key={`editor-${section.id}`}
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: "auto" }}
+                                exit={{ opacity: 0, height: 0 }}
+                                transition={{ duration: 0.18 }}
+                                className="overflow-hidden"
+                              >
+                                <div className="ml-3 mt-1 mb-2 pl-3 border-l-2 border-green-200">
+                                  <SectionEditor
+                                    section={section}
+                                    profile={liveProfile}
+                                    onProfileUpdate={setLiveProfile}
+                                    onChange={(c) => updateSectionContent(section.id, c)}
+                                  />
+                                </div>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </React.Fragment>
                       ))}
                     </AnimatePresence>
                   </div>
@@ -352,25 +373,6 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
                   )}
                 </DragOverlay>
               </DndContext>
-
-              {/* Section editor (shown when any section is selected) */}
-              <AnimatePresence>
-                {selectedSection && (
-                  <motion.div
-                    key={selectedSection.id}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                  >
-                    <SectionEditor
-                      section={selectedSection}
-                      profile={liveProfile}
-                      onProfileUpdate={setLiveProfile}
-                      onChange={(c) => updateSectionContent(selectedSection.id, c)}
-                    />
-                  </motion.div>
-                )}
-              </AnimatePresence>
 
               {/* Add section */}
               <div className="border-t border-zinc-100 pt-4">
