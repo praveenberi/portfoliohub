@@ -32,22 +32,41 @@ export default function MessagesPage() {
   const [filter, setFilter] = useState<"all" | "unread" | "message" | "booking">("all");
 
   useEffect(() => {
-    (async () => {
+    let cancelled = false;
+    let firstLoad = true;
+
+    async function loadMessages() {
       try {
-        const r = await fetch("/api/messages");
+        const r = await fetch("/api/messages", { cache: "no-store" });
         const data = await r.json();
+        if (cancelled) return;
         setMessages(Array.isArray(data) ? data : []);
-        // Viewing the Messages page clears the bell notification
-        const hasUnread = Array.isArray(data) && data.some((m: ContactRequest) => !m.isRead);
-        if (hasUnread) {
-          await fetch("/api/messages", { method: "PATCH" });
-          window.dispatchEvent(new Event("unread-count:refresh"));
-          router.refresh();
+
+        // On the first load, auto-clear the bell so the notification doesn't linger
+        if (firstLoad) {
+          const hasUnread = Array.isArray(data) && data.some((m: ContactRequest) => !m.isRead);
+          if (hasUnread) {
+            await fetch("/api/messages", { method: "PATCH" });
+            window.dispatchEvent(new Event("unread-count:refresh"));
+          }
         }
       } finally {
-        setLoading(false);
+        if (!cancelled && firstLoad) {
+          setLoading(false);
+          firstLoad = false;
+        }
       }
-    })();
+    }
+
+    loadMessages();
+    const interval = setInterval(loadMessages, 20000);
+    const onFocus = () => loadMessages();
+    window.addEventListener("focus", onFocus);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      window.removeEventListener("focus", onFocus);
+    };
   }, [router]);
 
   async function markRead(id: string) {
