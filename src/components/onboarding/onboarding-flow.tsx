@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import axios from "axios";
 import toast from "react-hot-toast";
 import Image from "next/image";
+import { Logo } from "@/components/logo";
 import {
   ArrowRight,
   ArrowLeft,
@@ -125,13 +126,8 @@ export function OnboardingFlow({ templates, userName }: Props) {
               exit={{ opacity: 0, y: -20 }}
               className="text-center"
             >
-              <div className="inline-flex w-14 h-14 rounded-2xl bg-zinc-900 border border-zinc-800 items-center justify-center mb-6">
-                <svg width="24" height="24" viewBox="0 0 18 18" fill="none">
-                  <rect x="2" y="2" width="6" height="6" rx="1" fill="white" />
-                  <rect x="10" y="2" width="6" height="6" rx="1" fill="white" fillOpacity="0.3" />
-                  <rect x="2" y="10" width="6" height="6" rx="1" fill="white" fillOpacity="0.3" />
-                  <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
-                </svg>
+              <div className="mb-6">
+                <Logo size={48} />
               </div>
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-4">
                 Welcome{userName ? `, ${userName.split(" ")[0]}` : ""}

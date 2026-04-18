@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { Eye, EyeSlash, CheckCircle, WarningCircle } from "@phosphor-icons/react";
 import toast from "react-hot-toast";
+import { Logo } from "@/components/logo";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -148,15 +149,7 @@ export default function ResetPasswordPage() {
         className="w-full max-w-sm"
       >
         <Link href="/" className="inline-flex items-center gap-2 mb-10">
-          <div className="w-7 h-7 rounded-lg bg-zinc-950 flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
-              <rect x="2" y="2" width="6" height="6" rx="1" fill="white" />
-              <rect x="10" y="2" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-              <rect x="2" y="10" width="6" height="6" rx="1" fill="white" fillOpacity="0.4" />
-              <rect x="10" y="10" width="6" height="6" rx="1" fill="#22c55e" />
-            </svg>
-          </div>
-          <span className="font-semibold text-zinc-950 tracking-tight text-sm">myskillspage</span>
+          <Logo size={28} withText textSize="sm" />
         </Link>
         <Suspense>
           <ResetPasswordForm />
