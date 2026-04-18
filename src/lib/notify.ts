@@ -13,20 +13,24 @@ export async function sendEmailNotification({
   replyTo,
   subject,
   html,
+  directToUser = false,
 }: {
   toEmail: string;
   replyTo: string;
   subject: string;
   html: string;
+  /** When true, send to the actual user email (e.g. password resets) instead of CONTACT_NOTIFY_EMAIL */
+  directToUser?: boolean;
 }) {
   if (!process.env.RESEND_API_KEY?.startsWith("re_")) return;
 
   // Resend free tier only allows sending to the registered account email.
-  const to = process.env.CONTACT_NOTIFY_EMAIL || toEmail;
+  // For user-directed emails (password reset), always use the real email.
+  const to = directToUser ? toEmail : (process.env.CONTACT_NOTIFY_EMAIL || toEmail);
   console.log(`[notify] Email → TO: ${to}  reply-to: ${replyTo}`);
 
   const result = await resend.emails.send({
-    from: "myskillspage <onboarding@resend.dev>",
+    from: "myskillspage <noreply@myskillspage.com>",
     to: [to],
     reply_to: replyTo,
     subject,

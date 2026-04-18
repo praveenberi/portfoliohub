@@ -34,9 +34,15 @@ export async function POST(req: NextRequest) {
 
     const resetUrl = `${process.env.NEXTAUTH_URL ?? "http://localhost:3000"}/reset-password?token=${token}`;
 
+    // Log reset URL in dev so you can test without email delivery
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[forgot-password] Reset link for ${user.email}: ${resetUrl}`);
+    }
+
     await sendEmailNotification({
       toEmail: user.email,
       replyTo: user.email,
+      directToUser: true,
       subject: "Reset your myskillspage password",
       html: `
         <div style="font-family:sans-serif;max-width:480px;margin:0 auto">
