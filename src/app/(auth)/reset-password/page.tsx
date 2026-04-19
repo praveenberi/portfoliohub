@@ -149,7 +149,7 @@ export default function ResetPasswordPage() {
         className="w-full max-w-sm"
       >
         <Link href="/" className="inline-flex items-center gap-2 mb-10">
-          <Logo size={28} withText textSize="sm" />
+          <Logo size={44} withText textSize="xl" />
         </Link>
         <Suspense>
           <ResetPasswordForm />
