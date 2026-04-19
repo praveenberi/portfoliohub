@@ -21,26 +21,41 @@ export async function sendEmailNotification({
   html: string;
   /** When true, send to the actual user email (e.g. password resets) instead of CONTACT_NOTIFY_EMAIL */
   directToUser?: boolean;
-}) {
-  if (!process.env.RESEND_API_KEY?.startsWith("re_")) return;
+}): Promise<{ ok: boolean; error?: string }> {
+  if (!process.env.RESEND_API_KEY?.startsWith("re_")) {
+    console.warn("[notify] RESEND_API_KEY missing or invalid — email skipped");
+    return { ok: false, error: "Email service not configured" };
+  }
 
-  // Resend free tier only allows sending to the registered account email.
+  // From address: configurable via env. Defaults to Resend's sandbox which
+  // works without domain verification (but only delivers to the Resend
+  // account owner's verified email).
+  const from = process.env.RESEND_FROM_EMAIL || "myskillspage <onboarding@resend.dev>";
+
+  // Resend free tier only allows sending to the registered account email
+  // unless you've verified your own domain.
   // For user-directed emails (password reset), always use the real email.
   const to = directToUser ? toEmail : (process.env.CONTACT_NOTIFY_EMAIL || toEmail);
-  console.log(`[notify] Email → TO: ${to}  reply-to: ${replyTo}`);
+  console.log(`[notify] Email → FROM: ${from}  TO: ${to}  reply-to: ${replyTo}`);
 
-  const result = await resend.emails.send({
-    from: "myskillspage <noreply@myskillspage.com>",
-    to: [to],
-    reply_to: replyTo,
-    subject,
-    html,
-  });
+  try {
+    const result = await resend.emails.send({
+      from,
+      to: [to],
+      reply_to: replyTo,
+      subject,
+      html,
+    });
 
-  if (result.error) {
-    console.error("[notify] ✗ Email failed:", result.error);
-  } else {
+    if (result.error) {
+      console.error("[notify] ✗ Email failed:", result.error);
+      return { ok: false, error: result.error.message ?? String(result.error) };
+    }
     console.log(`[notify] ✓ Email sent (id: ${result.data?.id})`);
+    return { ok: true };
+  } catch (err: any) {
+    console.error("[notify] ✗ Email threw:", err?.message ?? err);
+    return { ok: false, error: err?.message ?? "Unknown error" };
   }
 }
 

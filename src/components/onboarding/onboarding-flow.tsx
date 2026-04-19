@@ -126,7 +126,7 @@ export function OnboardingFlow({ templates, userName }: Props) {
               exit={{ opacity: 0, y: -20 }}
               className="text-center"
             >
-              <div className="mb-6">
+              <div className="inline-flex mb-6 p-3 rounded-2xl bg-white shadow-sm">
                 <Logo size={48} />
               </div>
               <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white mb-4">

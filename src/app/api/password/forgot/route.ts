@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       console.log(`[forgot-password] Reset link for ${user.email}: ${resetUrl}`);
     }
 
-    await sendEmailNotification({
+    const sendResult = await sendEmailNotification({
       toEmail: user.email,
       replyTo: user.email,
       directToUser: true,
@@ -57,6 +57,14 @@ export async function POST(req: NextRequest) {
         </div>
       `,
     });
+
+    if (!sendResult.ok) {
+      console.error(`[forgot-password] Email send failed: ${sendResult.error}`);
+      return NextResponse.json(
+        { error: `Could not send reset email: ${sendResult.error}` },
+        { status: 502 }
+      );
+    }
 
     return NextResponse.json({ success: true });
   } catch (err) {
