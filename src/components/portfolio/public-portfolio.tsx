@@ -517,14 +517,14 @@ function SectionRenderer({
     const SkillTag = ({ skill, i }: { skill: string; i: number }) =>
       displayStyle === "list" ? (
         <motion.div key={skill} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-          className="flex items-center gap-3 px-5 py-3.5"
+          className="flex items-center gap-2.5 px-3 py-2"
           style={{ border: `1px solid ${border}`, color: textColor, backgroundColor: isMeteors ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.01)", borderRadius: "var(--cr)" }}>
-          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
           <span className="text-sm font-medium">{skill}</span>
         </motion.div>
       ) : (
         <motion.div key={skill} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-          className="flex items-center gap-2.5 px-4 py-3 text-sm font-medium"
+          className="flex items-center gap-2 px-3 py-2 text-sm font-medium"
           style={{ border: `1px solid ${border}`, color: mutedText, backgroundColor: isMeteors ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)", borderRadius: "var(--cr)" }}>
           <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
           <span className="truncate">{skill}</span>
@@ -536,27 +536,27 @@ function SectionRenderer({
         <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Skills</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
-          <div className="space-y-8">
+          <div className="space-y-4">
             {groups.map((group, gi) => (
-              <div key={gi} className={group.level === 3 ? "pl-4 ml-2 border-l-2" : ""} style={group.level === 3 ? { borderColor: `${accent}30` } : undefined}>
+              <div key={gi} className={group.level === 3 ? "pl-3 ml-1 border-l-2" : ""} style={group.level === 3 ? { borderColor: `${accent}30` } : undefined}>
                 {group.label && group.level === 2 && (
-                  <div className="text-sm font-semibold tracking-wide mb-4 pb-2 border-b"
+                  <div className="text-sm font-semibold tracking-wide mb-2 pb-1.5 border-b"
                     style={{ color: accent, borderColor: `${accent}30` }}>
                     {group.label}
                   </div>
                 )}
                 {group.label && group.level === 3 && (
-                  <div className="text-xs font-medium uppercase tracking-wider mb-3"
+                  <div className="text-xs font-medium uppercase tracking-wider mb-1.5"
                     style={{ color: mutedText }}>
                     {group.label}
                   </div>
                 )}
                 {group.skills.length > 0 && (displayStyle === "list" ? (
-                  <div className="grid md:grid-cols-2 gap-3">
+                  <div className="grid md:grid-cols-2 gap-2">
                     {group.skills.map((skill, i) => <SkillTag key={skill} skill={skill} i={i} />)}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
                     {group.skills.map((skill, i) => <SkillTag key={skill} skill={skill} i={i} />)}
                   </div>
                 ))}

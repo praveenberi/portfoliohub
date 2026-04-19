@@ -2772,17 +2772,17 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
             Showing example skills. Go to <a href="/dashboard/profile" target="_blank" className="font-semibold underline">Profile → Skills tab</a> to add your real skills.
           </div>
         )}
-        <div className="space-y-5">
+        <div className="space-y-3">
           {renderGroups.map((group, gi) => (
-            <div key={gi} className={group.level === 3 ? "pl-3 ml-1 border-l-2" : ""} style={group.level === 3 ? { borderColor: `${accent}30` } : undefined}>
+            <div key={gi} className={group.level === 3 ? "pl-2.5 ml-1 border-l-2" : ""} style={group.level === 3 ? { borderColor: `${accent}30` } : undefined}>
               {group.label && group.level === 2 && (
-                <div className="text-xs font-semibold tracking-wide mb-2 pb-1 border-b"
+                <div className="text-xs font-semibold tracking-wide mb-1.5 pb-1 border-b"
                   style={{ color: accent, borderColor: `${accent}30` }}>
                   {group.label}
                 </div>
               )}
               {group.label && group.level === 3 && (
-                <div className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: subTextColor }}>
+                <div className="text-[10px] font-medium uppercase tracking-wider mb-1" style={{ color: subTextColor }}>
                   {group.label}
                 </div>
               )}
