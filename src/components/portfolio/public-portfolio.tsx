@@ -478,28 +478,38 @@ function SectionRenderer({
     const displayStyle = (section.content.displayStyle as string) ?? "tags";
     const profileSkills = [...parseArr(profile?.skills), ...parseArr(profile?.technologies)];
 
-    // Parse grouped format: ## Header\nskill1, skill2
-    type SkillGroup = { label: string | null; skills: string[] };
+    // Parse grouped format: ## Header / ### Sub-header / skill1, skill2
+    type SkillGroup = { label: string | null; level: 2 | 3; skills: string[] };
     const groups: SkillGroup[] = (() => {
-      if (!customSkills) return [{ label: null, skills: profileSkills }];
-      if (/^## /m.test(customSkills)) {
+      if (!customSkills) return [{ label: null, level: 2, skills: profileSkills }];
+      if (/^#{2,3} /m.test(customSkills)) {
         const result: SkillGroup[] = [];
         let label: string | null = null;
+        let level: 2 | 3 = 2;
         let skills: string[] = [];
+        const flush = () => {
+          if (label !== null || skills.length) result.push({ label, level, skills });
+        };
         for (const raw of customSkills.split("\n")) {
           const line = raw.trim();
-          if (line.startsWith("## ")) {
-            if (label !== null || skills.length) result.push({ label, skills });
+          if (line.startsWith("### ")) {
+            flush();
+            label = line.slice(4);
+            level = 3;
+            skills = [];
+          } else if (line.startsWith("## ")) {
+            flush();
             label = line.slice(3);
+            level = 2;
             skills = [];
           } else if (line) {
             skills.push(...line.split(",").map((s) => s.trim()).filter(Boolean));
           }
         }
-        if (label !== null || skills.length) result.push({ label, skills });
-        return result.filter((g) => g.skills.length > 0);
+        flush();
+        return result.filter((g) => g.skills.length > 0 || g.label);
       }
-      return [{ label: null, skills: customSkills.split(",").map((s) => s.trim()).filter(Boolean) }];
+      return [{ label: null, level: 2, skills: customSkills.split(",").map((s) => s.trim()).filter(Boolean) }];
     })();
 
     if (groups.every((g) => g.skills.length === 0)) return null;
@@ -526,16 +536,22 @@ function SectionRenderer({
         <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Skills</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
-          <div className="space-y-10">
+          <div className="space-y-8">
             {groups.map((group, gi) => (
-              <div key={gi}>
-                {group.label && (
+              <div key={gi} className={group.level === 3 ? "pl-4 ml-2 border-l-2" : ""} style={group.level === 3 ? { borderColor: `${accent}30` } : undefined}>
+                {group.label && group.level === 2 && (
                   <div className="text-sm font-semibold tracking-wide mb-4 pb-2 border-b"
                     style={{ color: accent, borderColor: `${accent}30` }}>
                     {group.label}
                   </div>
                 )}
-                {displayStyle === "list" ? (
+                {group.label && group.level === 3 && (
+                  <div className="text-xs font-medium uppercase tracking-wider mb-3"
+                    style={{ color: mutedText }}>
+                    {group.label}
+                  </div>
+                )}
+                {group.skills.length > 0 && (displayStyle === "list" ? (
                   <div className="grid md:grid-cols-2 gap-3">
                     {group.skills.map((skill, i) => <SkillTag key={skill} skill={skill} i={i} />)}
                   </div>
@@ -543,7 +559,7 @@ function SectionRenderer({
                   <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
                     {group.skills.map((skill, i) => <SkillTag key={skill} skill={skill} i={i} />)}
                   </div>
-                )}
+                ))}
               </div>
             ))}
           </div>

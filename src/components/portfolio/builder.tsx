@@ -1043,7 +1043,7 @@ function SkillsEditor({
     // Parse grouped format into flat list
     const skills = raw
       .split("\n")
-      .filter((l) => !l.trim().startsWith("##") && l.trim())
+      .filter((l) => l.trim() && !l.trim().startsWith("#"))
       .flatMap((l) => l.split(",").map((s) => s.trim()))
       .filter(Boolean);
     setSyncing(true);
@@ -1091,11 +1091,11 @@ function SkillsEditor({
         <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Custom skills</label>
         <FormattedTextarea
           value={(content.customSkills as string) ?? ""}
-          placeholder={`## Frontend\nReact, TypeScript, Vue\n\n## Backend\nNode.js, Python`}
-          rows={5}
+          placeholder={`## Frontend\nReact, TypeScript, Vue\n\n### Frameworks\nNext.js, Remix\n\n## Backend\nNode.js, Python`}
+          rows={6}
           onChange={(v) => onChange({ customSkills: v || undefined })}
         />
-        <p className="text-[10px] text-zinc-400">Use ## to add group headers (e.g. ## Frontend). Comma-separate skills below each header. Leave blank to use profile skills.</p>
+        <p className="text-[10px] text-zinc-400">Use ## for group headers and ### for sub-headings. Comma-separate skills below each heading. Leave blank to use profile skills.</p>
         {(content.customSkills as string) && (
           <button
             onClick={syncToProfile}
@@ -2693,12 +2693,76 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
   if (section.type === "skills") {
     const displayStyle = (section.content.displayStyle as string) ?? "tags";
     const rawCustom = (section.content.customSkills as string) ?? "";
-    const skills = rawCustom
-      ? rawCustom.split(",").map((s) => s.trim()).filter(Boolean)
-      : parseArr(profile?.skills);
-    const fallback = ["React", "TypeScript", "Node.js", "Design"];
-    const usingFallback = skills.length === 0;
-    const displaySkills = usingFallback ? fallback : skills;
+    const profileSkills = parseArr(profile?.skills);
+
+    type SkillGroup = { label: string | null; level: 2 | 3; skills: string[] };
+    const groups: SkillGroup[] = (() => {
+      if (!rawCustom) return [{ label: null, level: 2, skills: profileSkills }];
+      if (/^#{2,3} /m.test(rawCustom)) {
+        const result: SkillGroup[] = [];
+        let label: string | null = null;
+        let level: 2 | 3 = 2;
+        let skills: string[] = [];
+        const flush = () => {
+          if (label !== null || skills.length) result.push({ label, level, skills });
+        };
+        for (const raw of rawCustom.split("\n")) {
+          const line = raw.trim();
+          if (line.startsWith("### ")) {
+            flush();
+            label = line.slice(4); level = 3; skills = [];
+          } else if (line.startsWith("## ")) {
+            flush();
+            label = line.slice(3); level = 2; skills = [];
+          } else if (line) {
+            skills.push(...line.split(",").map((s) => s.trim()).filter(Boolean));
+          }
+        }
+        flush();
+        return result.filter((g) => g.skills.length > 0 || g.label);
+      }
+      return [{ label: null, level: 2, skills: rawCustom.split(",").map((s) => s.trim()).filter(Boolean) }];
+    })();
+
+    const totalSkills = groups.reduce((n, g) => n + g.skills.length, 0);
+    const usingFallback = totalSkills === 0;
+    const fallbackGroups: SkillGroup[] = [{ label: null, level: 2, skills: ["React", "TypeScript", "Node.js", "Design"] }];
+    const renderGroups = usingFallback ? fallbackGroups : groups;
+
+    const renderSkills = (skills: string[]) => {
+      if (displayStyle === "tags") {
+        return (
+          <div className="flex flex-wrap gap-2">
+            {skills.map((skill) => (
+              <span key={skill} className="px-3 py-1 text-xs font-medium rounded-full" style={{ backgroundColor: `${accent}15`, color: accent }}>
+                {skill}
+              </span>
+            ))}
+          </div>
+        );
+      }
+      if (displayStyle === "grid") {
+        return (
+          <div className="grid grid-cols-3 gap-2">
+            {skills.map((skill) => (
+              <div key={skill} className={`px-3 py-2 rounded-lg border text-xs font-medium text-center ${borderColor}`} style={{ color: textColor }}>
+                {skill}
+              </div>
+            ))}
+          </div>
+        );
+      }
+      return (
+        <div className="space-y-2">
+          {skills.map((skill) => (
+            <div key={skill} className="flex items-center gap-2.5 text-sm" style={{ color: textColor }}>
+              <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: accent }} />
+              {skill}
+            </div>
+          ))}
+        </div>
+      );
+    };
 
     return (
       <div className={`px-10 py-12 border-b ${borderColor}`}>
@@ -2708,34 +2772,24 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
             Showing example skills. Go to <a href="/dashboard/profile" target="_blank" className="font-semibold underline">Profile → Skills tab</a> to add your real skills.
           </div>
         )}
-        {displayStyle === "tags" && (
-          <div className="flex flex-wrap gap-2">
-            {displaySkills.map((skill) => (
-              <span key={skill} className="px-3 py-1 text-xs font-medium rounded-full" style={{ backgroundColor: `${accent}15`, color: accent }}>
-                {skill}
-              </span>
-            ))}
-          </div>
-        )}
-        {displayStyle === "grid" && (
-          <div className="grid grid-cols-3 gap-2">
-            {displaySkills.map((skill) => (
-              <div key={skill} className={`px-3 py-2 rounded-lg border text-xs font-medium text-center ${borderColor}`} style={{ color: textColor }}>
-                {skill}
-              </div>
-            ))}
-          </div>
-        )}
-        {displayStyle === "list" && (
-          <div className="space-y-2">
-            {displaySkills.map((skill) => (
-              <div key={skill} className="flex items-center gap-2.5 text-sm" style={{ color: textColor }}>
-                <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: accent }} />
-                {skill}
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="space-y-5">
+          {renderGroups.map((group, gi) => (
+            <div key={gi} className={group.level === 3 ? "pl-3 ml-1 border-l-2" : ""} style={group.level === 3 ? { borderColor: `${accent}30` } : undefined}>
+              {group.label && group.level === 2 && (
+                <div className="text-xs font-semibold tracking-wide mb-2 pb-1 border-b"
+                  style={{ color: accent, borderColor: `${accent}30` }}>
+                  {group.label}
+                </div>
+              )}
+              {group.label && group.level === 3 && (
+                <div className="text-[10px] font-medium uppercase tracking-wider mb-2" style={{ color: subTextColor }}>
+                  {group.label}
+                </div>
+              )}
+              {group.skills.length > 0 && renderSkills(group.skills)}
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
