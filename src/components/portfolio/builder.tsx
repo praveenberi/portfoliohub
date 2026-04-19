@@ -957,8 +957,10 @@ function FormattedTextarea({
   return (
     <div>
       <div className="flex items-center gap-0.5 px-2 py-0.5 bg-zinc-50 border border-zinc-200 border-b-0 rounded-t-lg">
-        <button type="button" onClick={() => insert("## ")} title="Section heading"
-          className="px-2 py-0.5 text-[11px] font-bold text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 rounded transition-colors">H</button>
+        <button type="button" onClick={() => insert("## ")} title="Section heading (##)"
+          className="px-2 py-0.5 text-[11px] font-bold text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 rounded transition-colors">H₂</button>
+        <button type="button" onClick={() => insert("### ")} title="Sub-heading (###)"
+          className="px-2 py-0.5 text-[11px] font-bold text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 rounded transition-colors">H₃</button>
         <button type="button" onClick={() => insert("- ")} title="Bullet point"
           className="px-2 py-0.5 text-[12px] font-bold text-zinc-500 hover:bg-zinc-200 hover:text-zinc-800 rounded transition-colors">•</button>
         <button type="button" onClick={() => insert("\n")} title="New paragraph"
@@ -1095,6 +1097,30 @@ function SkillsEditor({
           rows={6}
           onChange={(v) => onChange({ customSkills: v || undefined })}
         />
+        <div className="grid grid-cols-2 gap-1.5">
+          <button
+            type="button"
+            onClick={() => {
+              const cur = (content.customSkills as string) ?? "";
+              const sep = cur && !cur.endsWith("\n") ? "\n\n" : cur ? "\n" : "";
+              onChange({ customSkills: `${cur}${sep}## New section\nSkill 1, Skill 2` });
+            }}
+            className="py-1.5 rounded-lg border border-zinc-200 text-[11px] font-medium text-zinc-600 hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-all"
+          >
+            + Add section
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const cur = (content.customSkills as string) ?? "";
+              const sep = cur && !cur.endsWith("\n") ? "\n\n" : cur ? "\n" : "";
+              onChange({ customSkills: `${cur}${sep}### New sub-section\nSkill 1, Skill 2` });
+            }}
+            className="py-1.5 rounded-lg border border-zinc-200 text-[11px] font-medium text-zinc-600 hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-all"
+          >
+            + Add sub-section
+          </button>
+        </div>
         <p className="text-[10px] text-zinc-400">Use ## for group headers and ### for sub-headings. Comma-separate skills below each heading. Leave blank to use profile skills.</p>
         {(content.customSkills as string) && (
           <button
