@@ -40,6 +40,7 @@ import {
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import axios from "axios";
 import toast from "react-hot-toast";
 import type { Portfolio, Profile, Experience, Education, Project, Certification } from "@prisma/client";
@@ -162,6 +163,7 @@ interface BuilderProps {
 }
 
 export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
+  const router = useRouter();
   const parsedSections = parseJson<SectionConfig[]>(portfolio.sections as string, []);
   const existingSections = parsedSections.length > 0 ? parsedSections : DEFAULT_SECTIONS;
 
@@ -269,6 +271,7 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
         isPublished: true,
       });
       toast.success("Portfolio published!");
+      router.refresh();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to publish";
       toast.error(msg);
