@@ -17,7 +17,6 @@ import {
   Warning,
   Star,
   Check,
-  Copy,
 } from "@phosphor-icons/react";
 import type { Portfolio, Template } from "@prisma/client";
 import axios from "axios";
@@ -46,19 +45,19 @@ export interface AIResult {
 export function AIModal({ result, onClose }: { result: AIResult; onClose: () => void }) {
   const router = useRouter();
   const [tab, setTab] = useState<"suggestions" | "seo">("suggestions");
-  const [applied, setApplied] = useState<Record<number, "applied" | "copied">>({});
+  const [applied, setApplied] = useState<Record<number, "applied">>({});
   const [applying, setApplying] = useState<number | null>(null);
 
   const sectionLower = (s: string) => (s || "").toLowerCase().trim();
-  const isApplicable = (s: string) => ["bio", "headline", "skills"].includes(sectionLower(s));
 
   async function applySuggestion(index: number, section: string, improved: string) {
     const key = sectionLower(section);
     setApplying(index);
     try {
-      if (key === "bio" || key === "headline") {
-        const value = key === "headline" ? improved.slice(0, 160) : improved.slice(0, 2000);
-        await axios.patch("/api/profile", { [key]: value });
+      if (key === "bio" || key === "about" || key === "summary") {
+        await axios.patch("/api/profile", { bio: improved.slice(0, 2000) });
+      } else if (key === "headline" || key === "title" || key === "tagline") {
+        await axios.patch("/api/profile", { headline: improved.slice(0, 160) });
       } else if (key === "skills") {
         // Parse the suggested skills — accept commas, pipes, or bullets
         const items = improved
@@ -66,7 +65,6 @@ export function AIModal({ result, onClose }: { result: AIResult; onClose: () => 
           .map((s) => s.replace(/^[\s\-•]+|[\s.]+$/g, "").trim())
           .filter((s) => s.length > 0 && s.length < 40);
         if (items.length === 0) throw new Error("No parseable skills in suggestion");
-        // Fetch existing skills and merge (deduped, case-insensitive)
         const existing = (await axios.get("/api/profile")).data?.data?.skills;
         const existingArr: string[] = Array.isArray(existing)
           ? existing
@@ -82,6 +80,18 @@ export function AIModal({ result, onClose }: { result: AIResult; onClose: () => 
           }
         }
         await axios.patch("/api/profile", { skills: merged });
+      } else {
+        // Section can't be auto-patched (experience, projects, education, etc).
+        // Best effort: copy to clipboard + open profile editor in new tab.
+        try {
+          await navigator.clipboard.writeText(improved);
+        } catch {
+          // clipboard may be unavailable; fall through silently
+        }
+        window.open("/dashboard/profile", "_blank");
+        setApplied((prev) => ({ ...prev, [index]: "applied" }));
+        toast.success(`Copied to clipboard — paste into the ${section} section in your Profile`);
+        return;
       }
       setApplied((prev) => ({ ...prev, [index]: "applied" }));
       toast.success("Applied — click Publish to make it live");
@@ -91,23 +101,6 @@ export function AIModal({ result, onClose }: { result: AIResult; onClose: () => 
       toast.error(e?.response?.data?.error || e?.message || "Failed to apply");
     } finally {
       setApplying(null);
-    }
-  }
-
-  async function copySuggestion(index: number, improved: string) {
-    try {
-      await navigator.clipboard.writeText(improved);
-      setApplied((prev) => ({ ...prev, [index]: "copied" }));
-      toast.success("Copied — paste into the profile editor");
-      setTimeout(() => {
-        setApplied((prev) => {
-          const next = { ...prev };
-          if (next[index] === "copied") delete next[index];
-          return next;
-        });
-      }, 2000);
-    } catch {
-      toast.error("Failed to copy");
     }
   }
 
@@ -204,7 +197,7 @@ export function AIModal({ result, onClose }: { result: AIResult; onClose: () => 
                       <span className="flex items-center gap-1 text-[10px] font-semibold text-accent-700 px-2 py-1">
                         <Check size={11} weight="bold" /> Applied
                       </span>
-                    ) : isApplicable(s.section) ? (
+                    ) : (
                       <button
                         onClick={() => applySuggestion(i, s.section, s.improved)}
                         disabled={applying === i}
@@ -218,22 +211,6 @@ export function AIModal({ result, onClose }: { result: AIResult; onClose: () => 
                         ) : (
                           <>
                             <Check size={11} weight="bold" /> Apply
-                          </>
-                        )}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => copySuggestion(i, s.improved)}
-                        className="flex items-center gap-1 text-[10px] font-semibold text-zinc-700 bg-white hover:bg-zinc-50 border border-zinc-200 px-2.5 py-1 rounded-md transition-colors"
-                        title="Copy to clipboard — edit this section in the profile editor"
-                      >
-                        {applied[i] === "copied" ? (
-                          <>
-                            <Check size={11} weight="bold" /> Copied
-                          </>
-                        ) : (
-                          <>
-                            <Copy size={11} /> Copy
                           </>
                         )}
                       </button>
