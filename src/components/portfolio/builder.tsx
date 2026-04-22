@@ -169,6 +169,12 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
 
   const [sections, setSections] = useState<SectionConfig[]>(existingSections);
   const [liveProfile, setLiveProfile] = useState(profile);
+
+  // Re-sync liveProfile when the parent prop changes (e.g. after AI Apply
+  // calls router.refresh() and fresh profile data is fetched server-side).
+  useEffect(() => {
+    setLiveProfile(profile);
+  }, [profile]);
   const [config, setConfig] = useState<PortfolioConfig>({
     primaryColor: "#22c55e",
     backgroundColor: "#ffffff",
