@@ -48,7 +48,7 @@ import type { UserRole } from "@/lib/enums";
 import type { SectionConfig, SectionType, PortfolioConfig, HeroContent, BackgroundStyle } from "@/types";
 import { parseArr, parseJson, parseProjectImages } from "@/lib/utils";
 import { GridBackground, DotBackground, AuroraBackground, Meteors } from "./animations";
-import { AIModal, type AIResult } from "./manager";
+import { SectionAISuggestions, matchesSectionType, type AIResult, type AISuggestion } from "./manager";
 
 const AVAILABLE_SECTIONS: { type: SectionType; label: string; description: string }[] = [
   { type: "hero", label: "Hero", description: "Full-width intro with your name and headline" },
@@ -194,6 +194,18 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [aiResult, setAiResult] = useState<AIResult | null>(null);
+  const [appliedSuggestionIds, setAppliedSuggestionIds] = useState<Set<string>>(new Set());
+  const [pendingPublish, setPendingPublish] = useState(false);
+
+  const markSuggestionApplied = (id: string) => {
+    setAppliedSuggestionIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    setPendingPublish(true);
+    router.refresh();
+  };
 
   const handleAnalyze = async () => {
     setAnalyzing(true);
@@ -201,6 +213,8 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
       const res = await axios.post("/api/ai/analyze");
       if (res.data?.data) {
         setAiResult(res.data.data);
+        setAppliedSuggestionIds(new Set());
+        toast.success("AI suggestions ready — open any section to review");
       } else {
         toast.error("AI returned no data. Try again.");
       }
@@ -214,6 +228,12 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  // Count of relevant (non-applied) suggestions for a given section type
+  const suggestionsForSection = (sectionType: string): AISuggestion[] => {
+    if (!aiResult?.suggestions) return [];
+    return aiResult.suggestions.filter((s) => matchesSectionType(s.section, sectionType));
   };
 
   const sensors = useSensors(
@@ -277,6 +297,7 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
         isPublished: true,
       });
       toast.success("Portfolio published!");
+      setPendingPublish(false);
       router.refresh();
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to publish";
@@ -323,6 +344,35 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
           {activePanel === "sections" && (
             <div className="space-y-4">
               <ResumeImportButton />
+              {aiResult && (
+                <div className="rounded-xl border border-accent-200 bg-accent-50/60 p-3 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-zinc-950 flex items-center justify-center shrink-0">
+                        <Sparkle size={12} weight="fill" className="text-accent-400" />
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-semibold text-zinc-950">AI analysis</div>
+                        <div className="text-[10px] text-zinc-500">
+                          Score <span className="font-semibold text-accent-700">{aiResult.score}</span> / 100 ·{" "}
+                          {aiResult.suggestions.length} tips
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => setAiResult(null)}
+                      className="text-zinc-400 hover:text-zinc-700 p-0.5"
+                      title="Dismiss"
+                    >
+                      <X size={12} />
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-zinc-600 leading-relaxed">{aiResult.summary}</p>
+                  <p className="text-[10px] text-accent-700 font-medium">
+                    Open a section below to review and apply its suggestions.
+                  </p>
+                </div>
+              )}
               <div className="text-xs font-semibold text-zinc-500 uppercase tracking-wider px-1">
                 Active sections
               </div>
@@ -346,6 +396,9 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
                             }
                             onToggleVisible={() => toggleSectionVisibility(section.id)}
                             onRemove={() => removeSection(section.id)}
+                            suggestionCount={suggestionsForSection(section.type).filter(
+                              (_s, i) => !appliedSuggestionIds.has(`${section.type}-${i}`)
+                            ).length}
                           />
                           <AnimatePresence initial={false}>
                             {selectedSectionId === section.id && (
@@ -357,7 +410,15 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
                                 transition={{ duration: 0.18 }}
                                 className="overflow-hidden"
                               >
-                                <div className="ml-3 mt-1 mb-2 pl-3 border-l-2 border-green-200">
+                                <div className="ml-3 mt-1 mb-2 pl-3 border-l-2 border-green-200 space-y-3">
+                                  {aiResult && suggestionsForSection(section.type).length > 0 && (
+                                    <SectionAISuggestions
+                                      suggestions={suggestionsForSection(section.type)}
+                                      sectionType={section.type}
+                                      appliedIds={appliedSuggestionIds}
+                                      onAppliedId={markSuggestionApplied}
+                                    />
+                                  )}
                                   <SectionEditor
                                     section={section}
                                     profile={liveProfile}
@@ -740,9 +801,16 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
             <button
               onClick={handleSave}
               disabled={saving}
-              className="flex items-center gap-1.5 px-4 py-2 bg-green-500 text-white text-sm font-medium rounded-lg border border-transparent hover:bg-green-400 active:scale-[0.98] transition-all disabled:opacity-60"
+              className={`relative flex items-center gap-1.5 px-4 py-2 text-white text-sm font-medium rounded-lg border border-transparent active:scale-[0.98] transition-all disabled:opacity-60 ${
+                pendingPublish
+                  ? "bg-green-500 hover:bg-green-400 shadow-[0_0_0_3px_rgba(34,197,94,0.18)] animate-pulse"
+                  : "bg-green-500 hover:bg-green-400"
+              }`}
             >
-              {saving ? "..." : "Publish"}
+              {saving ? "..." : pendingPublish ? "Publish changes" : "Publish"}
+              {pendingPublish && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-accent-400 ring-2 ring-white" />
+              )}
             </button>
           </div>
         </div>
@@ -758,10 +826,6 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
           </div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {aiResult && <AIModal result={aiResult} onClose={() => setAiResult(null)} />}
-      </AnimatePresence>
     </div>
   );
 }
@@ -2542,13 +2606,14 @@ function HeroMediaEditor({
 // ─── Sortable section item ─────────────────────────────────────────────────
 
 function SortableSectionItem({
-  section, isSelected, onSelect, onToggleVisible, onRemove,
+  section, isSelected, onSelect, onToggleVisible, onRemove, suggestionCount,
 }: {
   section: SectionConfig;
   isSelected: boolean;
   onSelect: () => void;
   onToggleVisible: () => void;
   onRemove: () => void;
+  suggestionCount?: number;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: section.id });
   const style = { transform: CSS.Transform.toString(transform), transition, opacity: isDragging ? 0.4 : 1 };
@@ -2574,7 +2639,18 @@ function SortableSectionItem({
       >
         <DotsSixVertical size={14} />
       </button>
-      <span className="flex-1 text-xs font-medium text-zinc-700">{section.title}</span>
+      <span className="flex-1 text-xs font-medium text-zinc-700 flex items-center gap-1.5">
+        {section.title}
+        {suggestionCount && suggestionCount > 0 ? (
+          <span
+            title={`${suggestionCount} AI suggestion${suggestionCount > 1 ? "s" : ""}`}
+            className="flex items-center gap-0.5 text-[9px] font-semibold text-accent-700 bg-accent-50 border border-accent-200 px-1.5 py-0.5 rounded-full"
+          >
+            <Sparkle size={8} weight="fill" className="text-accent-500" />
+            {suggestionCount}
+          </span>
+        ) : null}
+      </span>
       <div className="flex items-center gap-1">
         <button onClick={(e) => { e.stopPropagation(); onToggleVisible(); }} className="p-1 rounded-lg hover:bg-zinc-100 transition-colors">
           {section.visible ? <Eye size={13} className="text-zinc-400" /> : <EyeSlash size={13} className="text-zinc-300" />}

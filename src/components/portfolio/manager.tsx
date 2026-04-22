@@ -42,60 +42,278 @@ export interface AIResult {
   };
 }
 
+// ── Section matching ──────────────────────────────────────────────────────────
+// Maps an AI suggestion's `section` string to a builder section type.
+export function sectionKey(s: string): string {
+  return (s || "").toLowerCase().trim();
+}
+
+export function matchesSectionType(suggestionSection: string, sectionType: string): boolean {
+  const s = sectionKey(suggestionSection);
+  const t = sectionKey(sectionType);
+  if (t === "about") return ["bio", "about", "summary"].includes(s);
+  if (t === "hero") return ["headline", "title", "tagline", "hero"].includes(s);
+  if (t === "skills") return s === "skills";
+  if (t === "experience") return ["experience", "work", "work experience"].includes(s);
+  if (t === "projects") return ["projects", "project"].includes(s);
+  if (t === "education") return s === "education";
+  if (t === "certifications") return ["certifications", "certs", "certification"].includes(s);
+  if (t === "contact") return ["contact", "contact info"].includes(s);
+  if (t === "testimonials") return ["testimonials", "recommendations"].includes(s);
+  if (t === "extras") return ["extras", "awards", "publications", "languages", "volunteer"].includes(s);
+  return s === t;
+}
+
+// ── Apply helper (shared by modal and inline panel) ──────────────────────────
+// Returns true if it was applied to the profile directly, false if the
+// suggestion targeted a section (experience, projects, ...) that isn't
+// patchable as a single field — in that case the text is copied to the
+// clipboard and the profile editor is opened in a new tab.
+export async function applySuggestionToProfile(section: string, improved: string): Promise<boolean> {
+  const key = sectionKey(section);
+  if (key === "bio" || key === "about" || key === "summary") {
+    await axios.patch("/api/profile", { bio: improved.slice(0, 2000) });
+    return true;
+  }
+  if (key === "headline" || key === "title" || key === "tagline") {
+    await axios.patch("/api/profile", { headline: improved.slice(0, 160) });
+    return true;
+  }
+  if (key === "skills") {
+    const items = improved
+      .split(/[,|•\n]/)
+      .map((s) => s.replace(/^[\s\-•]+|[\s.]+$/g, "").trim())
+      .filter((s) => s.length > 0 && s.length < 40);
+    if (items.length === 0) throw new Error("No parseable skills in suggestion");
+    const existing = (await axios.get("/api/profile")).data?.data?.skills;
+    const existingArr: string[] = Array.isArray(existing)
+      ? existing
+      : typeof existing === "string"
+      ? JSON.parse(existing || "[]")
+      : [];
+    const seen = new Set(existingArr.map((s) => s.toLowerCase()));
+    const merged = [...existingArr];
+    for (const item of items) {
+      if (!seen.has(item.toLowerCase())) {
+        merged.push(item);
+        seen.add(item.toLowerCase());
+      }
+    }
+    await axios.patch("/api/profile", { skills: merged });
+    return true;
+  }
+  try {
+    await navigator.clipboard.writeText(improved);
+  } catch {
+    // clipboard unavailable — fall through
+  }
+  window.open("/dashboard/profile", "_blank");
+  return false;
+}
+
+// ── Editable apply popup ─────────────────────────────────────────────────────
+export function SuggestionEditPopup({
+  suggestion,
+  onApplied,
+  onClose,
+}: {
+  suggestion: AISuggestion;
+  onApplied: () => void;
+  onClose: () => void;
+}) {
+  const [text, setText] = useState(suggestion.improved);
+  const [saving, setSaving] = useState(false);
+
+  async function handleApply() {
+    if (!text.trim()) {
+      toast.error("Content can't be empty");
+      return;
+    }
+    setSaving(true);
+    try {
+      const patched = await applySuggestionToProfile(suggestion.section, text);
+      if (patched) {
+        toast.success("Applied — click Publish to make it live");
+      } else {
+        toast.success(`Copied — paste into the ${suggestion.section} section in Profile`);
+      }
+      onApplied();
+      onClose();
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { error?: string } }; message?: string };
+      toast.error(e?.response?.data?.error || e?.message || "Failed to apply");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center sm:p-4 bg-black/50">
+      <motion.div
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 30 }}
+        transition={{ type: "spring", stiffness: 320, damping: 30 }}
+        className="bg-white rounded-t-2xl sm:rounded-2xl shadow-2xl w-full sm:max-w-xl max-h-[90svh] flex flex-col"
+      >
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-zinc-950 flex items-center justify-center">
+              <Sparkle size={14} weight="fill" className="text-accent-400" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-zinc-950">Edit suggestion</div>
+              <div className="text-[10px] text-zinc-400 uppercase tracking-wider">{suggestion.section}</div>
+            </div>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors">
+            <X size={16} className="text-zinc-500" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-3 overflow-y-auto">
+          <div>
+            <div className="text-xs font-semibold text-zinc-950 mb-1">{suggestion.title}</div>
+            <div className="flex items-start gap-1.5">
+              <Warning size={12} className="text-yellow-500 mt-0.5 shrink-0" />
+              <p className="text-xs text-zinc-500">{suggestion.issue}</p>
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
+              Suggested content — edit before applying
+            </label>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              rows={10}
+              className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all resize-none"
+            />
+            <p className="text-[10px] text-zinc-400">
+              {suggestion.section.toLowerCase() === "skills"
+                ? "Comma-separate skills. They'll be merged with your existing profile skills."
+                : "Your edits will be saved to your profile when you click Apply."}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-zinc-100">
+          <button
+            onClick={onClose}
+            className="px-3 py-1.5 text-xs font-medium text-zinc-600 hover:bg-zinc-50 border border-zinc-200 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleApply}
+            disabled={saving}
+            className="flex items-center gap-1.5 px-4 py-1.5 text-xs font-semibold text-white bg-accent-500 hover:bg-accent-400 active:scale-[0.98] disabled:opacity-60 rounded-lg transition-all"
+          >
+            {saving ? (
+              <>
+                <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                Applying
+              </>
+            ) : (
+              <>
+                <Check size={12} weight="bold" /> Apply
+              </>
+            )}
+          </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ── Inline per-section suggestions card ──────────────────────────────────────
+export function SectionAISuggestions({
+  suggestions,
+  sectionType,
+  appliedIds,
+  onAppliedId,
+}: {
+  suggestions: AISuggestion[];
+  sectionType: string;
+  appliedIds: Set<string>;
+  onAppliedId: (id: string) => void;
+}) {
+  const relevant = suggestions
+    .map((s, i) => ({ s, id: `${sectionType}-${i}` }))
+    .filter(({ s }) => matchesSectionType(s.section, sectionType));
+  const [editing, setEditing] = useState<{ suggestion: AISuggestion; id: string } | null>(null);
+
+  if (relevant.length === 0) return null;
+
+  const priorityColor = (p: string) =>
+    p === "high" ? "text-red-600 bg-red-50 border-red-200" :
+    p === "medium" ? "text-yellow-600 bg-yellow-50 border-yellow-200" :
+    "text-zinc-500 bg-zinc-50 border-zinc-200";
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center gap-1.5 px-1">
+        <Sparkle size={11} weight="fill" className="text-accent-500" />
+        <span className="text-[10px] font-semibold text-accent-700 uppercase tracking-wider">
+          AI suggestions ({relevant.length})
+        </span>
+      </div>
+      {relevant.map(({ s, id }) => {
+        const applied = appliedIds.has(id);
+        return (
+          <div key={id} className="rounded-lg border border-accent-200/60 bg-accent-50/40 p-2.5">
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded border ${priorityColor(s.priority)}`}>
+                {s.priority}
+              </span>
+              {applied ? (
+                <span className="flex items-center gap-1 text-[10px] font-semibold text-accent-700">
+                  <Check size={10} weight="bold" /> Applied
+                </span>
+              ) : (
+                <button
+                  onClick={() => setEditing({ suggestion: s, id })}
+                  className="flex items-center gap-1 text-[10px] font-semibold text-white bg-accent-500 hover:bg-accent-400 active:scale-[0.98] px-2 py-0.5 rounded-md transition-all"
+                >
+                  <Check size={10} weight="bold" /> Apply
+                </button>
+              )}
+            </div>
+            <div className="text-[11px] font-semibold text-zinc-950 mb-0.5">{s.title}</div>
+            <p className="text-[10px] text-zinc-500 line-clamp-2">{s.issue}</p>
+          </div>
+        );
+      })}
+      <AnimatePresence>
+        {editing && (
+          <SuggestionEditPopup
+            suggestion={editing.suggestion}
+            onApplied={() => onAppliedId(editing.id)}
+            onClose={() => setEditing(null)}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 export function AIModal({ result, onClose }: { result: AIResult; onClose: () => void }) {
   const router = useRouter();
   const [tab, setTab] = useState<"suggestions" | "seo">("suggestions");
   const [applied, setApplied] = useState<Record<number, "applied">>({});
   const [applying, setApplying] = useState<number | null>(null);
 
-  const sectionLower = (s: string) => (s || "").toLowerCase().trim();
-
   async function applySuggestion(index: number, section: string, improved: string) {
-    const key = sectionLower(section);
     setApplying(index);
     try {
-      if (key === "bio" || key === "about" || key === "summary") {
-        await axios.patch("/api/profile", { bio: improved.slice(0, 2000) });
-      } else if (key === "headline" || key === "title" || key === "tagline") {
-        await axios.patch("/api/profile", { headline: improved.slice(0, 160) });
-      } else if (key === "skills") {
-        // Parse the suggested skills — accept commas, pipes, or bullets
-        const items = improved
-          .split(/[,|•\n]/)
-          .map((s) => s.replace(/^[\s\-•]+|[\s.]+$/g, "").trim())
-          .filter((s) => s.length > 0 && s.length < 40);
-        if (items.length === 0) throw new Error("No parseable skills in suggestion");
-        const existing = (await axios.get("/api/profile")).data?.data?.skills;
-        const existingArr: string[] = Array.isArray(existing)
-          ? existing
-          : typeof existing === "string"
-          ? JSON.parse(existing || "[]")
-          : [];
-        const seen = new Set(existingArr.map((s) => s.toLowerCase()));
-        const merged = [...existingArr];
-        for (const item of items) {
-          if (!seen.has(item.toLowerCase())) {
-            merged.push(item);
-            seen.add(item.toLowerCase());
-          }
-        }
-        await axios.patch("/api/profile", { skills: merged });
-      } else {
-        // Section can't be auto-patched (experience, projects, education, etc).
-        // Best effort: copy to clipboard + open profile editor in new tab.
-        try {
-          await navigator.clipboard.writeText(improved);
-        } catch {
-          // clipboard may be unavailable; fall through silently
-        }
-        window.open("/dashboard/profile", "_blank");
-        setApplied((prev) => ({ ...prev, [index]: "applied" }));
-        toast.success(`Copied to clipboard — paste into the ${section} section in your Profile`);
-        return;
-      }
+      const patched = await applySuggestionToProfile(section, improved);
       setApplied((prev) => ({ ...prev, [index]: "applied" }));
-      toast.success("Applied — click Publish to make it live");
-      router.refresh();
+      if (patched) {
+        toast.success("Applied — click Publish to make it live");
+        router.refresh();
+      } else {
+        toast.success(`Copied to clipboard — paste into the ${section} section in your Profile`);
+      }
     } catch (err: unknown) {
       const e = err as { response?: { data?: { error?: string } }; message?: string };
       toast.error(e?.response?.data?.error || e?.message || "Failed to apply");
