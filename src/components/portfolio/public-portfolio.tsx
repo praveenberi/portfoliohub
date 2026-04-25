@@ -53,14 +53,48 @@ function MarkdownText({ text, textColor, mutedText, accent }: { text: string; te
   let bullets: string[] = [];
   let key = 0;
 
+  // Render inline formatting: **bold**, *italic*, [link](url), and bare URLs.
+  // Returns React nodes; safe because we never inject raw HTML.
+  function renderInline(input: string): React.ReactNode[] {
+    const nodes: React.ReactNode[] = [];
+    // Combined matcher: link, bold, italic, bare URL
+    const re = /\[([^\]]+)\]\(([^)]+)\)|\*\*([^*]+)\*\*|\*([^*]+)\*|(https?:\/\/[^\s)]+)/g;
+    let last = 0;
+    let m: RegExpExecArray | null;
+    let i = 0;
+    while ((m = re.exec(input)) !== null) {
+      if (m.index > last) nodes.push(input.slice(last, m.index));
+      if (m[1] && m[2]) {
+        nodes.push(
+          <a key={`l${i++}`} href={m[2]} target="_blank" rel="noreferrer noopener" className="underline underline-offset-2" style={{ color: accent }}>
+            {m[1]}
+          </a>
+        );
+      } else if (m[3]) {
+        nodes.push(<strong key={`b${i++}`} style={{ color: textColor }}>{m[3]}</strong>);
+      } else if (m[4]) {
+        nodes.push(<em key={`i${i++}`}>{m[4]}</em>);
+      } else if (m[5]) {
+        nodes.push(
+          <a key={`u${i++}`} href={m[5]} target="_blank" rel="noreferrer noopener" className="underline underline-offset-2 break-all" style={{ color: accent }}>
+            {m[5]}
+          </a>
+        );
+      }
+      last = re.lastIndex;
+    }
+    if (last < input.length) nodes.push(input.slice(last));
+    return nodes;
+  }
+
   const flush = () => {
     if (!bullets.length) return;
     result.push(
       <ul key={key++} className="space-y-1.5 my-3 ml-1">
         {bullets.map((b, i) => (
           <li key={i} className="flex items-start gap-2.5 leading-relaxed" style={{ color: mutedText }}>
-            <span className="mt-2 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
-            <span>{b}</span>
+            <span className="mt-[0.55em] w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+            <span>{renderInline(b)}</span>
           </li>
         ))}
       </ul>
@@ -70,11 +104,18 @@ function MarkdownText({ text, textColor, mutedText, accent }: { text: string; te
 
   for (const raw of lines) {
     const line = raw.trimEnd();
-    if (/^## /.test(line)) {
+    if (/^### /.test(line)) {
       flush();
       result.push(
-        <h3 key={key++} className="font-semibold text-xl mt-6 mb-2" style={{ color: textColor }}>
-          {line.slice(3)}
+        <h4 key={key++} className="font-semibold text-[1.05em] mt-4 mb-1" style={{ color: textColor }}>
+          {renderInline(line.slice(4))}
+        </h4>
+      );
+    } else if (/^## /.test(line)) {
+      flush();
+      result.push(
+        <h3 key={key++} className="font-semibold text-[1.15em] mt-6 mb-2" style={{ color: textColor }}>
+          {renderInline(line.slice(3))}
         </h3>
       );
     } else if (/^[*\-] /.test(line)) {
@@ -84,8 +125,8 @@ function MarkdownText({ text, textColor, mutedText, accent }: { text: string; te
     } else {
       flush();
       result.push(
-        <p key={key++} className="leading-relaxed text-lg" style={{ color: mutedText }}>
-          {line}
+        <p key={key++} className="leading-relaxed" style={{ color: mutedText }}>
+          {renderInline(line)}
         </p>
       );
     }
@@ -99,7 +140,7 @@ function MarkdownText({ text, textColor, mutedText, accent }: { text: string; te
 function SectionIntro({ text, textColor, mutedText, accent }: { text?: string; textColor: string; mutedText: string; accent: string }) {
   if (!text || !text.trim()) return null;
   return (
-    <div className="mb-10 max-w-3xl -mt-6">
+    <div className="mb-10 max-w-3xl -mt-6 text-base">
       <MarkdownText text={text} textColor={textColor} mutedText={mutedText} accent={accent} />
     </div>
   );
@@ -466,11 +507,11 @@ function SectionRenderer({
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>About</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
           <div className={profile?.avatarUrl ? "grid md:grid-cols-2 gap-16 items-center" : ""}>
-            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
+            <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-lg">
               {aboutBio ? (
                 <MarkdownText text={aboutBio} textColor={textColor} mutedText={mutedText} accent={accent} />
               ) : (
-                <p className="leading-relaxed text-lg" style={{ color: mutedText }}>Add your bio in your profile settings.</p>
+                <p className="leading-relaxed" style={{ color: mutedText }}>Add your bio in your profile settings.</p>
               )}
             </motion.div>
             {profile?.avatarUrl && (
