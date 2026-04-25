@@ -140,6 +140,59 @@ export function buildSectionContentPatch(
 }
 
 /**
+ * Extract the description portion from an AI suggestion that often inlines
+ * the title / company / date as a prefix. Recognised formats include:
+ *   - "**Title**: description"
+ *   - "Title at Company (2021–Present) | description"
+ *   - "Title — description"
+ *   - "Title\ndescription line 1\ndescription line 2"
+ * Falls back to the whole text as description with no title.
+ */
+export function extractEntryFromSuggestion(text: string): { title: string | null; description: string } {
+  const raw = (text ?? "").trim();
+  if (!raw) return { title: null, description: "" };
+
+  // **Title**: description
+  let m = raw.match(/^\*\*(.+?)\*\*\s*[:\-–|]?\s*([\s\S]*)$/);
+  if (m && m[2].trim()) return { title: m[1].trim(), description: m[2].trim() };
+
+  // Title at Company (dates) | description   (or other separators after the prefix)
+  m = raw.match(/^([^|\n]+?)\s*\|\s*([\s\S]+)$/);
+  if (m) {
+    const prefix = m[1].trim();
+    const titleOnly = prefix.match(/^(.+?)(?:\s+at\s+|\s*[\(\-–—])/i);
+    return { title: (titleOnly ? titleOnly[1] : prefix).trim(), description: m[2].trim() };
+  }
+
+  // First line short → treat as title, rest as description
+  const lines = raw.split(/\r?\n/);
+  if (lines.length > 1 && lines[0].length < 100 && /^[A-Z0-9*]/.test(lines[0])) {
+    return {
+      title: lines[0].replace(/^\*+|\*+$/g, "").trim(),
+      description: lines.slice(1).join("\n").trim(),
+    };
+  }
+
+  return { title: null, description: raw };
+}
+
+/**
+ * Convert a paragraph of sentences into bullet lines, unless the text already
+ * contains bullets, headings, or hard line breaks (in which case leave it alone).
+ */
+export function formatAsBullets(text: string): string {
+  const t = (text ?? "").trim();
+  if (!t) return t;
+  if (/^[-•*]\s/m.test(t) || /\n/.test(t) || /^#{1,3}\s/m.test(t)) return t;
+  const sentences = t
+    .split(/(?<=[.!?])\s+(?=[A-Z0-9])/)
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (sentences.length <= 1) return t;
+  return sentences.map((s) => `- ${s}`).join("\n");
+}
+
+/**
  * Parse an AI suggestion that contains a list of `**Title**: description` items
  * (one per line, optionally bulleted) into structured entries. Lines that don't
  * fit the pattern are appended to the previous entry's description.
@@ -203,11 +256,22 @@ export function SuggestionEditPopup({
   onApplied: () => void;
   onClose: () => void;
 }) {
-  const [text, setText] = useState(suggestion.improved);
-  const [saving, setSaving] = useState(false);
   const targetType = sectionKey(sectionType ?? suggestion.section);
   const isSkills = targetType === "skills";
   const isEntries = targetType === "projects" || targetType === "experience";
+
+  // For projects/experience, peel off any title/company/date prefix and pre-fill
+  // the textarea with just the description (formatted as bullets when it arrived
+  // as one long sentence-paragraph).
+  const extracted = useState(() =>
+    isEntries ? extractEntryFromSuggestion(suggestion.improved) : { title: null, description: suggestion.improved }
+  )[0];
+  const [detectedTitle] = useState<string | null>(extracted.title);
+  const initialText = isEntries
+    ? formatAsBullets(extracted.description || suggestion.improved)
+    : suggestion.improved;
+  const [text, setText] = useState(initialText);
+  const [saving, setSaving] = useState(false);
 
   function insertSkillsHeading(prefix: string) {
     const sep = text && !text.endsWith("\n") ? "\n\n" : text ? "\n" : "";
@@ -221,17 +285,26 @@ export function SuggestionEditPopup({
     }
     setSaving(true);
     try {
-      // Projects / experience: parse entries and replace each matching record's description.
+      // Projects / experience: replace ONLY the description on matching records.
       if (isEntries && onApplyToEntries) {
-        const entries = parseEntrySuggestions(text);
+        // Single-entry path: title detected from the original suggestion prefix.
+        let entries: Array<{ title: string; description: string }> = [];
+        if (detectedTitle) {
+          entries = [{ title: detectedTitle, description: text.trim() }];
+        } else {
+          // Fall back to parsing multiple `**Title**: description` lines from the textarea.
+          entries = parseEntrySuggestions(text);
+        }
         if (entries.length === 0) {
-          toast.error("Couldn't find any **Title**: description lines to apply");
+          toast.error(
+            `Couldn't detect which ${targetType} entry to update. Prefix the text with the entry's title.`
+          );
           return;
         }
         const { updated, total } = await onApplyToEntries(entries);
         if (updated === 0) {
           toast.error(
-            `No matching ${targetType} titles found. Make sure the bold names match your existing entries.`
+            `No matching ${targetType} entry found${detectedTitle ? ` for "${detectedTitle}"` : ""}. Make sure the title matches.`
           );
         } else {
           toast.success(
@@ -306,9 +379,21 @@ export function SuggestionEditPopup({
               <p className="text-xs text-zinc-500">{suggestion.issue}</p>
             </div>
           </div>
+          {isEntries && detectedTitle && (
+            <div className="flex items-start gap-2 rounded-lg border border-accent-200 bg-accent-50/60 px-3 py-2">
+              <Check size={12} weight="bold" className="text-accent-600 mt-0.5 shrink-0" />
+              <div className="text-[11px] text-zinc-700">
+                <span className="text-zinc-500">Updating description for:</span>{" "}
+                <span className="font-semibold text-zinc-950">{detectedTitle}</span>
+                <div className="text-[10px] text-zinc-400 mt-0.5">
+                  Title, dates{targetType === "experience" ? ", company, and location" : " and links"} are kept as-is.
+                </div>
+              </div>
+            </div>
+          )}
           <div className="space-y-1.5">
             <label className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">
-              Suggested content — edit before applying
+              {isEntries ? "Description bullets — edit before applying" : "Suggested content — edit before applying"}
             </label>
             <textarea
               value={text}
@@ -342,7 +427,9 @@ export function SuggestionEditPopup({
                 : targetType === "hero"
                 ? "Updates your profile headline."
                 : isEntries
-                ? `Format: **Title**: description (one per line). The title must match an existing ${targetType} entry — only the description is replaced. Dates, ${targetType === "experience" ? "company, location" : "links"}, and titles are kept as-is.`
+                ? detectedTitle
+                  ? `One bullet per line. Use - or • at the start of each bullet.`
+                  : `Couldn't auto-detect the target entry. Prefix the text with **Title**: to bind it to an existing ${targetType} entry.`
                 : "Saved as an intro paragraph above the list in this section."}
             </p>
           </div>
