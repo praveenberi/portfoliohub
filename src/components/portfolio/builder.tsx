@@ -417,6 +417,7 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
                                       sectionType={section.type}
                                       appliedIds={appliedSuggestionIds}
                                       onAppliedId={markSuggestionApplied}
+                                      onApplyToSection={(patch) => updateSectionContent(section.id, patch)}
                                     />
                                   )}
                                   <SectionEditor

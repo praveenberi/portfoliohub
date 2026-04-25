@@ -82,7 +82,7 @@ export async function applySuggestionToProfile(section: string, improved: string
   if (key === "skills") {
     const items = improved
       .split(/[,|•\n]/)
-      .map((s) => s.replace(/^[\s\-•]+|[\s.]+$/g, "").trim())
+      .map((s) => s.replace(/^[\s\-•#]+|[\s.]+$/g, "").trim())
       .filter((s) => s.length > 0 && s.length < 40);
     if (items.length === 0) throw new Error("No parseable skills in suggestion");
     const existing = (await axios.get("/api/profile")).data?.data?.skills;
@@ -111,18 +111,58 @@ export async function applySuggestionToProfile(section: string, improved: string
   return false;
 }
 
+// Map a suggestion's section + edited text to a builder section content patch.
+// The returned object is merged into `section.content` so the change is visible
+// in the preview and is saved on Publish.
+export function buildSectionContentPatch(
+  sectionType: string,
+  text: string
+): Record<string, unknown> | null {
+  const t = sectionKey(sectionType);
+  if (t === "about") return { bioOverride: text };
+  if (t === "skills") return { customSkills: text };
+  if (t === "hero") return null; // hero text comes from profile.headline
+  // For list-based sections, store as an `intro` paragraph rendered above the list.
+  if (
+    t === "projects" ||
+    t === "experience" ||
+    t === "education" ||
+    t === "certifications" ||
+    t === "contact" ||
+    t === "extras" ||
+    t === "testimonials" ||
+    t === "social"
+  ) {
+    return { intro: text };
+  }
+  return { intro: text };
+}
+
 // ── Editable apply popup ─────────────────────────────────────────────────────
 export function SuggestionEditPopup({
   suggestion,
+  sectionType,
+  onApplyToSection,
   onApplied,
   onClose,
 }: {
   suggestion: AISuggestion;
+  /** Builder section type the popup is being applied to (about, skills, projects, ...). Falls back to suggestion.section. */
+  sectionType?: string;
+  /** Optional callback to merge a content patch into the builder's section.content. */
+  onApplyToSection?: (patch: Record<string, unknown>) => void;
   onApplied: () => void;
   onClose: () => void;
 }) {
   const [text, setText] = useState(suggestion.improved);
   const [saving, setSaving] = useState(false);
+  const targetType = sectionKey(sectionType ?? suggestion.section);
+  const isSkills = targetType === "skills";
+
+  function insertSkillsHeading(prefix: string) {
+    const sep = text && !text.endsWith("\n") ? "\n\n" : text ? "\n" : "";
+    setText(`${text}${sep}${prefix} New section\nSkill 1, Skill 2`);
+  }
 
   async function handleApply() {
     if (!text.trim()) {
@@ -131,8 +171,23 @@ export function SuggestionEditPopup({
     }
     setSaving(true);
     try {
-      const patched = await applySuggestionToProfile(suggestion.section, text);
-      if (patched) {
+      // 1) Push the edit into the builder's section content (so preview reflects it).
+      const patch = onApplyToSection
+        ? buildSectionContentPatch(sectionType ?? suggestion.section, text)
+        : null;
+      if (patch && onApplyToSection) onApplyToSection(patch);
+
+      // 2) Best-effort: also patch the underlying profile field where applicable
+      //    (bio / headline / skills). Failures are non-fatal because the section
+      //    content patch above is the user-visible source of truth in the builder.
+      let profilePatched = false;
+      try {
+        profilePatched = await applySuggestionToProfile(suggestion.section, text);
+      } catch {
+        // ignore — section content already updated
+      }
+
+      if (patch || profilePatched) {
         toast.success("Applied — click Publish to make it live");
       } else {
         toast.success(`Copied — paste into the ${suggestion.section} section in Profile`);
@@ -186,13 +241,35 @@ export function SuggestionEditPopup({
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              rows={10}
+              rows={isSkills ? 8 : 10}
               className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all resize-none"
             />
+            {isSkills && (
+              <div className="grid grid-cols-2 gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => insertSkillsHeading("##")}
+                  className="py-1.5 rounded-lg border border-zinc-200 text-[11px] font-medium text-zinc-600 hover:border-accent-400 hover:text-accent-700 hover:bg-accent-50 transition-all"
+                >
+                  + Add section
+                </button>
+                <button
+                  type="button"
+                  onClick={() => insertSkillsHeading("###")}
+                  className="py-1.5 rounded-lg border border-zinc-200 text-[11px] font-medium text-zinc-600 hover:border-accent-400 hover:text-accent-700 hover:bg-accent-50 transition-all"
+                >
+                  + Add sub-section
+                </button>
+              </div>
+            )}
             <p className="text-[10px] text-zinc-400">
-              {suggestion.section.toLowerCase() === "skills"
-                ? "Comma-separate skills. They'll be merged with your existing profile skills."
-                : "Your edits will be saved to your profile when you click Apply."}
+              {isSkills
+                ? "Use ## for section headers and ### for sub-sections. Comma-separate skills below each heading."
+                : targetType === "about"
+                ? "Saved into the About section's bio (overrides your profile bio in this portfolio)."
+                : targetType === "hero"
+                ? "Updates your profile headline."
+                : "Saved as an intro paragraph above the list in this section."}
             </p>
           </div>
         </div>
@@ -232,11 +309,14 @@ export function SectionAISuggestions({
   sectionType,
   appliedIds,
   onAppliedId,
+  onApplyToSection,
 }: {
   suggestions: AISuggestion[];
   sectionType: string;
   appliedIds: Set<string>;
   onAppliedId: (id: string) => void;
+  /** Merges a content patch into the builder's section.content for this section. */
+  onApplyToSection?: (patch: Record<string, unknown>) => void;
 }) {
   const relevant = suggestions
     .map((s, i) => ({ s, id: `${sectionType}-${i}` }))
@@ -288,6 +368,8 @@ export function SectionAISuggestions({
         {editing && (
           <SuggestionEditPopup
             suggestion={editing.suggestion}
+            sectionType={sectionType}
+            onApplyToSection={onApplyToSection}
             onApplied={() => onAppliedId(editing.id)}
             onClose={() => setEditing(null)}
           />
