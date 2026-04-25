@@ -592,7 +592,6 @@ function SectionRenderer({
         <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Work</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
-          <SectionIntro text={section.content.intro as string | undefined} textColor={textColor} mutedText={mutedText} accent={accent} />
 
           {layout === "list" ? (
             <div className="space-y-4">
@@ -716,7 +715,6 @@ function SectionRenderer({
         <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>Career</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
-          <SectionIntro text={section.content.intro as string | undefined} textColor={textColor} mutedText={mutedText} accent={accent} />
           <div className={layout === "list" ? "space-y-4" : "grid md:grid-cols-2 gap-6"}>
             {experiences.map((exp, i) => (
               <motion.div key={exp.id} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}

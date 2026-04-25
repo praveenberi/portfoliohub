@@ -122,10 +122,11 @@ export function buildSectionContentPatch(
   if (t === "about") return { bioOverride: text };
   if (t === "skills") return { customSkills: text };
   if (t === "hero") return null; // hero text comes from profile.headline
-  // For list-based sections, store as an `intro` paragraph rendered above the list.
+  // Projects / experience are handled by replacing each entry's description
+  // (parsed from `**Title**: description` lines) — no section-level patch.
+  if (t === "projects" || t === "experience") return null;
+  // Other list-based sections store an intro paragraph above the list.
   if (
-    t === "projects" ||
-    t === "experience" ||
     t === "education" ||
     t === "certifications" ||
     t === "contact" ||
@@ -138,11 +139,57 @@ export function buildSectionContentPatch(
   return { intro: text };
 }
 
+/**
+ * Parse an AI suggestion that contains a list of `**Title**: description` items
+ * (one per line, optionally bulleted) into structured entries. Lines that don't
+ * fit the pattern are appended to the previous entry's description.
+ *
+ * Used by Projects / Experience suggestions so each existing entry's description
+ * can be replaced (matched by title) without touching titles, dates, company,
+ * or location.
+ */
+export function parseEntrySuggestions(text: string): Array<{ title: string; description: string }> {
+  const entries: Array<{ title: string; description: string }> = [];
+  if (!text) return entries;
+  const lines = text.split(/\r?\n/);
+  let current: { title: string; description: string } | null = null;
+  for (const raw of lines) {
+    const line = raw.trim();
+    if (!line) {
+      if (current) current.description += "\n";
+      continue;
+    }
+    // Strip any leading bullet/number markers
+    const cleaned = line.replace(/^[-•*]\s*/, "").replace(/^\d+\.\s*/, "");
+    // Match: **Title**: description  OR  Title: description (only if no other ":" before it)
+    const boldMatch = cleaned.match(/^\*\*(.+?)\*\*\s*[:\-–]?\s*(.*)$/);
+    if (boldMatch) {
+      if (current) entries.push({ ...current, description: current.description.trim() });
+      current = { title: boldMatch[1].trim(), description: boldMatch[2].trim() };
+      continue;
+    }
+    // Non-bolded "Title: description" — only treat as a new entry if the title is short
+    const colonMatch = cleaned.match(/^([^:]{2,80}):\s+(.+)$/);
+    if (colonMatch && /^[A-Z0-9]/.test(colonMatch[1].trim())) {
+      if (current) entries.push({ ...current, description: current.description.trim() });
+      current = { title: colonMatch[1].trim(), description: colonMatch[2].trim() };
+      continue;
+    }
+    // Continuation line — append to current entry
+    if (current) {
+      current.description += (current.description ? " " : "") + cleaned;
+    }
+  }
+  if (current) entries.push({ ...current, description: current.description.trim() });
+  return entries;
+}
+
 // ── Editable apply popup ─────────────────────────────────────────────────────
 export function SuggestionEditPopup({
   suggestion,
   sectionType,
   onApplyToSection,
+  onApplyToEntries,
   onApplied,
   onClose,
 }: {
@@ -151,6 +198,8 @@ export function SuggestionEditPopup({
   sectionType?: string;
   /** Optional callback to merge a content patch into the builder's section.content. */
   onApplyToSection?: (patch: Record<string, unknown>) => void;
+  /** For projects / experience: apply parsed `**Title**: description` entries. Returns updated count. */
+  onApplyToEntries?: (entries: Array<{ title: string; description: string }>) => Promise<{ updated: number; total: number }>;
   onApplied: () => void;
   onClose: () => void;
 }) {
@@ -158,6 +207,7 @@ export function SuggestionEditPopup({
   const [saving, setSaving] = useState(false);
   const targetType = sectionKey(sectionType ?? suggestion.section);
   const isSkills = targetType === "skills";
+  const isEntries = targetType === "projects" || targetType === "experience";
 
   function insertSkillsHeading(prefix: string) {
     const sep = text && !text.endsWith("\n") ? "\n\n" : text ? "\n" : "";
@@ -171,6 +221,28 @@ export function SuggestionEditPopup({
     }
     setSaving(true);
     try {
+      // Projects / experience: parse entries and replace each matching record's description.
+      if (isEntries && onApplyToEntries) {
+        const entries = parseEntrySuggestions(text);
+        if (entries.length === 0) {
+          toast.error("Couldn't find any **Title**: description lines to apply");
+          return;
+        }
+        const { updated, total } = await onApplyToEntries(entries);
+        if (updated === 0) {
+          toast.error(
+            `No matching ${targetType} titles found. Make sure the bold names match your existing entries.`
+          );
+        } else {
+          toast.success(
+            `Updated ${updated} of ${total} ${targetType} description${updated === 1 ? "" : "s"} — click Publish to make it live`
+          );
+          onApplied();
+          onClose();
+        }
+        return;
+      }
+
       // 1) Push the edit into the builder's section content (so preview reflects it).
       const patch = onApplyToSection
         ? buildSectionContentPatch(sectionType ?? suggestion.section, text)
@@ -269,6 +341,8 @@ export function SuggestionEditPopup({
                 ? "Saved into the About section's bio (overrides your profile bio in this portfolio)."
                 : targetType === "hero"
                 ? "Updates your profile headline."
+                : isEntries
+                ? `Format: **Title**: description (one per line). The title must match an existing ${targetType} entry — only the description is replaced. Dates, ${targetType === "experience" ? "company, location" : "links"}, and titles are kept as-is.`
                 : "Saved as an intro paragraph above the list in this section."}
             </p>
           </div>
@@ -310,6 +384,7 @@ export function SectionAISuggestions({
   appliedIds,
   onAppliedId,
   onApplyToSection,
+  onApplyToEntries,
 }: {
   suggestions: AISuggestion[];
   sectionType: string;
@@ -317,6 +392,8 @@ export function SectionAISuggestions({
   onAppliedId: (id: string) => void;
   /** Merges a content patch into the builder's section.content for this section. */
   onApplyToSection?: (patch: Record<string, unknown>) => void;
+  /** For projects/experience: parses `**Title**: description` and replaces matching entry descriptions. */
+  onApplyToEntries?: (entries: Array<{ title: string; description: string }>) => Promise<{ updated: number; total: number }>;
 }) {
   const relevant = suggestions
     .map((s, i) => ({ s, id: `${sectionType}-${i}` }))
@@ -370,6 +447,7 @@ export function SectionAISuggestions({
             suggestion={editing.suggestion}
             sectionType={sectionType}
             onApplyToSection={onApplyToSection}
+            onApplyToEntries={onApplyToEntries}
             onApplied={() => onAppliedId(editing.id)}
             onClose={() => setEditing(null)}
           />

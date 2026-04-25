@@ -236,6 +236,75 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
     return aiResult.suggestions.filter((s) => matchesSectionType(s.section, sectionType));
   };
 
+  // Replace descriptions on existing project / experience records by matching titles.
+  // Used by the AI suggestion popup so applies don't touch dates, company, location, etc.
+  function findEntryMatch<T extends { id: string; title?: string; name?: string }>(
+    entries: T[],
+    needle: string
+  ): T | undefined {
+    const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+    const n = norm(needle);
+    if (!n) return undefined;
+    let best = entries.find((e) => norm(e.title ?? e.name ?? "") === n);
+    if (best) return best;
+    // Substring containment
+    best = entries.find((e) => {
+      const t = norm(e.title ?? e.name ?? "");
+      return t && (t.includes(n) || n.includes(t));
+    });
+    return best;
+  }
+
+  async function applyEntriesToProjects(
+    items: Array<{ title: string; description: string }>
+  ): Promise<{ updated: number; total: number }> {
+    const projects = liveProfile?.projects ?? [];
+    let updated = 0;
+    for (const item of items) {
+      const match = findEntryMatch(projects, item.title);
+      if (!match) continue;
+      try {
+        const { data } = await axios.patch(`/api/profile/project/${match.id}`, {
+          description: item.description,
+        });
+        const updatedProj = data?.data ?? { ...match, description: item.description };
+        setLiveProfile((p) =>
+          p ? { ...p, projects: p.projects.map((x) => (x.id === match.id ? updatedProj : x)) } : p
+        );
+        updated++;
+      } catch {
+        // continue with the rest
+      }
+    }
+    if (updated > 0) router.refresh();
+    return { updated, total: items.length };
+  }
+
+  async function applyEntriesToExperiences(
+    items: Array<{ title: string; description: string }>
+  ): Promise<{ updated: number; total: number }> {
+    const experiences = liveProfile?.experiences ?? [];
+    let updated = 0;
+    for (const item of items) {
+      const match = findEntryMatch(experiences, item.title);
+      if (!match) continue;
+      try {
+        const { data } = await axios.patch(`/api/profile/experience/${match.id}`, {
+          description: item.description,
+        });
+        const updatedExp = data?.data ?? { ...match, description: item.description };
+        setLiveProfile((p) =>
+          p ? { ...p, experiences: p.experiences.map((x) => (x.id === match.id ? updatedExp : x)) } : p
+        );
+        updated++;
+      } catch {
+        // continue with the rest
+      }
+    }
+    if (updated > 0) router.refresh();
+    return { updated, total: items.length };
+  }
+
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -418,6 +487,13 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
                                       appliedIds={appliedSuggestionIds}
                                       onAppliedId={markSuggestionApplied}
                                       onApplyToSection={(patch) => updateSectionContent(section.id, patch)}
+                                      onApplyToEntries={
+                                        section.type === "projects"
+                                          ? applyEntriesToProjects
+                                          : section.type === "experience"
+                                          ? applyEntriesToExperiences
+                                          : undefined
+                                      }
                                     />
                                   )}
                                   <SectionEditor
