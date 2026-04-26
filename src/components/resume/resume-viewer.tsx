@@ -338,8 +338,8 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
               {editing && (
                 <div className="px-5 pb-3 print:hidden">
                   <div className="text-[11px] text-zinc-500 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2">
-                    <span className="font-semibold text-zinc-700">Tip:</span> Click any underlined text to edit just for this download.
-                    Skills, dates, and the entry list itself are managed in <Link href="/dashboard/profile" className="underline font-medium">Profile</Link>.
+                    <span className="font-semibold text-zinc-700">Tip:</span> Click any text (including the Skills block) to edit it just for this download.
+                    Dates and the entry list itself are managed in <Link href="/dashboard/profile" className="underline font-medium">Profile</Link>.
                   </div>
                 </div>
               )}

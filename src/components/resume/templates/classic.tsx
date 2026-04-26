@@ -1,6 +1,6 @@
 import type { ResumeData, ResumeEditing } from "../resume-viewer";
 import { groupSkills } from "@/lib/utils";
-import { Editable } from "../editable";
+import { Editable, SkillsEditor } from "../editable";
 
 interface Props { data: ResumeData; accentColor: string; editing?: ResumeEditing; }
 
@@ -57,27 +57,37 @@ export function ClassicTemplate({ data, accentColor, editing }: Props) {
       )}
 
       {/* ── Skills ── */}
-      {allSkills.length > 0 && (
+      {(allSkills.length > 0 || ed) && (
         <Section title="Skills & Technologies" accentColor={accentColor}>
-          <div className="space-y-1.5">
-            {skillGroups.map((g, gi) => (
-              <div key={gi} className="flex items-baseline gap-2">
-                {g.label && (
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-950 shrink-0 min-w-[110px]">
-                    {g.label}:
-                  </span>
-                )}
-                <div className="flex flex-wrap gap-x-1 gap-y-0.5">
-                  {g.items.map((s, i) => (
-                    <span key={i}>
-                      <span className="text-zinc-700">{s}</span>
-                      {i < g.items.length - 1 && <span className="text-zinc-300 mx-1">·</span>}
+          <SkillsEditor
+            skills={allSkills}
+            editable={ed}
+            textClassName="text-[12.5px] text-zinc-800"
+            onChange={(next) => {
+              editing?.updateField("skills", next);
+              editing?.updateField("technologies", []);
+            }}
+          >
+            <div className="space-y-1.5">
+              {skillGroups.map((g, gi) => (
+                <div key={gi} className="flex items-baseline gap-2">
+                  {g.label && (
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-950 shrink-0 min-w-[110px]">
+                      {g.label}:
                     </span>
-                  ))}
+                  )}
+                  <div className="flex flex-wrap gap-x-1 gap-y-0.5">
+                    {g.items.map((s, i) => (
+                      <span key={i}>
+                        <span className="text-zinc-700">{s}</span>
+                        {i < g.items.length - 1 && <span className="text-zinc-300 mx-1">·</span>}
+                      </span>
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </SkillsEditor>
         </Section>
       )}
 

@@ -1,6 +1,6 @@
 import type { ResumeData, ResumeEditing } from "../resume-viewer";
 import { groupSkills } from "@/lib/utils";
-import { Editable } from "../editable";
+import { Editable, SkillsEditor } from "../editable";
 
 interface Props { data: ResumeData; accentColor: string; editing?: ResumeEditing; }
 
@@ -66,28 +66,38 @@ export function ExecutiveTemplate({ data, accentColor, editing }: Props) {
         )}
 
         {/* ── Skills — grouped ── */}
-        {allSkills.length > 0 && (
+        {(allSkills.length > 0 || ed) && (
           <Section title="Core Skills" accentColor={accentColor}>
-            <div className="space-y-2">
-              {skillGroups.map((g, gi) => (
-                <div key={gi} className="flex items-baseline gap-3">
-                  {g.label && (
-                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] shrink-0 min-w-[110px]"
-                      style={{ color: accentColor }}>
-                      {g.label}
-                    </span>
-                  )}
-                  <div className="flex flex-wrap gap-1.5">
-                    {g.items.map((s, i) => (
-                      <span key={i} className="px-2.5 py-0.5 text-[11px] rounded border font-medium break-words max-w-full"
-                        style={{ borderColor: accentColor + "55", backgroundColor: chipBg, color: accentColor }}>
-                        {s}
+            <SkillsEditor
+              skills={allSkills}
+              editable={ed}
+              textClassName="text-[12px] text-zinc-800"
+              onChange={(next) => {
+                editing?.updateField("skills", next);
+                editing?.updateField("technologies", []);
+              }}
+            >
+              <div className="space-y-2">
+                {skillGroups.map((g, gi) => (
+                  <div key={gi} className="flex items-baseline gap-3">
+                    {g.label && (
+                      <span className="text-[10px] font-bold uppercase tracking-[0.12em] shrink-0 min-w-[110px]"
+                        style={{ color: accentColor }}>
+                        {g.label}
                       </span>
-                    ))}
+                    )}
+                    <div className="flex flex-wrap gap-1.5">
+                      {g.items.map((s, i) => (
+                        <span key={i} className="px-2.5 py-0.5 text-[11px] rounded border font-medium break-words max-w-full"
+                          style={{ borderColor: accentColor + "55", backgroundColor: chipBg, color: accentColor }}>
+                          {s}
+                        </span>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            </SkillsEditor>
           </Section>
         )}
 

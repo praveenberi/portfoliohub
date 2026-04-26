@@ -1,7 +1,7 @@
 import Image from "next/image";
 import type { ResumeData, ResumeEditing } from "../resume-viewer";
 import { groupSkills } from "@/lib/utils";
-import { Editable } from "../editable";
+import { Editable, SkillsEditor } from "../editable";
 
 interface Props { data: ResumeData; accentColor: string; editing?: ResumeEditing; }
 
@@ -48,26 +48,36 @@ export function ModernTemplate({ data, accentColor, editing }: Props) {
           </SideSection>
 
           {/* Skills — grouped */}
-          {allSkills.length > 0 && (
+          {(allSkills.length > 0 || ed) && (
             <SideSection title="SKILLS">
-              <div className="space-y-2.5">
-                {skillGroups.map((g, i) => (
-                  <div key={i}>
-                    {g.label && (
-                      <p className="text-[9px] font-bold tracking-wider text-white/70 uppercase mb-1">
-                        {g.label}
-                      </p>
-                    )}
-                    <div className="flex flex-wrap gap-1">
-                      {g.items.map((skill, j) => (
-                        <span key={j} className="text-[10px] px-2 py-0.5 rounded-full bg-white/15 text-white font-medium break-words max-w-full leading-snug">
-                          {skill}
-                        </span>
-                      ))}
+              <SkillsEditor
+                skills={allSkills}
+                editable={ed}
+                textClassName="text-[10px] text-zinc-800 bg-white"
+                onChange={(next) => {
+                  editing?.updateField("skills", next);
+                  editing?.updateField("technologies", []);
+                }}
+              >
+                <div className="space-y-2.5">
+                  {skillGroups.map((g, i) => (
+                    <div key={i}>
+                      {g.label && (
+                        <p className="text-[9px] font-bold tracking-wider text-white/70 uppercase mb-1">
+                          {g.label}
+                        </p>
+                      )}
+                      <div className="flex flex-wrap gap-1">
+                        {g.items.map((skill, j) => (
+                          <span key={j} className="text-[10px] px-2 py-0.5 rounded-full bg-white/15 text-white font-medium break-words max-w-full leading-snug">
+                            {skill}
+                          </span>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              </SkillsEditor>
             </SideSection>
           )}
 

@@ -178,6 +178,43 @@ export function groupSkills(skills: string[]): Array<{ label: string | null; ite
   return groups;
 }
 
+/**
+ * Render a flat skills array as the multi-line grouped text format
+ * (`## Group` / `skill1, skill2, ...`). Used to seed a textarea so users can
+ * edit and re-arrange groups visually.
+ */
+export function skillsToGroupedText(skills: string[]): string {
+  const groups = groupSkills(skills);
+  return groups
+    .map((g) => {
+      const header = g.label ? `## ${g.label}\n` : "";
+      return header + g.items.join(", ");
+    })
+    .filter(Boolean)
+    .join("\n\n");
+}
+
+/**
+ * Parse the grouped-text format back into a flat skills array using the
+ * "Group: firstItem" / "remainingItem" convention so the round-trip through
+ * groupSkills produces the same groups.
+ */
+export function groupedTextToSkills(text: string): string[] {
+  if (!text || !text.trim()) return [];
+  const groups = groupSkills([text]);
+  const out: string[] = [];
+  for (const g of groups) {
+    if (g.items.length === 0) continue;
+    if (g.label) {
+      out.push(`${g.label}: ${g.items[0]}`);
+      for (let i = 1; i < g.items.length; i++) out.push(g.items[i]);
+    } else {
+      out.push(...g.items);
+    }
+  }
+  return out;
+}
+
 export function getInitials(name: string): string {
   return name
     .split(" ")
