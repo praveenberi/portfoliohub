@@ -93,6 +93,33 @@ export function generatePortfolioSlug(name: string): string {
 }
 
 /**
+ * Split a comma-separated skills line while treating parentheses (and brackets)
+ * as grouping — commas inside `(...)` or `[...]` stay inside their chunk.
+ *
+ *   "AWS Infrastructure (EC2, RDS, VPC), CI/CD (Jenkins, GitLab)"
+ *     → ["AWS Infrastructure (EC2, RDS, VPC)", "CI/CD (Jenkins, GitLab)"]
+ */
+export function splitSkillsLine(line: string): string[] {
+  const out: string[] = [];
+  let buf = "";
+  let depth = 0;
+  for (const ch of line) {
+    if (ch === "(" || ch === "[") depth++;
+    else if (ch === ")" || ch === "]") depth = Math.max(0, depth - 1);
+    if (ch === "," && depth === 0) {
+      const t = buf.trim();
+      if (t) out.push(t);
+      buf = "";
+    } else {
+      buf += ch;
+    }
+  }
+  const t = buf.trim();
+  if (t) out.push(t);
+  return out;
+}
+
+/**
  * Group a flat skills list into labelled buckets.
  *
  * Recognises two input shapes:
@@ -130,9 +157,8 @@ export function groupSkills(skills: string[]): Array<{ label: string | null; ite
           current = { label: (h2 ? h2[1] : h3![1]).trim(), items: [] };
           continue;
         }
-        for (const part of line.split(",")) {
-          const p = part.trim();
-          if (p) current.items.push(p);
+        for (const part of splitSkillsLine(line)) {
+          if (part) current.items.push(part);
         }
       }
       continue;

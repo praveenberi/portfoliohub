@@ -46,7 +46,7 @@ import toast from "react-hot-toast";
 import type { Portfolio, Profile, Experience, Education, Project, Certification } from "@prisma/client";
 import type { UserRole } from "@/lib/enums";
 import type { SectionConfig, SectionType, PortfolioConfig, HeroContent, BackgroundStyle } from "@/types";
-import { parseArr, parseJson, parseProjectImages } from "@/lib/utils";
+import { parseArr, parseJson, parseProjectImages, splitSkillsLine } from "@/lib/utils";
 import { GridBackground, DotBackground, AuroraBackground, Meteors } from "./animations";
 import { SectionAISuggestions, matchesSectionType, type AIResult, type AISuggestion } from "./manager";
 
@@ -1192,12 +1192,12 @@ function SkillsEditor({
   async function syncToProfile() {
     const raw = (content.customSkills as string) ?? "";
     if (!raw.trim()) return;
-    // Parse grouped format into flat list
+    // Parse grouped format into flat list (parens-aware splitter so
+    // "AWS (EC2, RDS)" stays one skill).
     const skills = raw
       .split("\n")
       .filter((l) => l.trim() && !l.trim().startsWith("#"))
-      .flatMap((l) => l.split(",").map((s) => s.trim()))
-      .filter(Boolean);
+      .flatMap((l) => splitSkillsLine(l));
     setSyncing(true);
     try {
       await fetch("/api/profile", {
@@ -2903,13 +2903,13 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
             flush();
             label = line.slice(3); level = 2; skills = [];
           } else if (line) {
-            skills.push(...line.split(",").map((s) => s.trim()).filter(Boolean));
+            skills.push(...splitSkillsLine(line));
           }
         }
         flush();
         return result.filter((g) => g.skills.length > 0 || g.label);
       }
-      return [{ label: null, level: 2, skills: rawCustom.split(",").map((s) => s.trim()).filter(Boolean) }];
+      return [{ label: null, level: 2, skills: splitSkillsLine(rawCustom) }];
     })();
 
     const totalSkills = groups.reduce((n, g) => n + g.skills.length, 0);

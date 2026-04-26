@@ -35,19 +35,15 @@ export default async function ResumePage() {
   // Bio: prefer profile.bio, fall back to portfolio about section bioOverride
   const bio = profile?.bio || (sectionOf("about").bioOverride as string) || "";
 
-  // Skills: prefer profile fields; fall back to portfolio skills section
+  // Skills: prefer profile fields; fall back to portfolio skills section.
+  // When falling back to the portfolio's customSkills, pass the raw multi-line
+  // string through as a single item so the resume's groupSkills() can detect
+  // the ## / ### headers and split commas with paren-awareness.
   let skills = parseArr(profile?.skills ?? "[]");
   let technologies = parseArr(profile?.technologies ?? "[]");
   if (skills.length === 0 && technologies.length === 0) {
-    // Fall back to portfolio Skills section customSkills
     const customSkills = sectionOf("skills").customSkills as string | undefined;
-    if (customSkills) {
-      skills = customSkills
-        .split("\n")
-        .filter((line) => !line.trim().startsWith("##") && line.trim())
-        .flatMap((line) => line.split(",").map((s) => s.trim()))
-        .filter(Boolean);
-    }
+    if (customSkills && customSkills.trim()) skills = [customSkills];
   } else {
     skills = skills.filter((s) => !s.trim().startsWith("##"));
     technologies = technologies.filter((s) => !s.trim().startsWith("##"));

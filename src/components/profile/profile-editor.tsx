@@ -24,7 +24,7 @@ import {
   CheckCircle,
   CloudArrowUp,
 } from "@phosphor-icons/react";
-import { parseArr, parseProjectImages } from "@/lib/utils";
+import { parseArr, parseProjectImages, splitSkillsLine } from "@/lib/utils";
 import { AutocompleteInput } from "@/components/ui/autocomplete-input";
 import { TagAutocompleteInput } from "@/components/ui/tag-autocomplete-input";
 import {
@@ -543,7 +543,7 @@ function ExperienceEditor({ experiences: initial, profileId }: { experiences: Ex
         endDate: !isCurrent && form.endDate ? `${form.endDate}-01` : null,
         isCurrent,
         description: form.description,
-        skills: form.skills.split(",").map((s) => s.trim()).filter(Boolean),
+        skills: splitSkillsLine(form.skills),
         order: items.length,
       };
       if (editing === "new") {
@@ -826,7 +826,7 @@ function ProjectsEditor({ projects: initial, profileId }: { projects: Project[];
       const payload = {
         title: form.title,
         description: form.description,
-        technologies: form.technologies.split(",").map((s) => s.trim()).filter(Boolean),
+        technologies: splitSkillsLine(form.technologies),
         startDate: form.startDate ? `${form.startDate}-01` : null,
         endDate: form.endDate ? `${form.endDate}-01` : null,
         liveUrl: form.liveUrl,

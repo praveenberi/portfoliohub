@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { parseArr, parseJson, parseProjectImages } from "@/lib/utils";
+import { parseArr, parseJson, parseProjectImages, splitSkillsLine } from "@/lib/utils";
 import {
   GithubLogo,
   LinkedinLogo,
@@ -555,13 +555,13 @@ function SectionRenderer({
             level = 2;
             skills = [];
           } else if (line) {
-            skills.push(...line.split(",").map((s) => s.trim()).filter(Boolean));
+            skills.push(...splitSkillsLine(line));
           }
         }
         flush();
         return result.filter((g) => g.skills.length > 0 || g.label);
       }
-      return [{ label: null, level: 2, skills: customSkills.split(",").map((s) => s.trim()).filter(Boolean) }];
+      return [{ label: null, level: 2, skills: splitSkillsLine(customSkills) }];
     })();
 
     if (groups.every((g) => g.skills.length === 0)) return null;
