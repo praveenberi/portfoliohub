@@ -1,9 +1,11 @@
 import type { ResumeData } from "../resume-viewer";
+import { groupSkills } from "@/lib/utils";
 
 interface Props { data: ResumeData; accentColor: string; }
 
 export function ClassicTemplate({ data, accentColor }: Props) {
   const allSkills = Array.from(new Set([...data.skills, ...data.technologies])).filter(Boolean);
+  const skillGroups = groupSkills(allSkills);
 
   return (
     <div className="bg-white text-zinc-900 text-[12.5px] leading-relaxed px-12 py-10 min-h-[297mm]"
@@ -39,12 +41,23 @@ export function ClassicTemplate({ data, accentColor }: Props) {
       {/* ── Skills ── */}
       {allSkills.length > 0 && (
         <Section title="Skills & Technologies" accentColor={accentColor}>
-          <div className="flex flex-wrap gap-x-1 gap-y-1">
-            {allSkills.map((s, i) => (
-              <span key={i}>
-                <span className="text-zinc-700">{s}</span>
-                {i < allSkills.length - 1 && <span className="text-zinc-300 mx-1">·</span>}
-              </span>
+          <div className="space-y-1.5">
+            {skillGroups.map((g, gi) => (
+              <div key={gi} className="flex items-baseline gap-2">
+                {g.label && (
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-950 shrink-0 min-w-[110px]">
+                    {g.label}:
+                  </span>
+                )}
+                <div className="flex flex-wrap gap-x-1 gap-y-0.5">
+                  {g.items.map((s, i) => (
+                    <span key={i}>
+                      <span className="text-zinc-700">{s}</span>
+                      {i < g.items.length - 1 && <span className="text-zinc-300 mx-1">·</span>}
+                    </span>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         </Section>

@@ -92,6 +92,66 @@ export function generatePortfolioSlug(name: string): string {
     .substring(0, 50);
 }
 
+/**
+ * Group a flat skills list into labelled buckets.
+ *
+ * Recognises two input shapes:
+ *   1. Items that embed their own group as a prefix, e.g. "AWS Services: EC2"
+ *      → starts an "AWS Services" group and adds "EC2" to it. Subsequent items
+ *      without a "Group:" prefix continue under the same group until the next
+ *      "Group:" marker.
+ *   2. Multi-line strings using markdown headings ("## Group" / "### Sub")
+ *      followed by comma-separated skills — same format the portfolio's
+ *      customSkills field accepts.
+ *
+ * Items at the top with no group are placed in an unlabelled bucket so the
+ * caller can render them without a header.
+ */
+export function groupSkills(skills: string[]): Array<{ label: string | null; items: string[] }> {
+  const groups: Array<{ label: string | null; items: string[] }> = [];
+  let current: { label: string | null; items: string[] } = { label: null, items: [] };
+  const push = () => {
+    if (current.items.length || current.label) groups.push(current);
+  };
+
+  for (const raw of skills) {
+    const text = (raw ?? "").trim();
+    if (!text) continue;
+
+    // Multi-line skill strings (## Group / ### Sub / "a, b, c")
+    if (text.includes("\n") || /^#{2,3}\s/.test(text)) {
+      for (const lineRaw of text.split(/\r?\n/)) {
+        const line = lineRaw.trim();
+        if (!line) continue;
+        const h2 = line.match(/^##\s+(.+)$/);
+        const h3 = line.match(/^###\s+(.+)$/);
+        if (h2 || h3) {
+          push();
+          current = { label: (h2 ? h2[1] : h3![1]).trim(), items: [] };
+          continue;
+        }
+        for (const part of line.split(",")) {
+          const p = part.trim();
+          if (p) current.items.push(p);
+        }
+      }
+      continue;
+    }
+
+    // "Group Name: skill" prefix → start a new group
+    const m = text.match(/^([A-Z][A-Za-z0-9&+/\-\s]{1,40}):\s*(.+)$/);
+    if (m) {
+      push();
+      current = { label: m[1].trim(), items: [m[2].trim()] };
+      continue;
+    }
+
+    current.items.push(text);
+  }
+  push();
+  return groups;
+}
+
 export function getInitials(name: string): string {
   return name
     .split(" ")

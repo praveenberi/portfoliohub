@@ -1,9 +1,11 @@
 import type { ResumeData } from "../resume-viewer";
+import { groupSkills } from "@/lib/utils";
 
 interface Props { data: ResumeData; accentColor: string; }
 
 export function ExecutiveTemplate({ data, accentColor }: Props) {
   const allSkills = Array.from(new Set([...data.skills, ...data.technologies])).filter(Boolean);
+  const skillGroups = groupSkills(allSkills);
 
   // Derive a very light tint for skill chips
   const chipBg = accentColor + "18"; // 10% opacity hex trick
@@ -44,15 +46,27 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
           </Section>
         )}
 
-        {/* ── Skills ── */}
+        {/* ── Skills — grouped ── */}
         {allSkills.length > 0 && (
           <Section title="Core Skills" accentColor={accentColor}>
-            <div className="flex flex-wrap gap-1.5">
-              {allSkills.map((s, i) => (
-                <span key={i} className="px-2.5 py-0.5 text-[11px] rounded border font-medium"
-                  style={{ borderColor: accentColor + "55", backgroundColor: chipBg, color: accentColor }}>
-                  {s}
-                </span>
+            <div className="space-y-2">
+              {skillGroups.map((g, gi) => (
+                <div key={gi} className="flex items-baseline gap-3">
+                  {g.label && (
+                    <span className="text-[10px] font-bold uppercase tracking-[0.12em] shrink-0 min-w-[110px]"
+                      style={{ color: accentColor }}>
+                      {g.label}
+                    </span>
+                  )}
+                  <div className="flex flex-wrap gap-1.5">
+                    {g.items.map((s, i) => (
+                      <span key={i} className="px-2.5 py-0.5 text-[11px] rounded border font-medium"
+                        style={{ borderColor: accentColor + "55", backgroundColor: chipBg, color: accentColor }}>
+                        {s}
+                      </span>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </Section>

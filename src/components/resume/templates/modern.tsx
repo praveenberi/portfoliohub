@@ -1,10 +1,12 @@
 import Image from "next/image";
 import type { ResumeData } from "../resume-viewer";
+import { groupSkills } from "@/lib/utils";
 
 interface Props { data: ResumeData; accentColor: string; }
 
 export function ModernTemplate({ data, accentColor }: Props) {
   const allSkills = Array.from(new Set([...data.skills, ...data.technologies])).filter(Boolean);
+  const skillGroups = groupSkills(allSkills);
 
   return (
     <div className="bg-white flex min-h-[297mm] text-[12.5px] leading-relaxed"
@@ -42,14 +44,25 @@ export function ModernTemplate({ data, accentColor }: Props) {
             </div>
           </SideSection>
 
-          {/* Skills */}
+          {/* Skills — grouped */}
           {allSkills.length > 0 && (
             <SideSection title="SKILLS">
-              <div className="flex flex-wrap gap-1">
-                {allSkills.map((skill, i) => (
-                  <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-white/15 text-white font-medium">
-                    {skill}
-                  </span>
+              <div className="space-y-2.5">
+                {skillGroups.map((g, i) => (
+                  <div key={i}>
+                    {g.label && (
+                      <p className="text-[9px] font-bold tracking-wider text-white/70 uppercase mb-1">
+                        {g.label}
+                      </p>
+                    )}
+                    <div className="flex flex-wrap gap-1">
+                      {g.items.map((skill, j) => (
+                        <span key={j} className="text-[10px] px-2 py-0.5 rounded-full bg-white/15 text-white font-medium">
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 ))}
               </div>
             </SideSection>
