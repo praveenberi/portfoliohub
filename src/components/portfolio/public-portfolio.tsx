@@ -569,17 +569,17 @@ function SectionRenderer({
     const SkillTag = ({ skill, i }: { skill: string; i: number }) =>
       displayStyle === "list" ? (
         <motion.div key={skill} initial={{ opacity: 0, x: -10 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-          className="flex items-center gap-2.5 px-3 py-2"
+          className="flex items-start gap-2.5 px-3 py-2"
           style={{ border: `1px solid ${border}`, color: textColor, backgroundColor: isMeteors ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.01)", borderRadius: "var(--cr)" }}>
-          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
-          <span className="text-sm font-medium">{skill}</span>
+          <div className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+          <span className="text-sm font-medium break-words">{skill}</span>
         </motion.div>
       ) : (
         <motion.div key={skill} initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.04 }}
-          className="flex items-center gap-2 px-3 py-2 text-sm font-medium"
+          className="inline-flex items-start gap-2 px-3 py-2 text-sm font-medium"
           style={{ border: `1px solid ${border}`, color: mutedText, backgroundColor: isMeteors ? "rgba(255,255,255,0.04)" : "rgba(0,0,0,0.02)", borderRadius: "var(--cr)" }}>
-          <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
-          <span className="truncate">{skill}</span>
+          <div className="mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: accent }} />
+          <span className="break-words">{skill}</span>
         </motion.div>
       );
 
@@ -608,7 +608,7 @@ function SectionRenderer({
                     {group.skills.map((skill, i) => <SkillTag key={skill} skill={skill} i={i} />)}
                   </div>
                 ) : (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {group.skills.map((skill, i) => <SkillTag key={skill} skill={skill} i={i} />)}
                   </div>
                 ))}

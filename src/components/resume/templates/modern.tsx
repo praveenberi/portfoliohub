@@ -57,7 +57,7 @@ export function ModernTemplate({ data, accentColor }: Props) {
                     )}
                     <div className="flex flex-wrap gap-1">
                       {g.items.map((skill, j) => (
-                        <span key={j} className="text-[10px] px-2 py-0.5 rounded-full bg-white/15 text-white font-medium">
+                        <span key={j} className="text-[10px] px-2 py-0.5 rounded-full bg-white/15 text-white font-medium break-words max-w-full leading-snug">
                           {skill}
                         </span>
                       ))}

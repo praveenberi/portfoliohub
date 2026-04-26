@@ -60,7 +60,7 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
                   )}
                   <div className="flex flex-wrap gap-1.5">
                     {g.items.map((s, i) => (
-                      <span key={i} className="px-2.5 py-0.5 text-[11px] rounded border font-medium"
+                      <span key={i} className="px-2.5 py-0.5 text-[11px] rounded border font-medium break-words max-w-full"
                         style={{ borderColor: accentColor + "55", backgroundColor: chipBg, color: accentColor }}>
                         {s}
                       </span>

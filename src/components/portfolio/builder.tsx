@@ -2933,7 +2933,7 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
         return (
           <div className="grid grid-cols-3 gap-2">
             {skills.map((skill) => (
-              <div key={skill} className={`px-3 py-2 rounded-lg border text-xs font-medium text-center ${borderColor}`} style={{ color: textColor }}>
+              <div key={skill} className={`px-3 py-2 rounded-lg border text-xs font-medium text-center break-words ${borderColor}`} style={{ color: textColor }}>
                 {skill}
               </div>
             ))}
