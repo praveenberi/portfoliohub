@@ -1,12 +1,15 @@
 import Image from "next/image";
-import type { ResumeData } from "../resume-viewer";
+import type { ResumeData, ResumeEditing } from "../resume-viewer";
 import { groupSkills } from "@/lib/utils";
+import { Editable } from "../editable";
 
-interface Props { data: ResumeData; accentColor: string; }
+interface Props { data: ResumeData; accentColor: string; editing?: ResumeEditing; }
 
-export function ModernTemplate({ data, accentColor }: Props) {
+export function ModernTemplate({ data, accentColor, editing }: Props) {
   const allSkills = Array.from(new Set([...data.skills, ...data.technologies])).filter(Boolean);
   const skillGroups = groupSkills(allSkills);
+  const ed = editing?.editable ?? false;
+  const ek = ed ? "edit" : "view";
 
   return (
     <div className="bg-white flex min-h-[297mm] text-[12.5px] leading-relaxed"
@@ -74,8 +77,12 @@ export function ModernTemplate({ data, accentColor }: Props) {
               <div className="space-y-2">
                 {data.certifications.map((c) => (
                   <div key={c.id}>
-                    <p className="text-[11px] font-semibold text-white leading-snug">{c.name}</p>
-                    <p className="text-[10px] text-white/70">{c.issuer}</p>
+                    <Editable as="p" className="text-[11px] font-semibold text-white leading-snug"
+                      value={c.name} editable={ed} editKey={`${ek}-cert-name-${c.id}`}
+                      onChange={(v) => editing?.updateCertification(c.id, { name: v })} />
+                    <Editable as="p" className="text-[10px] text-white/70"
+                      value={c.issuer} editable={ed} editKey={`${ek}-cert-issuer-${c.id}`}
+                      onChange={(v) => editing?.updateCertification(c.id, { issuer: v })} />
                     <p className="text-[10px] text-white/50">{c.issueDate}</p>
                   </div>
                 ))}
@@ -90,16 +97,22 @@ export function ModernTemplate({ data, accentColor }: Props) {
 
         {/* Name + headline */}
         <div className="mb-5">
-          <h1 className="text-3xl font-bold text-zinc-950 leading-tight">{data.name}</h1>
-          {data.headline && (
-            <p className="text-sm font-semibold mt-0.5" style={{ color: accentColor }}>{data.headline}</p>
+          <Editable as="h1" className="text-3xl font-bold text-zinc-950 leading-tight inline-block"
+            value={data.name} editable={ed} editKey={`${ek}-name`}
+            onChange={(v) => editing?.updateField("name", v)} />
+          {(data.headline || ed) && (
+            <Editable as="p" className="text-sm font-semibold mt-0.5 inline-block" style={{ color: accentColor }}
+              value={data.headline} editable={ed} editKey={`${ek}-headline`} placeholder="Add a headline"
+              onChange={(v) => editing?.updateField("headline", v)} />
           )}
         </div>
 
         {/* About Me */}
-        {data.bio && (
+        {(data.bio || ed) && (
           <MainSection title="ABOUT ME" color={accentColor}>
-            <p className="text-zinc-600 leading-relaxed">{data.bio}</p>
+            <Editable as="p" multiline className="text-zinc-600 leading-relaxed whitespace-pre-wrap"
+              value={data.bio} editable={ed} editKey={`${ek}-bio`} placeholder="Add a short professional summary"
+              onChange={(v) => editing?.updateField("bio", v)} />
           </MainSection>
         )}
 
@@ -109,21 +122,34 @@ export function ModernTemplate({ data, accentColor }: Props) {
             <div className="space-y-5">
               {data.experiences.map((e) => (
                 <div key={e.id}>
-                  <p className="font-bold text-[13px]" style={{ color: accentColor }}>{e.title}</p>
-                  <p className="font-semibold text-zinc-700 text-[12px]">{e.company}</p>
+                  <Editable as="p" className="font-bold text-[13px]" style={{ color: accentColor }}
+                    value={e.title} editable={ed} editKey={`${ek}-exp-title-${e.id}`}
+                    onChange={(v) => editing?.updateExperience(e.id, { title: v })} />
+                  <Editable as="p" className="font-semibold text-zinc-700 text-[12px]"
+                    value={e.company} editable={ed} editKey={`${ek}-exp-co-${e.id}`}
+                    onChange={(v) => editing?.updateExperience(e.id, { company: v })} />
                   <div className="flex justify-between text-[11px] text-zinc-400 italic mb-1">
                     <span>{e.startDate} – {e.endDate}</span>
-                    {e.location && <span>{e.location}</span>}
+                    {(e.location || ed) && (
+                      <Editable value={e.location} editable={ed} editKey={`${ek}-exp-loc-${e.id}`} placeholder="location"
+                        onChange={(v) => editing?.updateExperience(e.id, { location: v })} />
+                    )}
                   </div>
-                  {e.description && (
-                    <ul className="space-y-0.5 mt-1">
-                      {e.description.split("\n").filter(Boolean).map((line, i) => (
-                        <li key={i} className="flex gap-2 text-zinc-600">
-                          <span className="mt-1 shrink-0" style={{ color: accentColor }}>▪</span>
-                          <span>{line.replace(/^[-•▪]\s*/, "")}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  {(e.description || ed) && (
+                    ed ? (
+                      <Editable as="div" multiline className="text-zinc-600 text-[12px] whitespace-pre-wrap mt-1"
+                        value={e.description} editable={ed} editKey={`${ek}-exp-desc-${e.id}`} placeholder="One bullet per line"
+                        onChange={(v) => editing?.updateExperience(e.id, { description: v })} />
+                    ) : (
+                      <ul className="space-y-0.5 mt-1">
+                        {e.description.split("\n").filter(Boolean).map((line, i) => (
+                          <li key={i} className="flex gap-2 text-zinc-600">
+                            <span className="mt-1 shrink-0" style={{ color: accentColor }}>▪</span>
+                            <span>{line.replace(/^[-•▪]\s*/, "")}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )
                   )}
                 </div>
               ))}
@@ -138,12 +164,17 @@ export function ModernTemplate({ data, accentColor }: Props) {
               {data.projects.map((p) => (
                 <div key={p.id}>
                   <div className="flex items-baseline gap-2 flex-wrap">
-                    <p className="font-bold text-zinc-950">{p.title}</p>
+                    <Editable as="p" className="font-bold text-zinc-950" value={p.title} editable={ed} editKey={`${ek}-proj-title-${p.id}`}
+                      onChange={(v) => editing?.updateProject(p.id, { title: v })} />
                     {p.technologies.length > 0 && (
                       <span className="text-[11px]" style={{ color: accentColor }}>{p.technologies.join(", ")}</span>
                     )}
                   </div>
-                  {p.description && <p className="text-zinc-600 text-[12px] mt-0.5 leading-relaxed">{p.description}</p>}
+                  {(p.description || ed) && (
+                    <Editable as="p" multiline className="text-zinc-600 text-[12px] mt-0.5 leading-relaxed whitespace-pre-wrap"
+                      value={p.description} editable={ed} editKey={`${ek}-proj-desc-${p.id}`} placeholder="Describe the project"
+                      onChange={(v) => editing?.updateProject(p.id, { description: v })} />
+                  )}
                   {(p.liveUrl || p.githubUrl) && (
                     <p className="text-[11px] mt-0.5" style={{ color: accentColor }}>
                       {(p.liveUrl || p.githubUrl || "").replace(/^https?:\/\//, "")}
@@ -162,10 +193,26 @@ export function ModernTemplate({ data, accentColor }: Props) {
               {data.education.map((e) => (
                 <div key={e.id}>
                   <div className="flex justify-between">
-                    <p className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</p>
+                    <p className="font-bold text-zinc-950">
+                      <Editable value={e.degree} editable={ed} editKey={`${ek}-edu-deg-${e.id}`}
+                        onChange={(v) => editing?.updateEducation(e.id, { degree: v })} />
+                      {(e.field || ed) && (<>
+                        <span> in </span>
+                        <Editable value={e.field} editable={ed} editKey={`${ek}-edu-field-${e.id}`} placeholder="field"
+                          onChange={(v) => editing?.updateEducation(e.id, { field: v })} />
+                      </>)}
+                    </p>
                     <span className="text-[11px] text-zinc-400 italic whitespace-nowrap ml-4">{e.startDate} – {e.endDate}</span>
                   </div>
-                  <p className="text-zinc-500 text-[12px]">{e.institution}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
+                  <p className="text-zinc-500 text-[12px]">
+                    <Editable value={e.institution} editable={ed} editKey={`${ek}-edu-inst-${e.id}`}
+                      onChange={(v) => editing?.updateEducation(e.id, { institution: v })} />
+                    {(e.gpa || ed) && (<>
+                      <span> · GPA </span>
+                      <Editable value={e.gpa} editable={ed} editKey={`${ek}-edu-gpa-${e.id}`} placeholder="—"
+                        onChange={(v) => editing?.updateEducation(e.id, { gpa: v })} />
+                    </>)}
+                  </p>
                 </div>
               ))}
             </div>

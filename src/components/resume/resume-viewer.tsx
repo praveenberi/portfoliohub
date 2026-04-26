@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Printer, DownloadSimple, Warning, Article, EnvelopeSimple } from "@phosphor-icons/react";
+import { Printer, DownloadSimple, Warning, Article, EnvelopeSimple, PencilSimple, ArrowCounterClockwise } from "@phosphor-icons/react";
 import { ClassicTemplate } from "./templates/classic";
 import { ModernTemplate } from "./templates/modern";
 import { ExecutiveTemplate } from "./templates/executive";
@@ -90,17 +90,49 @@ const COLOR_PRESETS = [
 
 type MainTab = "resume" | "cover-letter";
 
+// Helper that swaps a single field on a list entry by id
+function patchById<T extends { id: string }>(list: T[], id: string, partial: Partial<T>): T[] {
+  return list.map((item) => (item.id === id ? { ...item, ...partial } : item));
+}
+
+export type ResumeEditing = {
+  editable: boolean;
+  updateField: <K extends keyof ResumeData>(key: K, value: ResumeData[K]) => void;
+  updateExperience: (id: string, partial: Partial<ResumeData["experiences"][number]>) => void;
+  updateEducation: (id: string, partial: Partial<ResumeData["education"][number]>) => void;
+  updateProject: (id: string, partial: Partial<ResumeData["projects"][number]>) => void;
+  updateCertification: (id: string, partial: Partial<ResumeData["certifications"][number]>) => void;
+  updateExtra: (id: string, partial: Partial<ResumeData["extras"][number]>) => void;
+};
+
 export function ResumeViewer({ data }: { data: ResumeData }) {
   const [mainTab, setMainTab]         = useState<MainTab>("resume");
   const [active, setActive]           = useState<TemplateId>("classic");
   const [accentColor, setAccentColor] = useState("#0D9488");
+  const [editing, setEditing]         = useState(false);
+  const [edited, setEdited]           = useState<ResumeData>(data);
 
-  const allSkills = [...data.skills, ...data.technologies].filter(Boolean);
+  // Re-sync from prop when the source profile changes (e.g. after resume page
+  // refresh). Discards in-progress local edits — the user can re-enter Edit
+  // mode if needed.
+  useEffect(() => { setEdited(data); }, [data]);
+
+  const allSkills = [...edited.skills, ...edited.technologies].filter(Boolean);
   const missing: string[] = [
-    !data.phone                                           && "Phone",
-    allSkills.length === 0                                && "Skills",
-    !data.linkedinUrl && !data.githubUrl && !data.website && "Links (LinkedIn / GitHub / Website)",
+    !edited.phone                                           && "Phone",
+    allSkills.length === 0                                  && "Skills",
+    !edited.linkedinUrl && !edited.githubUrl && !edited.website && "Links (LinkedIn / GitHub / Website)",
   ].filter(Boolean) as string[];
+
+  const editingApi: ResumeEditing = {
+    editable: editing,
+    updateField: (key, value) => setEdited((prev) => ({ ...prev, [key]: value })),
+    updateExperience:    (id, p) => setEdited((prev) => ({ ...prev, experiences:    patchById(prev.experiences,    id, p) })),
+    updateEducation:     (id, p) => setEdited((prev) => ({ ...prev, education:      patchById(prev.education,      id, p) })),
+    updateProject:       (id, p) => setEdited((prev) => ({ ...prev, projects:       patchById(prev.projects,       id, p) })),
+    updateCertification: (id, p) => setEdited((prev) => ({ ...prev, certifications: patchById(prev.certifications, id, p) })),
+    updateExtra:         (id, p) => setEdited((prev) => ({ ...prev, extras:         patchById(prev.extras,         id, p) })),
+  };
 
   const handlePrint = () => {
     // On mobile, window.open() + document.write() produces a blank page.
@@ -148,13 +180,36 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
             <p className="text-sm text-zinc-500 mt-1">Build your resume and generate a tailored cover letter.</p>
           </div>
           {mainTab === "resume" && (
-            <button
-              onClick={handlePrint}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-950 text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 active:scale-[0.98] transition-all shrink-0"
-            >
-              <DownloadSimple size={16} />
-              Download PDF
-            </button>
+            <div className="flex items-center gap-2 shrink-0">
+              {editing && (
+                <button
+                  onClick={() => setEdited(data)}
+                  title="Discard local edits and reload from your profile"
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-white text-zinc-700 text-sm font-medium rounded-xl border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 active:scale-[0.98] transition-all"
+                >
+                  <ArrowCounterClockwise size={14} />
+                  Reset
+                </button>
+              )}
+              <button
+                onClick={() => setEditing((v) => !v)}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 text-sm font-semibold rounded-xl active:scale-[0.98] transition-all border ${
+                  editing
+                    ? "bg-accent-500 text-white border-transparent hover:bg-accent-400"
+                    : "bg-white text-zinc-700 border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50"
+                }`}
+              >
+                <PencilSimple size={14} />
+                {editing ? "Done editing" : "Edit text"}
+              </button>
+              <button
+                onClick={handlePrint}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-950 text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 active:scale-[0.98] transition-all"
+              >
+                <DownloadSimple size={16} />
+                Download PDF
+              </button>
+            </div>
           )}
         </div>
 
@@ -275,10 +330,19 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
               </div>
 
               <div id="resume-print" className="max-w-[210mm] mx-auto">
-                {active === "classic"   && <ClassicTemplate   data={data} accentColor={accentColor} />}
-                {active === "modern"    && <ModernTemplate    data={data} accentColor={accentColor} />}
-                {active === "executive" && <ExecutiveTemplate data={data} accentColor={accentColor} />}
+                {active === "classic"   && <ClassicTemplate   data={edited} accentColor={accentColor} editing={editingApi} />}
+                {active === "modern"    && <ModernTemplate    data={edited} accentColor={accentColor} editing={editingApi} />}
+                {active === "executive" && <ExecutiveTemplate data={edited} accentColor={accentColor} editing={editingApi} />}
               </div>
+
+              {editing && (
+                <div className="px-5 pb-3 print:hidden">
+                  <div className="text-[11px] text-zinc-500 bg-zinc-50 border border-zinc-200 rounded-lg px-3 py-2">
+                    <span className="font-semibold text-zinc-700">Tip:</span> Click any underlined text to edit just for this download.
+                    Skills, dates, and the entry list itself are managed in <Link href="/dashboard/profile" className="underline font-medium">Profile</Link>.
+                  </div>
+                </div>
+              )}
             </div>
 
             <p className="text-xs text-zinc-400 text-center print:hidden">
@@ -289,7 +353,7 @@ export function ResumeViewer({ data }: { data: ResumeData }) {
 
         {/* ══════════ COVER LETTER TAB ══════════ */}
         {mainTab === "cover-letter" && (
-          <CoverLetterEditor data={data} accentColor={accentColor} />
+          <CoverLetterEditor data={edited} accentColor={accentColor} />
         )}
       </div>
     </>

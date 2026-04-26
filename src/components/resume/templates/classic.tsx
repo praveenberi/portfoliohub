@@ -1,11 +1,14 @@
-import type { ResumeData } from "../resume-viewer";
+import type { ResumeData, ResumeEditing } from "../resume-viewer";
 import { groupSkills } from "@/lib/utils";
+import { Editable } from "../editable";
 
-interface Props { data: ResumeData; accentColor: string; }
+interface Props { data: ResumeData; accentColor: string; editing?: ResumeEditing; }
 
-export function ClassicTemplate({ data, accentColor }: Props) {
+export function ClassicTemplate({ data, accentColor, editing }: Props) {
   const allSkills = Array.from(new Set([...data.skills, ...data.technologies])).filter(Boolean);
   const skillGroups = groupSkills(allSkills);
+  const ed = editing?.editable ?? false;
+  const ek = ed ? "edit" : "view";
 
   return (
     <div className="bg-white text-zinc-900 text-[12.5px] leading-relaxed px-12 py-10 min-h-[297mm]"
@@ -13,15 +16,28 @@ export function ClassicTemplate({ data, accentColor }: Props) {
 
       {/* ── Header ── */}
       <div className="text-center mb-6">
-        <h1 className="text-[32px] font-bold tracking-widest uppercase text-zinc-950 mb-1">{data.name}</h1>
-        {data.headline && (
-          <p className="text-sm tracking-wide mb-2" style={{ color: accentColor }}>{data.headline}</p>
+        <Editable as="h1" className="text-[32px] font-bold tracking-widest uppercase text-zinc-950 mb-1 inline-block"
+          value={data.name} editable={ed} editKey={`${ek}-name`}
+          onChange={(v) => editing?.updateField("name", v)} />
+        {(data.headline || ed) && (
+          <Editable as="p" className="text-sm tracking-wide mb-2 inline-block" style={{ color: accentColor }}
+            value={data.headline} editable={ed} editKey={`${ek}-headline`} placeholder="Add a headline"
+            onChange={(v) => editing?.updateField("headline", v)} />
         )}
         {/* Contact row */}
         <div className="flex flex-wrap justify-center gap-x-3 gap-y-0.5 text-[11px] text-zinc-500">
-          {data.email    && <span>{data.email}</span>}
-          {data.phone    && <><Pipe /><span>{data.phone}</span></>}
-          {data.location && <><Pipe /><span>{data.location}</span></>}
+          {(data.email || ed) && (
+            <Editable value={data.email} editable={ed} editKey={`${ek}-email`} placeholder="email"
+              onChange={(v) => editing?.updateField("email", v)} />
+          )}
+          {(data.phone || ed) && (<><Pipe />
+            <Editable value={data.phone} editable={ed} editKey={`${ek}-phone`} placeholder="phone"
+              onChange={(v) => editing?.updateField("phone", v)} />
+          </>)}
+          {(data.location || ed) && (<><Pipe />
+            <Editable value={data.location} editable={ed} editKey={`${ek}-loc`} placeholder="location"
+              onChange={(v) => editing?.updateField("location", v)} />
+          </>)}
           {data.website  && <><Pipe /><span>{data.website.replace(/^https?:\/\//, "")}</span></>}
           {data.linkedinUrl  && <><Pipe /><span>{data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "linkedin/")}</span></>}
           {data.githubUrl    && <><Pipe /><span>{data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github/")}</span></>}
@@ -32,9 +48,11 @@ export function ClassicTemplate({ data, accentColor }: Props) {
       </div>
 
       {/* ── About / Summary ── */}
-      {data.bio && (
+      {(data.bio || ed) && (
         <Section title="About Me" accentColor={accentColor}>
-          <p className="text-zinc-700 leading-relaxed">{data.bio}</p>
+          <Editable as="p" multiline className="text-zinc-700 leading-relaxed whitespace-pre-wrap"
+            value={data.bio} editable={ed} editKey={`${ek}-bio`} placeholder="Add a short professional summary"
+            onChange={(v) => editing?.updateField("bio", v)} />
         </Section>
       )}
 
@@ -71,23 +89,36 @@ export function ClassicTemplate({ data, accentColor }: Props) {
               <div key={e.id}>
                 <div className="flex justify-between items-baseline">
                   <div>
-                    <span className="font-bold text-zinc-950 text-[13px]">{e.title}</span>
-                    <span className="text-zinc-600"> — {e.company}</span>
-                    {e.location && <span className="text-zinc-400 text-[11px]"> · {e.location}</span>}
+                    <Editable className="font-bold text-zinc-950 text-[13px]" value={e.title} editable={ed} editKey={`${ek}-exp-title-${e.id}`}
+                      onChange={(v) => editing?.updateExperience(e.id, { title: v })} />
+                    <span className="text-zinc-600"> — </span>
+                    <Editable className="text-zinc-600" value={e.company} editable={ed} editKey={`${ek}-exp-co-${e.id}`}
+                      onChange={(v) => editing?.updateExperience(e.id, { company: v })} />
+                    {(e.location || ed) && (<>
+                      <span className="text-zinc-400 text-[11px]"> · </span>
+                      <Editable className="text-zinc-400 text-[11px]" value={e.location} editable={ed} editKey={`${ek}-exp-loc-${e.id}`} placeholder="location"
+                        onChange={(v) => editing?.updateExperience(e.id, { location: v })} />
+                    </>)}
                   </div>
                   <span className="text-[11px] text-zinc-500 whitespace-nowrap ml-4 italic">
                     {e.startDate} – {e.endDate}
                   </span>
                 </div>
-                {e.description && (
-                  <ul className="mt-1.5 space-y-0.5 ml-1">
-                    {e.description.split("\n").filter(Boolean).map((line, i) => (
-                      <li key={i} className="flex gap-2 text-zinc-700">
-                        <span className="shrink-0 mt-1" style={{ color: accentColor }}>•</span>
-                        <span>{line.replace(/^[-•]\s*/, "")}</span>
-                      </li>
-                    ))}
-                  </ul>
+                {(e.description || ed) && (
+                  ed ? (
+                    <Editable as="div" multiline className="mt-1.5 text-zinc-700 whitespace-pre-wrap"
+                      value={e.description} editable={ed} editKey={`${ek}-exp-desc-${e.id}`} placeholder="One bullet per line"
+                      onChange={(v) => editing?.updateExperience(e.id, { description: v })} />
+                  ) : (
+                    <ul className="mt-1.5 space-y-0.5 ml-1">
+                      {e.description.split("\n").filter(Boolean).map((line, i) => (
+                        <li key={i} className="flex gap-2 text-zinc-700">
+                          <span className="shrink-0 mt-1" style={{ color: accentColor }}>•</span>
+                          <span>{line.replace(/^[-•]\s*/, "")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )
                 )}
               </div>
             ))}
@@ -102,14 +133,19 @@ export function ClassicTemplate({ data, accentColor }: Props) {
             {data.projects.map((p) => (
               <div key={p.id}>
                 <div className="flex items-baseline gap-2 flex-wrap">
-                  <span className="font-bold text-zinc-950">{p.title}</span>
+                  <Editable className="font-bold text-zinc-950" value={p.title} editable={ed} editKey={`${ek}-proj-title-${p.id}`}
+                    onChange={(v) => editing?.updateProject(p.id, { title: v })} />
                   {p.technologies.length > 0 && (
                     <span className="text-[11px]" style={{ color: accentColor }}>
                       {p.technologies.join(", ")}
                     </span>
                   )}
                 </div>
-                {p.description && <p className="text-zinc-700 mt-0.5 leading-relaxed">{p.description}</p>}
+                {(p.description || ed) && (
+                  <Editable as="p" multiline className="text-zinc-700 mt-0.5 leading-relaxed whitespace-pre-wrap"
+                    value={p.description} editable={ed} editKey={`${ek}-proj-desc-${p.id}`} placeholder="Describe the project"
+                    onChange={(v) => editing?.updateProject(p.id, { description: v })} />
+                )}
                 {(p.liveUrl || p.githubUrl) && (
                   <p className="text-[11px] mt-0.5" style={{ color: accentColor }}>
                     {(p.liveUrl || p.githubUrl || "").replace(/^https?:\/\//, "")}
@@ -128,9 +164,21 @@ export function ClassicTemplate({ data, accentColor }: Props) {
             {data.education.map((e) => (
               <div key={e.id} className="flex justify-between">
                 <div>
-                  <span className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</span>
-                  <span className="text-zinc-600"> — {e.institution}</span>
-                  {e.gpa && <span className="text-zinc-400 text-[11px]"> · GPA: {e.gpa}</span>}
+                  <Editable className="font-bold text-zinc-950" value={e.degree} editable={ed} editKey={`${ek}-edu-deg-${e.id}`}
+                    onChange={(v) => editing?.updateEducation(e.id, { degree: v })} />
+                  {(e.field || ed) && (<>
+                    <span className="text-zinc-950"> in </span>
+                    <Editable className="font-bold text-zinc-950" value={e.field} editable={ed} editKey={`${ek}-edu-field-${e.id}`} placeholder="field"
+                      onChange={(v) => editing?.updateEducation(e.id, { field: v })} />
+                  </>)}
+                  <span className="text-zinc-600"> — </span>
+                  <Editable className="text-zinc-600" value={e.institution} editable={ed} editKey={`${ek}-edu-inst-${e.id}`}
+                    onChange={(v) => editing?.updateEducation(e.id, { institution: v })} />
+                  {(e.gpa || ed) && (<>
+                    <span className="text-zinc-400 text-[11px]"> · GPA: </span>
+                    <Editable className="text-zinc-400 text-[11px]" value={e.gpa} editable={ed} editKey={`${ek}-edu-gpa-${e.id}`} placeholder="—"
+                      onChange={(v) => editing?.updateEducation(e.id, { gpa: v })} />
+                  </>)}
                 </div>
                 <span className="text-[11px] text-zinc-500 whitespace-nowrap ml-4 italic">
                   {e.startDate} – {e.endDate}
@@ -148,8 +196,11 @@ export function ClassicTemplate({ data, accentColor }: Props) {
             {data.certifications.map((c) => (
               <div key={c.id} className="flex justify-between">
                 <span>
-                  <span className="font-semibold text-zinc-950">{c.name}</span>
-                  <span className="text-zinc-600"> — {c.issuer}</span>
+                  <Editable className="font-semibold text-zinc-950" value={c.name} editable={ed} editKey={`${ek}-cert-name-${c.id}`}
+                    onChange={(v) => editing?.updateCertification(c.id, { name: v })} />
+                  <span className="text-zinc-600"> — </span>
+                  <Editable className="text-zinc-600" value={c.issuer} editable={ed} editKey={`${ek}-cert-issuer-${c.id}`}
+                    onChange={(v) => editing?.updateCertification(c.id, { issuer: v })} />
                 </span>
                 <span className="text-[11px] text-zinc-500 italic whitespace-nowrap ml-4">{c.issueDate}</span>
               </div>

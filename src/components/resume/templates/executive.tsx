@@ -1,11 +1,14 @@
-import type { ResumeData } from "../resume-viewer";
+import type { ResumeData, ResumeEditing } from "../resume-viewer";
 import { groupSkills } from "@/lib/utils";
+import { Editable } from "../editable";
 
-interface Props { data: ResumeData; accentColor: string; }
+interface Props { data: ResumeData; accentColor: string; editing?: ResumeEditing; }
 
-export function ExecutiveTemplate({ data, accentColor }: Props) {
+export function ExecutiveTemplate({ data, accentColor, editing }: Props) {
   const allSkills = Array.from(new Set([...data.skills, ...data.technologies])).filter(Boolean);
   const skillGroups = groupSkills(allSkills);
+  const ed = editing?.editable ?? false;
+  const ek = ed ? "edit" : "view";
 
   // Derive a very light tint for skill chips
   const chipBg = accentColor + "18"; // 10% opacity hex trick
@@ -18,16 +21,30 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
       <div className="px-12 pt-10 pb-7" style={{ borderBottom: `3px solid ${accentColor}` }}>
         <div className="flex items-end justify-between gap-6">
           <div>
-            <h1 className="text-[38px] font-light tracking-tight text-zinc-950 leading-none">{data.name}</h1>
-            {data.headline && (
-              <p className="text-sm font-semibold mt-1 tracking-wide" style={{ color: accentColor }}>{data.headline}</p>
+            <Editable as="h1" className="text-[38px] font-light tracking-tight text-zinc-950 leading-none inline-block"
+              value={data.name} editable={ed} editKey={`${ek}-name`}
+              onChange={(v) => editing?.updateField("name", v)} />
+            {(data.headline || ed) && (
+              <Editable as="p" className="text-sm font-semibold mt-1 tracking-wide inline-block"
+                style={{ color: accentColor }}
+                value={data.headline} editable={ed} editKey={`${ek}-headline`} placeholder="Add a headline"
+                onChange={(v) => editing?.updateField("headline", v)} />
             )}
           </div>
           {/* Contact block */}
           <div className="text-right text-[11px] text-zinc-500 space-y-0.5 shrink-0">
-            {data.email       && <p>{data.email}</p>}
-            {data.phone       && <p>{data.phone}</p>}
-            {data.location    && <p>{data.location}</p>}
+            {(data.email || ed) && (
+              <Editable as="p" value={data.email} editable={ed} editKey={`${ek}-email`} placeholder="email"
+                onChange={(v) => editing?.updateField("email", v)} />
+            )}
+            {(data.phone || ed) && (
+              <Editable as="p" value={data.phone} editable={ed} editKey={`${ek}-phone`} placeholder="phone"
+                onChange={(v) => editing?.updateField("phone", v)} />
+            )}
+            {(data.location || ed) && (
+              <Editable as="p" value={data.location} editable={ed} editKey={`${ek}-loc`} placeholder="location"
+                onChange={(v) => editing?.updateField("location", v)} />
+            )}
             {data.website     && <p>{data.website.replace(/^https?:\/\//, "")}</p>}
             {data.linkedinUrl  && <p>{data.linkedinUrl.replace(/^https?:\/\/(www\.)?linkedin\.com\/in\//, "linkedin.com/in/")}</p>}
             {data.githubUrl    && <p>{data.githubUrl.replace(/^https?:\/\/(www\.)?github\.com\//, "github.com/")}</p>}
@@ -40,9 +57,11 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
       <div className="px-12 py-8 space-y-6">
 
         {/* ── About Me ── */}
-        {data.bio && (
+        {(data.bio || ed) && (
           <Section title="About Me" accentColor={accentColor}>
-            <p className="text-zinc-600 leading-relaxed text-[12px]">{data.bio}</p>
+            <Editable as="p" multiline className="text-zinc-600 leading-relaxed text-[12px] whitespace-pre-wrap"
+              value={data.bio} editable={ed} editKey={`${ek}-bio`} placeholder="Add a short professional summary"
+              onChange={(v) => editing?.updateField("bio", v)} />
           </Section>
         )}
 
@@ -80,23 +99,39 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
                 <div key={e.id}>
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="font-bold text-zinc-950 text-[13px]">{e.title}</p>
-                      <p className="text-zinc-500 text-[12px]">{e.company}{e.location ? ` · ${e.location}` : ""}</p>
+                      <Editable as="p" className="font-bold text-zinc-950 text-[13px]"
+                        value={e.title} editable={ed} editKey={`${ek}-exp-title-${e.id}`}
+                        onChange={(v) => editing?.updateExperience(e.id, { title: v })} />
+                      <p className="text-zinc-500 text-[12px]">
+                        <Editable value={e.company} editable={ed} editKey={`${ek}-exp-co-${e.id}`}
+                          onChange={(v) => editing?.updateExperience(e.id, { company: v })} />
+                        {(e.location || ed) && (<>
+                          <span> · </span>
+                          <Editable value={e.location} editable={ed} editKey={`${ek}-exp-loc-${e.id}`} placeholder="location"
+                            onChange={(v) => editing?.updateExperience(e.id, { location: v })} />
+                        </>)}
+                      </p>
                     </div>
                     <span className="text-[11px] text-zinc-400 whitespace-nowrap ml-6 tabular-nums pt-0.5">
                       {e.startDate} – {e.endDate}
                     </span>
                   </div>
-                  {e.description && (
-                    <ul className="mt-2 space-y-1 ml-3">
-                      {e.description.split("\n").filter(Boolean).map((line, i) => (
-                        <li key={i} className="flex gap-2 text-zinc-600">
-                          <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full inline-block"
-                            style={{ backgroundColor: accentColor }} />
-                          <span>{line.replace(/^[-•]\s*/, "")}</span>
-                        </li>
-                      ))}
-                    </ul>
+                  {(e.description || ed) && (
+                    ed ? (
+                      <Editable as="div" multiline className="mt-2 text-zinc-600 whitespace-pre-wrap"
+                        value={e.description} editable={ed} editKey={`${ek}-exp-desc-${e.id}`} placeholder="One bullet per line"
+                        onChange={(v) => editing?.updateExperience(e.id, { description: v })} />
+                    ) : (
+                      <ul className="mt-2 space-y-1 ml-3">
+                        {e.description.split("\n").filter(Boolean).map((line, i) => (
+                          <li key={i} className="flex gap-2 text-zinc-600">
+                            <span className="shrink-0 mt-1.5 w-1.5 h-1.5 rounded-full inline-block"
+                              style={{ backgroundColor: accentColor }} />
+                            <span>{line.replace(/^[-•]\s*/, "")}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )
                   )}
                 </div>
               ))}
@@ -111,7 +146,9 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
               {data.projects.map((p) => (
                 <div key={p.id} className="pl-4" style={{ borderLeft: `3px solid ${accentColor}` }}>
                   <div className="flex items-baseline gap-3 flex-wrap">
-                    <p className="font-bold text-zinc-950">{p.title}</p>
+                    <Editable as="p" className="font-bold text-zinc-950"
+                      value={p.title} editable={ed} editKey={`${ek}-proj-title-${p.id}`}
+                      onChange={(v) => editing?.updateProject(p.id, { title: v })} />
                     {p.technologies.length > 0 && (
                       <span className="text-[11px]" style={{ color: accentColor }}>{p.technologies.join(", ")}</span>
                     )}
@@ -121,7 +158,11 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
                       </span>
                     )}
                   </div>
-                  {p.description && <p className="text-zinc-600 text-[12px] mt-0.5 leading-relaxed">{p.description}</p>}
+                  {(p.description || ed) && (
+                    <Editable as="p" multiline className="text-zinc-600 text-[12px] mt-0.5 leading-relaxed whitespace-pre-wrap"
+                      value={p.description} editable={ed} editKey={`${ek}-proj-desc-${p.id}`} placeholder="Describe the project"
+                      onChange={(v) => editing?.updateProject(p.id, { description: v })} />
+                  )}
                 </div>
               ))}
             </div>
@@ -135,8 +176,24 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
               {data.education.map((e) => (
                 <div key={e.id} className="flex justify-between">
                   <div>
-                    <p className="font-bold text-zinc-950">{e.degree}{e.field ? ` in ${e.field}` : ""}</p>
-                    <p className="text-zinc-500 text-[12px]">{e.institution}{e.gpa ? ` · GPA ${e.gpa}` : ""}</p>
+                    <p className="font-bold text-zinc-950">
+                      <Editable value={e.degree} editable={ed} editKey={`${ek}-edu-deg-${e.id}`}
+                        onChange={(v) => editing?.updateEducation(e.id, { degree: v })} />
+                      {(e.field || ed) && (<>
+                        <span> in </span>
+                        <Editable value={e.field} editable={ed} editKey={`${ek}-edu-field-${e.id}`} placeholder="field"
+                          onChange={(v) => editing?.updateEducation(e.id, { field: v })} />
+                      </>)}
+                    </p>
+                    <p className="text-zinc-500 text-[12px]">
+                      <Editable value={e.institution} editable={ed} editKey={`${ek}-edu-inst-${e.id}`}
+                        onChange={(v) => editing?.updateEducation(e.id, { institution: v })} />
+                      {(e.gpa || ed) && (<>
+                        <span> · GPA </span>
+                        <Editable value={e.gpa} editable={ed} editKey={`${ek}-edu-gpa-${e.id}`} placeholder="—"
+                          onChange={(v) => editing?.updateEducation(e.id, { gpa: v })} />
+                      </>)}
+                    </p>
                   </div>
                   <span className="text-[11px] text-zinc-400 whitespace-nowrap ml-6 tabular-nums">
                     {e.startDate} – {e.endDate}
@@ -154,8 +211,13 @@ export function ExecutiveTemplate({ data, accentColor }: Props) {
               {data.certifications.map((c) => (
                 <div key={c.id} className="flex justify-between">
                   <span>
-                    <span className="font-semibold text-zinc-950">{c.name}</span>
-                    <span className="text-zinc-500 text-[12px]"> — {c.issuer}</span>
+                    <Editable className="font-semibold text-zinc-950"
+                      value={c.name} editable={ed} editKey={`${ek}-cert-name-${c.id}`}
+                      onChange={(v) => editing?.updateCertification(c.id, { name: v })} />
+                    <span className="text-zinc-500 text-[12px]"> — </span>
+                    <Editable className="text-zinc-500 text-[12px]"
+                      value={c.issuer} editable={ed} editKey={`${ek}-cert-issuer-${c.id}`}
+                      onChange={(v) => editing?.updateCertification(c.id, { issuer: v })} />
                   </span>
                   <span className="text-[11px] text-zinc-400 whitespace-nowrap ml-4">{c.issueDate}</span>
                 </div>
