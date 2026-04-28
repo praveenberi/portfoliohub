@@ -2527,7 +2527,64 @@ function HeroMediaEditor({
           onChange={(e) => onChange({ ...content, headlineOverride: e.target.value || undefined })}
           className="w-full h-9 px-2.5 rounded-lg border border-zinc-200 bg-white text-xs text-zinc-800 focus:outline-none focus:border-zinc-400"
         />
-        <div className="flex items-center justify-between gap-2">
+
+        {/* Headline color */}
+        <div className="space-y-1.5">
+          <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Headline color</label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={content.headlineColor ?? "#71717a"}
+              onChange={(e) => onChange({ ...content, headlineColor: e.target.value })}
+              className="w-9 h-9 rounded-lg border border-zinc-200 cursor-pointer p-0.5 bg-white"
+            />
+            <input
+              type="text"
+              value={content.headlineColor ?? ""}
+              placeholder="auto (matches theme)"
+              onChange={(e) => {
+                const v = e.target.value.trim();
+                onChange({ ...content, headlineColor: v || undefined });
+              }}
+              className="flex-1 h-9 px-2.5 rounded-lg border border-zinc-200 bg-white text-[11px] font-mono text-zinc-700 focus:outline-none focus:border-zinc-400"
+            />
+            {content.headlineColor && (
+              <button
+                onClick={() => onChange({ ...content, headlineColor: undefined })}
+                title="Reset to theme default"
+                className="shrink-0 w-9 h-9 rounded-lg border border-zinc-200 bg-white text-zinc-400 hover:text-zinc-700 hover:border-zinc-300 flex items-center justify-center transition-colors"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-1">
+            {[
+              { label: "White", value: "#ffffff" },
+              { label: "Black", value: "#09090b" },
+              { label: "Slate", value: "#475569" },
+              { label: "Accent", value: "#22c55e" },
+              { label: "Sky", value: "#0ea5e9" },
+              { label: "Indigo", value: "#6366f1" },
+              { label: "Rose", value: "#f43f5e" },
+              { label: "Amber", value: "#f59e0b" },
+            ].map((swatch) => (
+              <button
+                key={swatch.value}
+                onClick={() => onChange({ ...content, headlineColor: swatch.value })}
+                title={swatch.label}
+                className={`w-5 h-5 rounded-full border transition-transform hover:scale-110 ${
+                  content.headlineColor?.toLowerCase() === swatch.value.toLowerCase()
+                    ? "ring-2 ring-offset-1 ring-zinc-900 border-white"
+                    : "border-zinc-200"
+                }`}
+                style={{ backgroundColor: swatch.value }}
+              />
+            ))}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between gap-2 pt-1">
           <p className="text-[10px] text-zinc-400">
             {headline ? "Overrides your profile headline in this portfolio's hero." : profileHeadline ? `Using profile headline: "${profileHeadline}"` : "Add a short tagline shown under your name."}
           </p>
@@ -2899,7 +2956,7 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
             <h1 className="text-4xl font-bold tracking-tight mb-4" style={{ color: hasMedia && isBackground ? "#ffffff" : textColor }}>
               {profile?.firstName ? `${profile.firstName} ${profile.lastName ?? ""}`.trim() : user.name ?? "Your Name"}
             </h1>
-            <p className="text-lg mb-6" style={{ color: hasMedia && isBackground ? "rgba(255,255,255,0.7)" : subTextColor }}>
+            <p className="text-lg mb-6" style={{ color: heroContent.headlineColor || (hasMedia && isBackground ? "rgba(255,255,255,0.7)" : subTextColor) }}>
               {heroContent.headlineOverride || profile?.headline || "Software Engineer · Designer · Creator"}
             </p>
             <div className="flex gap-3">

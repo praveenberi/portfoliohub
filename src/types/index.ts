@@ -72,6 +72,8 @@ export interface HeroContent {
   overlayOpacity?: number; // 0-80, percentage
   /** Overrides profile.headline for this portfolio when set. */
   headlineOverride?: string;
+  /** Optional CSS color (hex / rgb) applied to the headline text. Falls back to theme defaults. */
+  headlineColor?: string;
 }
 
 export interface PortfolioConfig {

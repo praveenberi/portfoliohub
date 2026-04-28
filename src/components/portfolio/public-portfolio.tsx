@@ -430,7 +430,7 @@ function SectionRenderer({
             </h1>
 
             {(heroContent.headlineOverride || profile?.headline) && (
-              <p className="text-xl mb-6" style={{ color: hasMedia && isBackground ? "rgba(255,255,255,0.75)" : mutedText }}>
+              <p className="text-xl mb-6" style={{ color: heroContent.headlineColor || (hasMedia && isBackground ? "rgba(255,255,255,0.75)" : mutedText) }}>
                 {heroContent.headlineOverride || profile?.headline}
               </p>
             )}
