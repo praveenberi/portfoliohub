@@ -70,6 +70,8 @@ export interface HeroContent {
   mediaUrl?: string;
   mediaMode?: "background" | "featured"; // bg covers section, featured shows beside text
   overlayOpacity?: number; // 0-80, percentage
+  /** Overrides profile.headline for this portfolio when set. */
+  headlineOverride?: string;
 }
 
 export interface PortfolioConfig {

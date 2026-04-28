@@ -429,9 +429,9 @@ function SectionRenderer({
               {user.name}
             </h1>
 
-            {profile?.headline && (
+            {(heroContent.headlineOverride || profile?.headline) && (
               <p className="text-xl mb-6" style={{ color: hasMedia && isBackground ? "rgba(255,255,255,0.75)" : mutedText }}>
-                {profile.headline}
+                {heroContent.headlineOverride || profile?.headline}
               </p>
             )}
 

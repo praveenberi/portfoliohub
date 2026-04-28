@@ -1001,7 +1001,7 @@ function SectionEditor({
       )}
 
       {section.type === "hero" && (
-        <HeroMediaEditor content={section.content as HeroContent} onChange={onChange} />
+        <HeroMediaEditor content={section.content as HeroContent} profile={profile} onProfileUpdate={onProfileUpdate} onChange={onChange} />
       )}
       {section.type === "about" && (
         <AboutEditor content={section.content} onChange={onChange} />
@@ -2397,16 +2397,42 @@ function AutoPlayVideo({ src, className }: { src: string; className: string }) {
 
 function HeroMediaEditor({
   content,
+  profile,
+  onProfileUpdate,
   onChange,
 }: {
   content: HeroContent;
+  profile: BuilderProps["profile"];
+  onProfileUpdate: React.Dispatch<React.SetStateAction<BuilderProps["profile"]>>;
   onChange: (c: Record<string, unknown>) => void;
 }) {
   const [urlInput, setUrlInput] = useState(content.mediaUrl ?? "");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [dragOver, setDragOver] = useState(false);
+  const [syncingHeadline, setSyncingHeadline] = useState(false);
+  const [syncedHeadline, setSyncedHeadline] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const headline = content.headlineOverride ?? "";
+  const profileHeadline = profile?.headline ?? "";
+  const canSyncHeadline = headline.trim().length > 0 && headline.trim() !== profileHeadline.trim();
+
+  async function syncHeadlineToProfile() {
+    if (!canSyncHeadline) return;
+    setSyncingHeadline(true);
+    try {
+      const next = headline.trim().slice(0, 160);
+      await axios.patch("/api/profile", { headline: next });
+      onProfileUpdate((p) => (p ? { ...p, headline: next } : p));
+      setSyncedHeadline(true);
+      setTimeout(() => setSyncedHeadline(false), 2500);
+    } catch {
+      toast.error("Failed to sync to profile");
+    } finally {
+      setSyncingHeadline(false);
+    }
+  }
 
   const isImage = content.mediaType === "image";
   const isVideo = content.mediaType === "video";
@@ -2486,7 +2512,38 @@ function HeroMediaEditor({
   }
 
   return (
-    <div className="bg-zinc-50 rounded-xl border border-zinc-200 p-3 mt-2 space-y-3">
+    <div className="space-y-3 mt-2">
+      {/* ── Headline ── */}
+      <div className="bg-zinc-50 rounded-xl border border-zinc-200 p-3 space-y-2">
+        <div className="flex items-center gap-1.5">
+          <PencilSimple size={12} className="text-zinc-500" />
+          <span className="text-xs font-semibold text-zinc-700">Headline</span>
+        </div>
+        <input
+          type="text"
+          value={headline}
+          maxLength={160}
+          placeholder={profileHeadline || "Full-stack developer & open-source contributor"}
+          onChange={(e) => onChange({ ...content, headlineOverride: e.target.value || undefined })}
+          className="w-full h-9 px-2.5 rounded-lg border border-zinc-200 bg-white text-xs text-zinc-800 focus:outline-none focus:border-zinc-400"
+        />
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[10px] text-zinc-400">
+            {headline ? "Overrides your profile headline in this portfolio's hero." : profileHeadline ? `Using profile headline: "${profileHeadline}"` : "Add a short tagline shown under your name."}
+          </p>
+          {canSyncHeadline && (
+            <button
+              onClick={syncHeadlineToProfile}
+              disabled={syncingHeadline}
+              className="shrink-0 px-2 py-1 rounded-md border border-zinc-200 text-[10px] font-medium text-zinc-600 hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-all disabled:opacity-50"
+            >
+              {syncingHeadline ? "Syncing…" : syncedHeadline ? "✓ Synced" : "↑ Sync to Profile"}
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="bg-zinc-50 rounded-xl border border-zinc-200 p-3 space-y-3">
       <div className="flex items-center gap-1.5">
         <PencilSimple size={12} className="text-zinc-500" />
         <span className="text-xs font-semibold text-zinc-700">Hero Media</span>
@@ -2676,6 +2733,7 @@ function HeroMediaEditor({
           )}
         </>
       )}
+      </div>
     </div>
   );
 }
@@ -2842,7 +2900,7 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
               {profile?.firstName ? `${profile.firstName} ${profile.lastName ?? ""}`.trim() : user.name ?? "Your Name"}
             </h1>
             <p className="text-lg mb-6" style={{ color: hasMedia && isBackground ? "rgba(255,255,255,0.7)" : subTextColor }}>
-              {profile?.headline ?? "Software Engineer · Designer · Creator"}
+              {heroContent.headlineOverride || profile?.headline || "Software Engineer · Designer · Creator"}
             </p>
             <div className="flex gap-3">
               <button className="px-5 py-2 text-sm font-semibold text-white rounded-lg" style={{ background: accent }}>View projects</button>
