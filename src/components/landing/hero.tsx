@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { motion } from "framer-motion";
+import { useSession } from "next-auth/react";
 import { ArrowRight, Briefcase, ChartLineUp, Layout } from "@phosphor-icons/react";
 import Image from "next/image";
 
@@ -20,6 +21,8 @@ const item = {
 };
 
 export function HeroSection({ stats }: HeroProps) {
+  const { data: session } = useSession();
+  const jobsHref = session ? "/dashboard/jobs" : `/login?callbackUrl=${encodeURIComponent("/dashboard/jobs")}`;
   return (
     <section className="relative min-h-[100dvh] flex items-center overflow-hidden bg-zinc-50 pt-16">
       {/* Mesh gradient background */}
@@ -88,7 +91,7 @@ export function HeroSection({ stats }: HeroProps) {
                 <ArrowRight size={16} weight="bold" />
               </Link>
               <Link
-                href="/jobs"
+                href={jobsHref}
                 className="inline-flex items-center gap-2 px-6 py-3 text-zinc-700 text-sm font-medium border border-zinc-200 rounded-xl hover:border-zinc-400 hover:bg-white active:scale-[0.98] transition-all duration-150"
               >
                 Browse jobs

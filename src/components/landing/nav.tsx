@@ -8,10 +8,12 @@ import { List, X } from "@phosphor-icons/react";
 import { Logo } from "@/components/logo";
 import { cn } from "@/lib/utils";
 
-const navLinks = [
+type NavLink = { label: string; href: string; requiresAuth?: boolean };
+
+const navLinks: NavLink[] = [
   { label: "Features", href: "#features" },
   { label: "Templates", href: "#templates" },
-  { label: "Jobs", href: "/jobs" },
+  { label: "Jobs", href: "/dashboard/jobs", requiresAuth: true },
   { label: "Pricing", href: "#pricing" },
 ];
 
@@ -19,6 +21,13 @@ export function LandingNav() {
   const { data: session } = useSession();
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Routes that require auth become /login?callbackUrl=… for unauthenticated visitors
+  // so they land on the gated page after signing in.
+  const resolveHref = (link: NavLink) =>
+    link.requiresAuth && !session
+      ? `/login?callbackUrl=${encodeURIComponent(link.href)}`
+      : link.href;
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -49,7 +58,7 @@ export function LandingNav() {
           {navLinks.map((link) => (
             <Link
               key={link.label}
-              href={link.href}
+              href={resolveHref(link)}
               className="px-4 py-2 text-sm text-zinc-600 hover:text-zinc-950 hover:bg-zinc-100 rounded-lg transition-all duration-150 font-medium"
             >
               {link.label}
@@ -108,7 +117,7 @@ export function LandingNav() {
             {navLinks.map((link) => (
               <Link
                 key={link.label}
-                href={link.href}
+                href={resolveHref(link)}
                 onClick={() => setMobileOpen(false)}
                 className="block px-4 py-2.5 text-sm font-medium text-zinc-700 hover:bg-zinc-50 rounded-lg transition-colors"
               >
