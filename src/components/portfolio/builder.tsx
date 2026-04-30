@@ -1004,7 +1004,7 @@ function SectionEditor({
         <HeroMediaEditor content={section.content as HeroContent} profile={profile} onProfileUpdate={onProfileUpdate} onChange={onChange} />
       )}
       {section.type === "about" && (
-        <AboutEditor content={section.content} onChange={onChange} />
+        <AboutEditor content={section.content} profile={profile} onChange={onChange} />
       )}
       {section.type === "skills" && (
         <SkillsEditor content={section.content} profile={profile} onChange={onChange} />
@@ -1133,11 +1133,50 @@ function FormattedTextarea({
 
 function AboutEditor({
   content,
+  profile,
   onChange,
 }: {
   content: Record<string, unknown>;
+  profile: BuilderProps["profile"];
   onChange: (c: Record<string, unknown>) => void;
 }) {
+  const photoUrl = (content.photoUrl as string) ?? "";
+  const profileAvatar = profile?.avatarUrl ?? "";
+  const effectivePhoto = photoUrl || profileAvatar;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [urlInput, setUrlInput] = useState("");
+
+  async function handleFile(file: File) {
+    const allowed = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"];
+    if (!allowed.includes(file.type)) {
+      toast.error("Please select a JPG, PNG, WebP or GIF image");
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File too large. Max 10 MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await axios.post("/api/upload", fd);
+      const url = res.data?.url as string;
+      if (url) {
+        onChange({ photoUrl: url });
+        toast.success("Photo uploaded");
+      } else {
+        toast.error("Upload failed");
+      }
+    } catch {
+      toast.error("Upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
@@ -1158,6 +1197,93 @@ function AboutEditor({
           ))}
         </div>
       </div>
+
+      {/* ── Photo upload ── */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Photo</label>
+        {effectivePhoto ? (
+          <div className="flex items-start gap-2.5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={effectivePhoto}
+              alt="About photo"
+              className="w-16 h-20 rounded-md object-cover border border-zinc-200"
+            />
+            <div className="flex-1 space-y-1">
+              <div className="text-[10px] text-zinc-500">
+                {photoUrl ? "Custom photo for this section" : "Using your profile avatar"}
+              </div>
+              <div className="flex gap-1">
+                <button
+                  type="button"
+                  onClick={() => fileRef.current?.click()}
+                  disabled={uploading}
+                  className="px-2 py-1 rounded-md border border-zinc-200 text-[10px] font-medium text-zinc-600 hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-all disabled:opacity-50"
+                >
+                  {uploading ? "Uploading…" : photoUrl ? "Replace" : "Upload override"}
+                </button>
+                {photoUrl && (
+                  <button
+                    type="button"
+                    onClick={() => onChange({ photoUrl: undefined })}
+                    className="px-2 py-1 rounded-md border border-zinc-200 text-[10px] font-medium text-zinc-500 hover:border-red-300 hover:text-red-600 hover:bg-red-50 transition-all"
+                  >
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => {
+              e.preventDefault();
+              const file = e.dataTransfer.files[0];
+              if (file) handleFile(file);
+            }}
+            onClick={() => !uploading && fileRef.current?.click()}
+            className={`border-2 border-dashed rounded-lg flex flex-col items-center justify-center gap-1 py-4 cursor-pointer transition-colors ${
+              uploading ? "border-zinc-200 bg-zinc-50 pointer-events-none" : "border-zinc-200 bg-white hover:border-zinc-400 hover:bg-zinc-50"
+            }`}
+          >
+            <CloudArrowUp size={16} className="text-zinc-400" />
+            <span className="text-[10px] text-zinc-500">{uploading ? "Uploading…" : "Click or drag a photo"}</span>
+            <span className="text-[9px] text-zinc-400">JPG, PNG, WebP up to 10 MB</span>
+          </div>
+        )}
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) handleFile(f);
+          }}
+        />
+        <div className="flex gap-1">
+          <input
+            type="text"
+            value={urlInput}
+            onChange={(e) => setUrlInput(e.target.value)}
+            placeholder="…or paste image URL"
+            className="flex-1 h-7 px-2 rounded-md border border-zinc-200 text-[11px] focus:outline-none focus:border-zinc-400"
+          />
+          <button
+            type="button"
+            disabled={!urlInput.trim()}
+            onClick={() => {
+              onChange({ photoUrl: urlInput.trim() });
+              setUrlInput("");
+            }}
+            className="px-2 h-7 rounded-md border border-zinc-200 text-[10px] font-medium text-zinc-600 hover:border-green-400 hover:text-green-700 hover:bg-green-50 transition-all disabled:opacity-50"
+          >
+            Set
+          </button>
+        </div>
+      </div>
+
       <div className="space-y-1.5">
         <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Bio override</label>
         <FormattedTextarea

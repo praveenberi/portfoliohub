@@ -501,12 +501,13 @@ function SectionRenderer({
 
   if (section.type === "about") {
     const aboutBio = (section.content.bioOverride as string) || profile?.bio || "";
+    const aboutPhoto = (section.content.photoUrl as string) || profile?.avatarUrl || "";
     return (
       <div className="py-24 px-6 md:px-20 border-t" style={{ borderColor: border }}>
         <div className="max-w-[1200px] mx-auto">
           <div className="text-xs font-semibold tracking-widest uppercase mb-4" style={{ color: accent }}>About</div>
           <h2 className="text-3xl font-bold tracking-tight mb-10" style={{ color: textColor }}>{section.title}</h2>
-          <div className={profile?.avatarUrl ? "grid md:grid-cols-2 gap-16 items-center" : ""}>
+          <div className={aboutPhoto ? "grid md:grid-cols-2 gap-16 items-center" : ""}>
             <motion.div initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="text-lg">
               {aboutBio ? (
                 <MarkdownText text={aboutBio} textColor={textColor} mutedText={mutedText} accent={accent} />
@@ -514,9 +515,9 @@ function SectionRenderer({
                 <p className="leading-relaxed" style={{ color: mutedText }}>Add your bio in your profile settings.</p>
               )}
             </motion.div>
-            {profile?.avatarUrl && (
+            {aboutPhoto && (
               <motion.div initial={{ opacity: 0, x: 20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }} className="flex justify-center">
-                <Image src={profile.avatarUrl} alt={user.name ?? ""} width={400} height={514} className="rounded-2xl object-cover" style={{ aspectRatio: "400/514", width: 400, height: 514 }} />
+                <Image src={aboutPhoto} alt={user.name ?? ""} width={400} height={514} className="rounded-2xl object-cover" style={{ aspectRatio: "400/514", width: 400, height: 514 }} unoptimized={aboutPhoto.startsWith("data:") || aboutPhoto !== (profile?.avatarUrl ?? "")} />
               </motion.div>
             )}
           </div>
