@@ -46,7 +46,7 @@ import toast from "react-hot-toast";
 import type { Portfolio, Profile, Experience, Education, Project, Certification } from "@prisma/client";
 import type { UserRole } from "@/lib/enums";
 import type { SectionConfig, SectionType, PortfolioConfig, HeroContent, BackgroundStyle } from "@/types";
-import { parseArr, parseJson, parseProjectImages, splitSkillsLine } from "@/lib/utils";
+import { parseArr, parseJson, parseProjectImages, splitSkillsLine, skillsToGroupedText } from "@/lib/utils";
 import { GridBackground, DotBackground, AuroraBackground, Meteors } from "./animations";
 import { SectionAISuggestions, matchesSectionType, type AIResult, type AISuggestion } from "./manager";
 
@@ -1335,14 +1335,40 @@ function AboutEditor({
       </div>
 
       <div className="space-y-1.5">
-        <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Bio override</label>
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Bio</label>
+          {profile?.bio && !(content.bioOverride as string) && (
+            <button
+              type="button"
+              onClick={() => onChange({ bioOverride: profile.bio })}
+              className="text-[10px] font-medium text-zinc-500 hover:text-green-700 hover:underline transition-colors"
+            >
+              ↓ Load from profile
+            </button>
+          )}
+          {(content.bioOverride as string) && profile?.bio && (
+            <button
+              type="button"
+              onClick={() => onChange({ bioOverride: undefined })}
+              className="text-[10px] font-medium text-zinc-500 hover:text-red-600 hover:underline transition-colors"
+            >
+              Reset to profile
+            </button>
+          )}
+        </div>
         <FormattedTextarea
           value={(content.bioOverride as string) ?? ""}
-          placeholder="Leave blank to use your profile bio"
+          placeholder={profile?.bio || "Leave blank to use your profile bio"}
           rows={4}
           onChange={(v) => onChange({ bioOverride: v || undefined })}
         />
-        <p className="text-[10px] text-zinc-400">Use ## for headings, - for bullets</p>
+        <p className="text-[10px] text-zinc-400">
+          {(content.bioOverride as string)
+            ? "Editing the section override (your profile bio is unchanged)."
+            : profile?.bio
+            ? "Currently rendering your profile bio. Click ↓ to load it for editing."
+            : "Use ## for headings, - for bullets."}
+        </p>
       </div>
     </div>
   );
@@ -1416,10 +1442,33 @@ function SkillsEditor({
         </div>
       </div>
       <div className="space-y-1.5">
-        <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Custom skills</label>
+        <div className="flex items-center justify-between gap-2">
+          <label className="text-[10px] font-medium text-zinc-500 uppercase tracking-wide">Custom skills</label>
+          {hasProfileSkills && !(content.customSkills as string) && (
+            <button
+              type="button"
+              onClick={() => {
+                const all = [...parseArr(profile?.skills), ...parseArr(profile?.technologies)];
+                onChange({ customSkills: skillsToGroupedText(all) || all.join(", ") });
+              }}
+              className="text-[10px] font-medium text-zinc-500 hover:text-green-700 hover:underline transition-colors"
+            >
+              ↓ Load from profile
+            </button>
+          )}
+          {(content.customSkills as string) && hasProfileSkills && (
+            <button
+              type="button"
+              onClick={() => onChange({ customSkills: undefined })}
+              className="text-[10px] font-medium text-zinc-500 hover:text-red-600 hover:underline transition-colors"
+            >
+              Reset to profile
+            </button>
+          )}
+        </div>
         <FormattedTextarea
           value={(content.customSkills as string) ?? ""}
-          placeholder={`## Frontend\nReact, TypeScript, Vue\n\n### Frameworks\nNext.js, Remix\n\n## Backend\nNode.js, Python`}
+          placeholder={hasProfileSkills ? `Currently using profile skills (${profileSkillsPlaceholder}…). Click ↓ to load and edit.` : `## Frontend\nReact, TypeScript, Vue\n\n### Frameworks\nNext.js, Remix\n\n## Backend\nNode.js, Python`}
           rows={6}
           onChange={(v) => onChange({ customSkills: v || undefined })}
         />
