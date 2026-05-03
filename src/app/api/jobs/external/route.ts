@@ -58,40 +58,26 @@ function safeDate(value: unknown): string {
 
 // ── MyCareersFuture.gov.sg (free, Singapore gov job portal) ─────────────────
 
-function slugifyForMcf(s: string | undefined | null): string {
-  return (s ?? "")
-    .toLowerCase()
-    .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
 /**
- * Build the public MyCareersFuture job URL. Their site routes look like:
- *   /job/{category-slug}/{title-and-company-slug}-{uuidWithoutHyphens}
- * The legacy /job-detail/{uuid} pattern returns "page not found" on the
- * production site, so we always assemble the slug-based URL and fall back to
- * the search page when key fields are missing.
+ * Resolve the canonical MyCareersFuture job URL.
+ *
+ * The MCF API actually returns the slug-based URL directly in
+ * `metadata.jobDetailsUrl` (e.g. `/job/marketing/...-{uuidWithoutHyphens}`).
+ * Their slug rules are quirky (they preserve emojis, drop parentheticals,
+ * collapse "&", trim company suffixes like " Pte Ltd", etc.) so reconstructing
+ * the slug from just title + company doesn't reliably match what the site
+ * expects. Use the API-provided URL when available; fall back to a title-keyed
+ * search so the user still lands somewhere useful.
  */
 function mcfApplyUrl(j: {
   uuid?: string;
   title?: string;
-  postedCompany?: { name?: string };
-  categories?: Array<{ category?: string }>;
+  metadata?: { jobDetailsUrl?: string };
 }): string {
-  const uuid = (j.uuid ?? "").replace(/-/g, "");
-  if (!uuid) return "https://www.mycareersfuture.gov.sg/search";
-
-  const category = slugifyForMcf(j.categories?.[0]?.category) || "all";
-  const slug = [slugifyForMcf(j.title), slugifyForMcf(j.postedCompany?.name)]
-    .filter(Boolean)
-    .join("-");
-
-  if (!slug) {
-    // Fall back to a search by title so the user still lands somewhere useful.
-    return `https://www.mycareersfuture.gov.sg/search?search=${encodeURIComponent(j.title ?? "")}`;
-  }
-  return `https://www.mycareersfuture.gov.sg/job/${category}/${slug}-${uuid}`;
+  const direct = j.metadata?.jobDetailsUrl;
+  if (direct && /^https?:\/\//.test(direct)) return direct;
+  const q = encodeURIComponent(j.title ?? j.uuid ?? "");
+  return `https://www.mycareersfuture.gov.sg/search?search=${q}`;
 }
 
 async function fetchMyCareersFuture(q: string, page: number): Promise<ExternalJob[]> {
