@@ -352,6 +352,40 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
     setSections((prev) => prev.map((s) => (s.id === id ? { ...s, content: { ...s.content, ...content } } : s)));
   };
 
+  // After a PDF resume import, ensure the portfolio's ACTIVE SECTIONS list
+  // contains a section for every data type the resume actually populated. We
+  // PATCH the portfolio so the new sections survive the page reload that the
+  // ResumeImportButton triggers right after.
+  const handleResumeImported = async (counts: ImportCounts) => {
+    const wanted: SectionType[] = [];
+    if (counts.experiences > 0) wanted.push("experience");
+    if (counts.education > 0) wanted.push("education");
+    if (counts.projects > 0) wanted.push("projects");
+    if (counts.certifications > 0) wanted.push("certifications");
+    if ((counts.skills ?? 0) + (counts.technologies ?? 0) > 0) wanted.push("skills");
+
+    const existingTypes = new Set(sections.map((s) => s.type));
+    const missing = wanted.filter((t) => !existingTypes.has(t));
+    if (missing.length === 0) return;
+
+    const baseOrder = sections.length;
+    const additions: SectionConfig[] = missing.map((type, i) => ({
+      id: `${type}-${Date.now()}-${i}`,
+      type,
+      title: AVAILABLE_SECTIONS.find((s) => s.type === type)?.label ?? type,
+      visible: true,
+      order: baseOrder + i,
+      content: {},
+    }));
+    const next = [...sections, ...additions];
+    setSections(next);
+    try {
+      await axios.patch(`/api/portfolios/${portfolio.id}`, { sections: next });
+    } catch {
+      // non-fatal — the next Publish will persist them
+    }
+  };
+
   const handleSave = async () => {
     if (!user.username?.trim()) {
       toast.error("Set a username in Settings → Account before publishing");
@@ -412,7 +446,7 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
           {/* ── Sections panel ── */}
           {activePanel === "sections" && (
             <div className="space-y-4">
-              <ResumeImportButton />
+              <ResumeImportButton onImported={handleResumeImported} />
               {aiResult && (
                 <div className="rounded-xl border border-accent-200 bg-accent-50/60 p-3 space-y-2">
                   <div className="flex items-start justify-between gap-2">
@@ -909,7 +943,16 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
 
 // ─── Resume Import Button ─────────────────────────────────────────────────────
 
-function ResumeImportButton() {
+type ImportCounts = {
+  experiences: number;
+  education: number;
+  projects: number;
+  certifications: number;
+  skills: number;
+  technologies: number;
+};
+
+function ResumeImportButton({ onImported }: { onImported?: (counts: ImportCounts) => Promise<void> | void }) {
   const [uploading, setUploading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -926,7 +969,14 @@ function ResumeImportButton() {
     const id = toast.loading("Reading your resume…");
     try {
       const res = await axios.post("/api/profile/import-resume", fd);
-      const c = res.data.counts;
+      const c = res.data.counts as ImportCounts;
+      // Let the builder add any missing sections (skills/projects/experience/...)
+      // before we reload so the ACTIVE SECTIONS list reflects what was imported.
+      try {
+        await onImported?.(c);
+      } catch {
+        // non-fatal — reload will still pull fresh profile data
+      }
       toast.success(
         `Imported: ${c.experiences} exp, ${c.education} edu, ${c.projects} projects, ${c.certifications} certs`,
         { id, duration: 4000 }
