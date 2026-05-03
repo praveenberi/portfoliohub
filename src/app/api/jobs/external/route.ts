@@ -57,6 +57,43 @@ function safeDate(value: unknown): string {
 }
 
 // ── MyCareersFuture.gov.sg (free, Singapore gov job portal) ─────────────────
+
+function slugifyForMcf(s: string | undefined | null): string {
+  return (s ?? "")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+/**
+ * Build the public MyCareersFuture job URL. Their site routes look like:
+ *   /job/{category-slug}/{title-and-company-slug}-{uuidWithoutHyphens}
+ * The legacy /job-detail/{uuid} pattern returns "page not found" on the
+ * production site, so we always assemble the slug-based URL and fall back to
+ * the search page when key fields are missing.
+ */
+function mcfApplyUrl(j: {
+  uuid?: string;
+  title?: string;
+  postedCompany?: { name?: string };
+  categories?: Array<{ category?: string }>;
+}): string {
+  const uuid = (j.uuid ?? "").replace(/-/g, "");
+  if (!uuid) return "https://www.mycareersfuture.gov.sg/search";
+
+  const category = slugifyForMcf(j.categories?.[0]?.category) || "all";
+  const slug = [slugifyForMcf(j.title), slugifyForMcf(j.postedCompany?.name)]
+    .filter(Boolean)
+    .join("-");
+
+  if (!slug) {
+    // Fall back to a search by title so the user still lands somewhere useful.
+    return `https://www.mycareersfuture.gov.sg/search?search=${encodeURIComponent(j.title ?? "")}`;
+  }
+  return `https://www.mycareersfuture.gov.sg/job/${category}/${slug}-${uuid}`;
+}
+
 async function fetchMyCareersFuture(q: string, page: number): Promise<ExternalJob[]> {
   const params = new URLSearchParams({
     limit: "12",
@@ -88,7 +125,7 @@ async function fetchMyCareersFuture(q: string, page: number): Promise<ExternalJo
       description: (j.categories ?? []).map((c: any) => c.category).join(" · ") || "",
       skills: (j.skills ?? []).map((s: any) => s.skill),
       postedAt: j.metadata?.newPostingDate ?? j.createdAt ?? new Date().toISOString(),
-      applyUrl: `https://www.mycareersfuture.gov.sg/job-detail/${j.uuid}`,
+      applyUrl: mcfApplyUrl(j),
       source: "MyCareersFuture",
       companyLogo: j.postedCompany?.logoUrl ?? undefined,
       salary:
