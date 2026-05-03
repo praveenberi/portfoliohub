@@ -591,7 +591,26 @@ export function PortfolioBuilder({ portfolio, profile, user }: BuilderProps) {
                   {BG_STYLES.map((bg) => (
                     <button
                       key={bg.value}
-                      onClick={() => setConfig((c) => ({ ...c, backgroundStyle: bg.value }))}
+                      onClick={() => setConfig((c) => {
+                        // Auto-flip text colours so legacy users (or anyone who
+                        // never opened the colour picker) still get readable
+                        // text after switching between light and dark bg styles.
+                        // Only flips values that still match the canonical
+                        // defaults — anything custom is left alone.
+                        const wasDark = c.backgroundStyle === "meteors" || c.backgroundStyle === "image";
+                        const isDark = bg.value === "meteors" || bg.value === "image";
+                        const updates: Partial<PortfolioConfig> = { backgroundStyle: bg.value };
+                        if (isDark && !wasDark) {
+                          if (c.textColor === "#09090b") updates.textColor = "#fafafa";
+                          if (!c.secondaryTextColor || c.secondaryTextColor === "#71717a")
+                            updates.secondaryTextColor = "rgba(255,255,255,0.55)";
+                        } else if (!isDark && wasDark) {
+                          if (c.textColor === "#fafafa") updates.textColor = "#09090b";
+                          if (c.secondaryTextColor === "rgba(255,255,255,0.55)")
+                            updates.secondaryTextColor = "#71717a";
+                        }
+                        return { ...c, ...updates };
+                      })}
                       className={`flex flex-col items-center gap-1 rounded-lg border p-1.5 transition-all ${
                         config.backgroundStyle === bg.value
                           ? "border-green-500 bg-green-50"
@@ -3148,9 +3167,12 @@ function PreviewSection({ section, config, profile, user, isMeteors }: {
   isMeteors: boolean;
 }) {
   const accent = config.primaryColor;
-  const textColor = isMeteors ? "#fafafa" : config.textColor;
+  // User-chosen text colors always win. Bg-style only fills the gap when nothing
+  // is set — so picking a Heading / Description color in the design panel
+  // applies even on meteors / image backgrounds.
+  const textColor = config.textColor || (isMeteors ? "#fafafa" : "#09090b");
   const borderColor = isMeteors ? "border-white/10" : "border-zinc-100";
-  const subTextColor = isMeteors ? "rgba(255,255,255,0.55)" : (config.secondaryTextColor ?? `${config.textColor}99`);
+  const subTextColor = config.secondaryTextColor || (isMeteors ? "rgba(255,255,255,0.55)" : `${textColor}99`);
   const sectionTitle = (section.content.titleOverride as string) || section.title;
 
   // ── Hero ──────────────────────────────────────────────────────────────────

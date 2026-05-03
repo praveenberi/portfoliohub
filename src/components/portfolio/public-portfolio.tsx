@@ -234,7 +234,9 @@ export function PublicPortfolio({ portfolio }: { portfolio: FullPortfolio }) {
   const isImageBg = bgStyle === "image";
   const overlayOpacity = (config.backgroundImageOverlay ?? 40) / 100;
   const bgColor = isMeteors ? "#09090b" : (config.backgroundColor ?? "#ffffff");
-  const textColor = isMeteors ? "#fafafa" : (config.textColor ?? "#09090b");
+  // User-chosen Heading text color always wins; bg-style fallback only kicks
+  // in when nothing has been picked.
+  const textColor = config.textColor || (isMeteors ? "#fafafa" : "#09090b");
   const zoomMap = { sm: 0.875, md: 1, lg: 1.125, xl: 1.25 };
   const zoom = zoomMap[config.fontSize ?? "md"];
   const radiusMap = { sm: "4px", md: "16px", lg: "28px" };
@@ -374,7 +376,8 @@ function SectionRenderer({
   const profile = portfolio.user.profile;
   const user = portfolio.user;
   const border = isMeteors ? "rgba(255,255,255,0.08)" : "rgba(0,0,0,0.06)";
-  const mutedText = isMeteors ? "rgba(255,255,255,0.55)" : (config.secondaryTextColor ?? `${textColor}99`);
+  // Description / muted text follows the user's secondaryTextColor when set.
+  const mutedText = config.secondaryTextColor || (isMeteors ? "rgba(255,255,255,0.55)" : `${textColor}99`);
   const subtleText = isMeteors ? "rgba(255,255,255,0.35)" : `${textColor}66`;
 
   if (section.type === "hero") {
