@@ -37,6 +37,7 @@ import {
   X,
   CloudArrowUp,
   PencilSimple,
+  Check,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import Image from "next/image";
@@ -70,6 +71,23 @@ const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: "projects", type: "projects", title: "Projects", visible: true, order: 3, content: {} },
   { id: "experience", type: "experience", title: "Experience", visible: true, order: 4, content: {} },
   { id: "contact", type: "contact", title: "Contact", visible: true, order: 5, content: {} },
+];
+
+// Curated preset images for the Hero "Click to browse" picker. Picsum.photos
+// is already whitelisted in next.config.mjs, and the seeded URLs are stable.
+const HERO_IMAGE_PRESETS: { label: string; url: string }[] = [
+  { label: "Workspace",  url: "https://picsum.photos/seed/workspace-desk/1600/900" },
+  { label: "Code",       url: "https://picsum.photos/seed/code-editor/1600/900" },
+  { label: "Studio",     url: "https://picsum.photos/seed/creative-studio/1600/900" },
+  { label: "Mountains",  url: "https://picsum.photos/seed/mountain-vista/1600/900" },
+  { label: "Forest",     url: "https://picsum.photos/seed/forest-trail/1600/900" },
+  { label: "Ocean",      url: "https://picsum.photos/seed/ocean-shore/1600/900" },
+  { label: "City",       url: "https://picsum.photos/seed/city-skyline/1600/900" },
+  { label: "Architecture", url: "https://picsum.photos/seed/modern-architecture/1600/900" },
+  { label: "Abstract",   url: "https://picsum.photos/seed/abstract-light/1600/900" },
+  { label: "Gradient",   url: "https://picsum.photos/seed/sunset-gradient/1600/900" },
+  { label: "Minimal",    url: "https://picsum.photos/seed/minimal-grain/1600/900" },
+  { label: "Dark",       url: "https://picsum.photos/seed/dark-night/1600/900" },
 ];
 
 const FONT_MAP: Record<string, { family: string; url?: string; label: string }> = {
@@ -2656,6 +2674,7 @@ function HeroMediaEditor({
   const [dragOver, setDragOver] = useState(false);
   const [syncingHeadline, setSyncingHeadline] = useState(false);
   const [syncedHeadline, setSyncedHeadline] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const headline = content.headlineOverride ?? "";
@@ -2882,7 +2901,11 @@ function HeroMediaEditor({
               onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
               onDragLeave={() => setDragOver(false)}
               onDrop={handleDrop}
-              onClick={() => !uploading && fileInputRef.current?.click()}
+              onClick={() => {
+                if (uploading) return;
+                if (isImage) setPickerOpen(true);
+                else fileInputRef.current?.click();
+              }}
               className={`relative w-full rounded-xl border-2 border-dashed transition-all cursor-pointer flex flex-col items-center justify-center gap-2 py-5 ${
                 dragOver
                   ? "border-green-400 bg-green-50"
@@ -3035,6 +3058,152 @@ function HeroMediaEditor({
         </>
       )}
       </div>
+
+      <AnimatePresence>
+        {pickerOpen && (
+          <HeroImagePicker
+            currentUrl={content.mediaUrl}
+            onClose={() => setPickerOpen(false)}
+            onPick={(url) => {
+              onChange({ ...content, mediaUrl: url });
+              setUrlInput(url);
+              setPickerOpen(false);
+            }}
+            onUploadClick={() => {
+              setPickerOpen(false);
+              fileInputRef.current?.click();
+            }}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// ─── Hero Image Picker (preset gallery + upload + URL paste) ────────────────
+
+function HeroImagePicker({
+  currentUrl,
+  onClose,
+  onPick,
+  onUploadClick,
+}: {
+  currentUrl?: string;
+  onClose: () => void;
+  onPick: (url: string) => void;
+  onUploadClick: () => void;
+}) {
+  const [urlInput, setUrlInput] = useState("");
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 bg-black/50"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: 20 }}
+        transition={{ type: "spring", stiffness: 320, damping: 30 }}
+        onClick={(e) => e.stopPropagation()}
+        className="bg-white w-full sm:max-w-2xl max-h-[90svh] sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col"
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 py-4 border-b border-zinc-100">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-zinc-950 flex items-center justify-center">
+              <ImageIcon size={14} className="text-accent-400" weight="fill" />
+            </div>
+            <div>
+              <div className="text-sm font-semibold text-zinc-950">Choose a hero image</div>
+              <div className="text-[10px] text-zinc-400">Pick a preset, paste a URL, or upload your own</div>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="w-8 h-8 rounded-lg hover:bg-zinc-100 flex items-center justify-center transition-colors"
+          >
+            <X size={16} className="text-zinc-500" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
+          {/* Upload from computer */}
+          <button
+            type="button"
+            onClick={onUploadClick}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-dashed border-zinc-300 hover:border-green-400 hover:bg-green-50 transition-colors text-left group"
+          >
+            <div className="w-10 h-10 rounded-lg bg-zinc-100 group-hover:bg-green-100 flex items-center justify-center transition-colors">
+              <CloudArrowUp size={18} className="text-zinc-500 group-hover:text-green-600" />
+            </div>
+            <div className="flex-1">
+              <div className="text-sm font-semibold text-zinc-900">Upload from your computer</div>
+              <div className="text-[11px] text-zinc-500">JPG, PNG, WebP, GIF — max 10 MB</div>
+            </div>
+          </button>
+
+          {/* URL paste */}
+          <div className="flex items-center gap-2">
+            <input
+              type="text"
+              value={urlInput}
+              onChange={(e) => setUrlInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && urlInput.trim()) onPick(urlInput.trim());
+              }}
+              placeholder="…or paste an image URL"
+              className="flex-1 h-9 px-3 rounded-lg border border-zinc-200 text-xs focus:outline-none focus:border-zinc-400"
+            />
+            <button
+              type="button"
+              disabled={!urlInput.trim()}
+              onClick={() => onPick(urlInput.trim())}
+              className="h-9 px-3 rounded-lg bg-zinc-950 text-white text-xs font-medium disabled:opacity-50 hover:bg-zinc-800 transition-colors"
+            >
+              Use URL
+            </button>
+          </div>
+
+          {/* Preset grid */}
+          <div>
+            <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider mb-2">
+              Preset images
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {HERO_IMAGE_PRESETS.map((preset) => {
+                const selected = currentUrl === preset.url;
+                return (
+                  <button
+                    key={preset.url}
+                    type="button"
+                    onClick={() => onPick(preset.url)}
+                    className={`relative aspect-video rounded-lg overflow-hidden border-2 transition-all hover:scale-[1.02] active:scale-[0.99] ${
+                      selected ? "border-green-500 shadow-[0_0_0_3px_rgba(34,197,94,0.18)]" : "border-zinc-200 hover:border-zinc-400"
+                    }`}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={preset.url}
+                      alt={preset.label}
+                      loading="lazy"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-x-0 bottom-0 px-2 py-1 bg-gradient-to-t from-black/60 to-transparent">
+                      <div className="text-[10px] font-medium text-white">{preset.label}</div>
+                    </div>
+                    {selected && (
+                      <div className="absolute top-1 right-1 w-5 h-5 rounded-full bg-green-500 flex items-center justify-center shadow-lg">
+                        <Check size={11} weight="bold" className="text-white" />
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </motion.div>
     </div>
   );
 }
