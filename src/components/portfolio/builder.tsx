@@ -3094,6 +3094,31 @@ function HeroImagePicker({
   onUploadClick: () => void;
 }) {
   const [urlInput, setUrlInput] = useState("");
+  const [aiPrompt, setAiPrompt] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [aiResult, setAiResult] = useState<string | null>(null);
+
+  async function handleGenerate() {
+    const prompt = aiPrompt.trim();
+    if (prompt.length < 3) {
+      toast.error("Describe your image in a few words first");
+      return;
+    }
+    setGenerating(true);
+    setAiResult(null);
+    try {
+      const res = await axios.post("/api/ai/generate-image", { prompt, width: 1600, height: 900 });
+      const url = res.data?.url as string | undefined;
+      if (url) setAiResult(url);
+      else toast.error("Generator didn't return an image — try again");
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to generate";
+      toast.error(msg);
+    } finally {
+      setGenerating(false);
+    }
+  }
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center sm:p-4 bg-black/50"
@@ -3163,6 +3188,69 @@ function HeroImagePicker({
             >
               Use URL
             </button>
+          </div>
+
+          {/* AI generation */}
+          <div className="rounded-xl border border-accent-200 bg-accent-50/40 p-3 space-y-2">
+            <div className="flex items-center gap-2">
+              <Sparkle size={12} weight="fill" className="text-accent-500" />
+              <span className="text-xs font-semibold text-zinc-950">Generate with AI</span>
+            </div>
+            <div className="flex items-start gap-2">
+              <textarea
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                placeholder="e.g. cinematic photo of a bright minimal home office, morning light, soft focus"
+                rows={2}
+                disabled={generating}
+                className="flex-1 px-3 py-2 rounded-lg border border-zinc-200 text-xs focus:outline-none focus:border-accent-500 focus:ring-2 focus:ring-accent-500/20 transition-all resize-none disabled:opacity-60"
+              />
+              <button
+                type="button"
+                onClick={handleGenerate}
+                disabled={generating || aiPrompt.trim().length < 3}
+                className="shrink-0 h-9 px-3 rounded-lg bg-accent-500 text-white text-xs font-semibold hover:bg-accent-400 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center gap-1"
+              >
+                {generating ? (
+                  <>
+                    <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Generating
+                  </>
+                ) : (
+                  <>
+                    <Sparkle size={11} weight="fill" /> Generate
+                  </>
+                )}
+              </button>
+            </div>
+            {aiResult && (
+              <div className="rounded-lg overflow-hidden border-2 border-accent-300 relative aspect-video">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={aiResult} alt="AI generated" className="w-full h-full object-cover" />
+                <div className="absolute inset-x-0 bottom-0 px-2 py-1.5 bg-gradient-to-t from-black/80 to-transparent flex items-center justify-end gap-1.5">
+                  <button
+                    type="button"
+                    onClick={handleGenerate}
+                    disabled={generating}
+                    className="text-[10px] font-medium text-white px-2 py-1 rounded-md bg-white/15 hover:bg-white/25 transition-colors disabled:opacity-50"
+                  >
+                    Regenerate
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onPick(aiResult)}
+                    className="text-[10px] font-semibold text-zinc-950 px-2.5 py-1 rounded-md bg-accent-400 hover:bg-accent-300 transition-colors flex items-center gap-1"
+                  >
+                    <Check size={10} weight="bold" /> Use this image
+                  </button>
+                </div>
+              </div>
+            )}
+            {!aiResult && (
+              <p className="text-[10px] text-zinc-500">
+                Free, no key required. Generation takes ~10–20 seconds — keep prompts vivid and specific.
+              </p>
+            )}
           </div>
 
           {/* Preset grid */}
