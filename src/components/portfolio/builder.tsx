@@ -3086,8 +3086,12 @@ function HeroMediaEditor({
               setPickerOpen(false);
             }}
             onUploadClick={() => {
-              setPickerOpen(false);
+              // Open the OS file dialog first so we stay inside the user-gesture
+              // frame (some browsers block .click() if state has already torn the
+              // input out of the DOM). Then drop the modal immediately so the
+              // user isn't looking at it while picking a file.
               fileInputRef.current?.click();
+              setPickerOpen(false);
             }}
           />
         )}
@@ -3141,10 +3145,10 @@ function HeroImagePicker({
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 20 }}
-        transition={{ type: "spring", stiffness: 320, damping: 30 }}
+        exit={{ opacity: 0 }}
+        transition={{ duration: 0.12, ease: "easeOut" }}
         onClick={(e) => e.stopPropagation()}
         className="bg-white w-full sm:max-w-2xl max-h-[90svh] sm:rounded-2xl rounded-t-2xl shadow-2xl flex flex-col"
       >
