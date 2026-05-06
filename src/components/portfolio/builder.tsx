@@ -3026,6 +3026,11 @@ function HeroMediaEditor({
                 </button>
               )}
             </div>
+            <p className="text-[10px] text-zinc-400 leading-relaxed">
+              {isImage
+                ? "Recommended: 1600 × 900 px (16:9), landscape, at least 1280 px wide. JPG / PNG / WebP / GIF, max 10 MB."
+                : "Recommended: 1920 × 1080 px (16:9) at 24–30 fps, ≤ 30 s loop. MP4 (H.264) or WebM, max 100 MB."}
+            </p>
           </div>
 
           {/* Display mode */}
@@ -3184,7 +3189,9 @@ function HeroImagePicker({
             </div>
             <div className="flex-1">
               <div className="text-sm font-semibold text-zinc-900">Upload from your computer</div>
-              <div className="text-[11px] text-zinc-500">JPG, PNG, WebP, GIF — max 10 MB</div>
+              <div className="text-[11px] text-zinc-500">
+                Recommended 1600 × 900 px (16:9), landscape — JPG / PNG / WebP / GIF, max 10 MB
+              </div>
             </div>
           </button>
 
