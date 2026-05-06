@@ -73,21 +73,37 @@ const DEFAULT_SECTIONS: SectionConfig[] = [
   { id: "contact", type: "contact", title: "Contact", visible: true, order: 5, content: {} },
 ];
 
-// Curated preset images for the Hero "Click to browse" picker. Picsum.photos
-// is already whitelisted in next.config.mjs, and the seeded URLs are stable.
+// Curated preset images for the Hero "Click to browse" picker.
+// Profession-specific entries are AI-generated via Pollinations.ai with stable
+// seeds so the rendered image always matches its label. Generic entries use
+// picsum.photos seeds. Both domains are whitelisted in next.config.mjs.
+function pollinationsPreset(prompt: string, seed: number): string {
+  const params = new URLSearchParams({ width: "1600", height: "900", seed: String(seed), nologo: "true", enhance: "true" });
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
+}
+
 const HERO_IMAGE_PRESETS: { label: string; url: string }[] = [
-  { label: "Workspace",  url: "https://picsum.photos/seed/workspace-desk/1600/900" },
-  { label: "Code",       url: "https://picsum.photos/seed/code-editor/1600/900" },
-  { label: "Studio",     url: "https://picsum.photos/seed/creative-studio/1600/900" },
-  { label: "Mountains",  url: "https://picsum.photos/seed/mountain-vista/1600/900" },
-  { label: "Forest",     url: "https://picsum.photos/seed/forest-trail/1600/900" },
-  { label: "Ocean",      url: "https://picsum.photos/seed/ocean-shore/1600/900" },
-  { label: "City",       url: "https://picsum.photos/seed/city-skyline/1600/900" },
-  { label: "Architecture", url: "https://picsum.photos/seed/modern-architecture/1600/900" },
-  { label: "Abstract",   url: "https://picsum.photos/seed/abstract-light/1600/900" },
-  { label: "Gradient",   url: "https://picsum.photos/seed/sunset-gradient/1600/900" },
-  { label: "Minimal",    url: "https://picsum.photos/seed/minimal-grain/1600/900" },
-  { label: "Dark",       url: "https://picsum.photos/seed/dark-night/1600/900" },
+  // Profession-specific (AI-generated, label always matches)
+  { label: "Makeup Artist", url: pollinationsPreset("professional makeup artist applying makeup with brushes, soft studio lighting, cinematic, high detail", 4101) },
+  { label: "Singers",       url: pollinationsPreset("vocalist singing into vintage microphone on stage, dramatic concert lighting, cinematic photo", 4102) },
+  { label: "Music",         url: pollinationsPreset("musician playing grand piano in warm-lit recording studio, cinematic photo, soft focus", 4103) },
+  { label: "Doctor",        url: pollinationsPreset("doctor with stethoscope in bright modern hospital corridor, professional warm lighting, cinematic", 4104) },
+  { label: "Technology",    url: pollinationsPreset("abstract glowing technology circuit board with subtle data visualization, deep blue and teal tones, cinematic", 4105) },
+  { label: "Artist",        url: pollinationsPreset("painter at easel applying vibrant oil paint to canvas in sunlit studio, cinematic photo", 4106) },
+  { label: "Writer",        url: pollinationsPreset("vintage typewriter on wooden desk with leather notebook and coffee, warm morning window light, cinematic", 4107) },
+
+  // Generic (picsum seeds)
+  { label: "Workspace",     url: "https://picsum.photos/seed/workspace-desk/1600/900" },
+  { label: "Studio",        url: "https://picsum.photos/seed/creative-studio/1600/900" },
+  { label: "Mountains",     url: "https://picsum.photos/seed/mountain-vista/1600/900" },
+  { label: "Forest",        url: "https://picsum.photos/seed/forest-trail/1600/900" },
+  { label: "Ocean",         url: "https://picsum.photos/seed/ocean-shore/1600/900" },
+  { label: "City",          url: "https://picsum.photos/seed/city-skyline/1600/900" },
+  { label: "Architecture",  url: "https://picsum.photos/seed/modern-architecture/1600/900" },
+  { label: "Abstract",      url: "https://picsum.photos/seed/abstract-light/1600/900" },
+  { label: "Gradient",      url: "https://picsum.photos/seed/sunset-gradient/1600/900" },
+  { label: "Minimal",       url: "https://picsum.photos/seed/minimal-grain/1600/900" },
+  { label: "Dark",          url: "https://picsum.photos/seed/dark-night/1600/900" },
 ];
 
 const FONT_MAP: Record<string, { family: string; url?: string; label: string }> = {
