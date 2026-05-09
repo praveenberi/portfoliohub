@@ -20,6 +20,7 @@ import {
   SpeakerHigh,
   PaperPlaneRight,
   Pencil,
+  X,
 } from "@phosphor-icons/react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -446,6 +447,15 @@ type Evaluation = {
   modelAnswer: string;
 };
 
+type InterviewTurn = {
+  id: string;
+  question: string;
+  /** ms offset from interview start when the question was first shown. */
+  askedAt: number;
+  answer?: string;
+  evaluation?: Evaluation;
+};
+
 type SpeechRecognitionLike = {
   continuous: boolean;
   interimResults: boolean;
@@ -466,8 +476,9 @@ function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [count, setCount] = useState(5);
   const [generating, setGenerating] = useState(false);
-  const [questions, setQuestions] = useState<string[]>([]);
+  const [turns, setTurns] = useState<InterviewTurn[]>([]);
   const [questionIndex, setQuestionIndex] = useState(0);
+  const [interviewStart, setInterviewStart] = useState<number | null>(null);
 
   // Camera / recording
   const [stream, setStream] = useState<MediaStream | null>(null);
@@ -490,8 +501,10 @@ function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
 
-  const currentQuestion = questions[questionIndex] ?? "";
-  const hasInterview = questions.length > 0;
+  const currentTurn = turns[questionIndex];
+  const currentQuestion = currentTurn?.question ?? "";
+  const hasInterview = turns.length > 0;
+  const totalQuestions = turns.length;
 
   // Bind preview to stream
   useEffect(() => {
@@ -521,7 +534,14 @@ function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
         toast.error("AI returned no questions — try a different topic");
         return;
       }
-      setQuestions(qs);
+      const start = Date.now();
+      setInterviewStart(start);
+      const newTurns: InterviewTurn[] = qs.map((q, i) => ({
+        id: `turn-${start}-${i}`,
+        question: q,
+        askedAt: i === 0 ? 0 : -1, // -1 = not yet shown
+      }));
+      setTurns(newTurns);
       setQuestionIndex(0);
       resetForNewQuestion();
     } catch (err) {
@@ -536,8 +556,9 @@ function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
     stopRecording();
     stream?.getTracks().forEach((t) => t.stop());
     setStream(null);
-    setQuestions([]);
+    setTurns([]);
     setQuestionIndex(0);
+    setInterviewStart(null);
     resetForNewQuestion();
     try { window.speechSynthesis?.cancel(); } catch {}
   }
@@ -552,10 +573,26 @@ function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
   }
 
   function nextQuestion(delta: number) {
-    const total = questions.length;
+    const total = turns.length;
     if (total === 0) return;
-    setQuestionIndex((i) => (i + delta + total) % total);
-    resetForNewQuestion();
+    const newIndex = (questionIndex + delta + total) % total;
+    setQuestionIndex(newIndex);
+    // Stamp askedAt the first time the user actually views a question
+    if (interviewStart && turns[newIndex]?.askedAt < 0) {
+      setTurns((t) => {
+        const next = [...t];
+        next[newIndex] = { ...next[newIndex], askedAt: Date.now() - interviewStart };
+        return next;
+      });
+    }
+    // Restore any saved answer / evaluation for this turn
+    const t = turns[newIndex];
+    setTranscript(t?.answer ?? "");
+    setEvaluation(t?.evaluation ?? null);
+    if (recordingUrl) URL.revokeObjectURL(recordingUrl);
+    setRecordingUrl(null);
+    setEditingTranscript(false);
+    setElapsed(0);
   }
 
   async function startCamera() {
@@ -770,13 +807,39 @@ function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
         answer: transcript.trim(),
         topic,
       });
-      setEvaluation(data?.data ?? null);
+      const evalData: Evaluation | null = data?.data ?? null;
+      setEvaluation(evalData);
+      if (evalData) {
+        // Persist answer + evaluation into the turn so the Copilot Answers feed
+        // can render them and we can navigate back without losing state.
+        const finalAnswer = transcript.trim();
+        setTurns((prev) => {
+          const next = [...prev];
+          if (next[questionIndex]) {
+            next[questionIndex] = {
+              ...next[questionIndex],
+              answer: finalAnswer,
+              evaluation: evalData,
+            };
+          }
+          return next;
+        });
+      }
     } catch (err) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Failed to evaluate";
       toast.error(msg);
     } finally {
       setEvaluating(false);
     }
+  }
+
+  // Format ms offset as mm:ss
+  function fmtOffset(ms: number) {
+    if (ms < 0) ms = 0;
+    const total = Math.floor(ms / 1000);
+    const m = Math.floor(total / 60).toString().padStart(2, "0");
+    const s = (total % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
   }
 
   if (!hasInterview) {
@@ -807,88 +870,67 @@ function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
 
   const minutes = Math.floor(elapsed / 60).toString().padStart(2, "0");
   const seconds = (elapsed % 60).toString().padStart(2, "0");
+  const hasAnyAnswered = turns.some((t) => !!t.evaluation);
 
   return (
-    <div className="grid lg:grid-cols-3 gap-6">
-      {/* Virtual interviewer + question */}
-      <div className="lg:col-span-1 space-y-4">
-        <div className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-4">
-          {/* Header: small portrait + name */}
-          <div className="flex items-center gap-3">
-            <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-accent-500/20">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={portraitSrc}
-                onError={(e) => {
-                  const img = e.currentTarget;
-                  if (img.dataset.fallback !== "1") {
-                    img.dataset.fallback = "1";
-                    img.src = INTERVIEWER_PORTRAIT_FALLBACK;
-                  }
-                }}
-                alt="Aria"
-                className="w-full h-full object-cover"
-                style={{ objectPosition: "center 18%" }}
-              />
-            </div>
-            <div className="min-w-0">
-              <div className="text-sm font-semibold text-zinc-950">Aria · AI Interviewer</div>
-              <div className="text-[10px] text-zinc-400 uppercase tracking-wider">
-                Question {questionIndex + 1} of {questions.length}
-              </div>
-            </div>
-            <div className="ml-auto flex items-center gap-1.5">
-              {isAdmin && (
-                <>
-                  <button
-                    onClick={() => photoInputRef.current?.click()}
-                    title="Replace Aria's photo"
-                    disabled={uploadingPhoto}
-                    className="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 hover:text-accent-700 transition-colors disabled:opacity-60"
-                  >
-                    {uploadingPhoto ? (
-                      <div className="w-3 h-3 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
-                    ) : (
-                      <Pencil size={13} />
-                    )}
-                  </button>
-                  <input
-                    ref={photoInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f) handlePortraitFile(f);
-                    }}
-                  />
-                </>
-              )}
-              <button
-                onClick={speakQuestion}
-                title="Hear the question again"
-                className="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 hover:text-accent-700 transition-colors"
-              >
-                <SpeakerHigh size={14} weight={speakingQuestion ? "fill" : "regular"} />
-              </button>
-            </div>
+    <div className="grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)] gap-6">
+      {/* ── Left: Interview Room ───────────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-zinc-200 flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-100">
+          <h3 className="text-sm font-semibold text-zinc-950 flex items-center gap-2">
+            <VideoCamera size={15} weight="fill" className="text-accent-500" />
+            Interview Room
+          </h3>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={speakQuestion}
+              title="Replay the question"
+              className="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 hover:text-accent-700 transition-colors"
+            >
+              <SpeakerHigh size={14} weight={speakingQuestion ? "fill" : "regular"} />
+            </button>
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => photoInputRef.current?.click()}
+                  title="Replace Aria's photo"
+                  disabled={uploadingPhoto}
+                  className="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 hover:text-accent-700 transition-colors disabled:opacity-60"
+                >
+                  {uploadingPhoto ? (
+                    <div className="w-3 h-3 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+                  ) : (
+                    <Pencil size={13} />
+                  )}
+                </button>
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handlePortraitFile(f);
+                  }}
+                />
+              </>
+            )}
+            <button
+              onClick={endInterview}
+              title="End interview"
+              className="w-8 h-8 rounded-lg bg-red-500 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
+            >
+              <X size={13} weight="bold" />
+            </button>
           </div>
+        </div>
 
-          {/* Question text — speech-bubble style */}
-          <div className="relative bg-zinc-50 border border-zinc-100 rounded-xl px-4 py-3">
-            <p className="text-sm font-semibold text-zinc-950 leading-snug">"{currentQuestion}"</p>
-          </div>
-
-          {/* Big portrait of the virtual interviewer — static image */}
-          <button
-            type="button"
-            onClick={speakQuestion}
-            title={speakingQuestion ? "Aria is speaking" : "Tap to hear the question"}
-            className="relative block w-full aspect-square rounded-xl overflow-hidden bg-zinc-100"
-          >
+        <div className="p-5 space-y-4">
+          {/* Aria stage with user PiP */}
+          <div className="relative w-full aspect-video rounded-xl overflow-hidden bg-zinc-100">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src={INTERVIEWER_PORTRAIT_URL}
+              src={portraitSrc}
               onError={(e) => {
                 const img = e.currentTarget;
                 if (img.dataset.fallback !== "1") {
@@ -898,176 +940,163 @@ function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
               }}
               alt="Aria the AI interviewer"
               className="absolute inset-0 w-full h-full object-cover"
-              style={{ objectPosition: "center 25%" }}
+              style={{ objectPosition: "center 22%" }}
             />
 
-            {/* Bottom label + equalizer (only audio-level cue, no face motion) */}
-            <div className="absolute inset-x-0 bottom-0 px-3 py-2.5 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-2">
-              <div className="flex items-end gap-0.5 h-4">
-                {[0, 1, 2, 3, 4].map((i) => (
-                  <motion.span
-                    key={i}
-                    className="w-0.5 bg-accent-400 rounded-full"
-                    initial={{ height: 4 }}
-                    animate={{ height: speakingQuestion ? [4, 14, 6, 12, 4] : 4 }}
-                    transition={{
-                      duration: 0.9,
-                      repeat: speakingQuestion ? Infinity : 0,
-                      ease: "easeInOut",
-                      delay: i * 0.08,
-                    }}
-                    style={{ height: 4 }}
-                  />
-                ))}
-              </div>
-              <span className="text-[11px] font-medium text-white/85">
-                {speakingQuestion ? "Aria is asking…" : "Tap to replay"}
-              </span>
+            {/* Top-left ready badge */}
+            <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-accent-500 text-white text-[10px] font-semibold shadow-md">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+              AI interviewer ready
             </div>
-          </button>
 
-          <div className="flex items-center gap-1.5">
+            {/* User picture-in-picture (only when stream active) */}
+            {stream && (
+              <div className="absolute bottom-3 right-3 w-28 h-20 rounded-lg overflow-hidden border-2 border-white shadow-lg bg-black">
+                {recording && (
+                  <div className="absolute top-1.5 left-1.5 z-10 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500 text-white text-[9px] font-semibold">
+                    <span className="w-1 h-1 rounded-full bg-white animate-pulse" />
+                    {minutes}:{seconds}
+                  </div>
+                )}
+                <video ref={previewRef} autoPlay muted playsInline className="w-full h-full object-cover" />
+              </div>
+            )}
+
+            {/* Bottom equalizer when speaking */}
+            {speakingQuestion && (
+              <div className="absolute bottom-3 left-3 inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-black/60 text-white">
+                <div className="flex items-end gap-0.5 h-3.5">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <motion.span
+                      key={i}
+                      className="w-0.5 bg-accent-400 rounded-full"
+                      initial={{ height: 4 }}
+                      animate={{ height: [4, 13, 5, 11, 4] }}
+                      transition={{ duration: 0.9, repeat: Infinity, ease: "easeInOut", delay: i * 0.08 }}
+                      style={{ height: 4 }}
+                    />
+                  ))}
+                </div>
+                <span className="text-[10px] font-medium">Aria is asking…</span>
+              </div>
+            )}
+          </div>
+
+          {/* Step header — like reference's "Step 2: Review interview context" */}
+          <div className="flex items-center gap-2 text-[10px] font-semibold text-zinc-400 uppercase tracking-wider">
+            <span className="w-5 h-5 rounded-full bg-zinc-100 text-zinc-700 flex items-center justify-center text-[10px]">
+              {questionIndex + 1}
+            </span>
+            <span>Question {questionIndex + 1} of {totalQuestions}</span>
+            {currentTurn?.evaluation && (
+              <span className="ml-auto px-1.5 py-0.5 rounded bg-accent-50 text-accent-700 text-[10px] font-semibold normal-case">
+                Answered · {currentTurn.evaluation.score}/100
+              </span>
+            )}
+          </div>
+
+          {/* Question text */}
+          <div className="bg-zinc-50 border border-zinc-100 rounded-xl px-4 py-3">
+            <p className="text-sm font-semibold text-zinc-950 leading-snug">"{currentQuestion}"</p>
+          </div>
+
+          {/* Camera permission helper */}
+          {!stream && !permissionError && (
+            <button
+              onClick={startCamera}
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-zinc-950 text-white text-sm font-semibold rounded-xl hover:bg-zinc-800 active:scale-[0.98] transition-all"
+            >
+              <VideoCamera size={14} weight="fill" /> Start camera + microphone
+            </button>
+          )}
+          {permissionError && (
+            <p className="text-[11px] text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+              {permissionError}
+            </p>
+          )}
+
+          {/* Recording controls */}
+          {stream && (
+            <div className="flex flex-wrap items-center gap-2">
+              {!recording && !recordingUrl && (
+                <button
+                  onClick={startRecording}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 active:scale-[0.98] transition-all"
+                >
+                  <Play size={13} weight="fill" /> Record answer
+                </button>
+              )}
+              {recording && (
+                <button
+                  onClick={stopRecording}
+                  className="inline-flex items-center gap-1.5 px-3 py-2 bg-zinc-950 text-white rounded-lg text-xs font-semibold hover:bg-zinc-800 active:scale-[0.98] transition-all"
+                >
+                  <Stop size={13} weight="fill" /> Stop
+                </button>
+              )}
+              {recordingUrl && !recording && (
+                <>
+                  <button
+                    onClick={() => {
+                      discardRecording();
+                      if (!stream) { startCamera(); return; }
+                      startRecording();
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 active:scale-[0.98] transition-all"
+                  >
+                    <ArrowClockwise size={13} weight="bold" /> Re-record
+                  </button>
+                  <button
+                    onClick={discardRecording}
+                    className="inline-flex items-center gap-1.5 px-3 py-2 bg-white text-zinc-600 border border-zinc-200 rounded-lg text-xs font-medium hover:border-zinc-300 hover:bg-zinc-50 active:scale-[0.98] transition-all"
+                  >
+                    <Trash size={13} /> Discard
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Transcript */}
+          {(recordingUrl || transcript) && (
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between">
+                <div className="text-[10px] font-semibold text-zinc-500 uppercase tracking-wider">Your answer</div>
+                <button
+                  onClick={() => setEditingTranscript((v) => !v)}
+                  className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-950"
+                >
+                  <Pencil size={11} /> {editingTranscript ? "Done" : "Edit"}
+                </button>
+              </div>
+              {editingTranscript ? (
+                <textarea
+                  value={transcript}
+                  onChange={(e) => setTranscript(e.target.value)}
+                  rows={4}
+                  placeholder="If transcription failed, paste or type your answer here…"
+                  className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all resize-none"
+                />
+              ) : (
+                <p className="text-sm text-zinc-700 leading-relaxed bg-zinc-50 rounded-lg px-3 py-2 min-h-[56px]">
+                  {transcript || <span className="text-zinc-400 italic">Couldn't auto-transcribe — click Edit to type your answer.</span>}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Submit + nav */}
+          <div className="flex items-center gap-1.5 pt-1">
             <button
               onClick={() => nextQuestion(-1)}
-              className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg border border-zinc-200 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
+              className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg border border-zinc-200 text-xs font-medium text-zinc-600 hover:bg-zinc-50 transition-colors"
             >
               <CaretLeft size={12} /> Prev
             </button>
             <button
-              onClick={() => nextQuestion(1)}
-              className="flex-1 inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-zinc-950 text-white text-xs font-semibold hover:bg-zinc-800 transition-colors"
-            >
-              Next <CaretRight size={12} weight="bold" />
-            </button>
-          </div>
-        </div>
-
-        <button
-          onClick={endInterview}
-          className="w-full text-xs font-medium text-zinc-500 hover:text-red-600 hover:underline"
-        >
-          End interview
-        </button>
-
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4">
-          <div className="flex items-start gap-2">
-            <Lightbulb size={16} className="text-amber-600 mt-0.5 shrink-0" weight="fill" />
-            <p className="text-[11px] text-amber-800 leading-relaxed">
-              Recordings stay <span className="font-semibold">in your browser</span> — only the typed/transcribed
-              answer is sent to the AI for grading.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Camera + recording + evaluation */}
-      <div className="lg:col-span-2 space-y-4">
-        <div className="relative w-full aspect-video bg-zinc-950 rounded-2xl overflow-hidden border border-zinc-200">
-          {recordingUrl ? (
-            <video src={recordingUrl} controls className="w-full h-full object-contain bg-black" />
-          ) : stream ? (
-            <video ref={previewRef} autoPlay muted playsInline className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center text-center px-6">
-              <VideoCamera size={42} className="text-white/30 mb-3" />
-              <div className="text-sm font-semibold text-white/90">Camera preview</div>
-              <p className="text-xs text-white/50 mt-1 max-w-sm">
-                {permissionError ?? "Click Start camera to begin. Your browser will ask for camera + microphone permission."}
-              </p>
-              <button
-                onClick={startCamera}
-                className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-accent-500 text-white text-sm font-semibold rounded-lg hover:bg-accent-400 active:scale-[0.98] transition-all"
-              >
-                <VideoCamera size={14} weight="fill" /> Start camera
-              </button>
-            </div>
-          )}
-          {recording && (
-            <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-red-500 text-white text-[11px] font-semibold shadow-lg">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-              REC {minutes}:{seconds}
-            </div>
-          )}
-        </div>
-
-        {/* Action bar */}
-        <div className="bg-white rounded-2xl border border-zinc-200 p-3 flex flex-wrap items-center gap-2">
-          {!stream && !recordingUrl && (
-            <button
-              onClick={startCamera}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-accent-500 text-white rounded-lg text-xs font-semibold hover:bg-accent-400 active:scale-[0.98] transition-all"
-            >
-              <VideoCamera size={13} weight="fill" /> Start camera
-            </button>
-          )}
-          {stream && !recording && !recordingUrl && (
-            <button
-              onClick={startRecording}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 active:scale-[0.98] transition-all"
-            >
-              <Play size={13} weight="fill" /> Record answer
-            </button>
-          )}
-          {recording && (
-            <button
-              onClick={stopRecording}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-zinc-950 text-white rounded-lg text-xs font-semibold hover:bg-zinc-800 active:scale-[0.98] transition-all"
-            >
-              <Stop size={13} weight="fill" /> Stop
-            </button>
-          )}
-          {recordingUrl && !recording && (
-            <>
-              <button
-                onClick={() => {
-                  discardRecording();
-                  if (!stream) { startCamera(); return; }
-                  startRecording();
-                }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-red-500 text-white rounded-lg text-xs font-semibold hover:bg-red-600 active:scale-[0.98] transition-all"
-              >
-                <ArrowClockwise size={13} weight="bold" /> Re-record
-              </button>
-              <button
-                onClick={discardRecording}
-                className="inline-flex items-center gap-1.5 px-3 py-2 bg-white text-zinc-600 border border-zinc-200 rounded-lg text-xs font-medium hover:border-zinc-300 hover:bg-zinc-50 active:scale-[0.98] transition-all"
-              >
-                <Trash size={13} /> Discard
-              </button>
-            </>
-          )}
-        </div>
-
-        {/* Transcript + evaluate */}
-        {(recordingUrl || transcript) && (
-          <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-3">
-            <div className="flex items-center justify-between">
-              <div className="text-xs font-semibold text-zinc-700">Your answer (transcript)</div>
-              <button
-                onClick={() => setEditingTranscript((v) => !v)}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-500 hover:text-zinc-950"
-              >
-                <Pencil size={11} /> {editingTranscript ? "Done" : "Edit"}
-              </button>
-            </div>
-            {editingTranscript ? (
-              <textarea
-                value={transcript}
-                onChange={(e) => setTranscript(e.target.value)}
-                rows={5}
-                placeholder="If transcription failed, paste or type your answer here…"
-                className="w-full px-3 py-2 rounded-lg border border-zinc-200 text-sm text-zinc-800 focus:outline-none focus:ring-2 focus:ring-accent-500/20 focus:border-accent-500 transition-all resize-none"
-              />
-            ) : (
-              <p className="text-sm text-zinc-700 leading-relaxed bg-zinc-50 rounded-lg px-3 py-2 min-h-[64px]">
-                {transcript || <span className="text-zinc-400 italic">Couldn't auto-transcribe — click Edit to type your answer manually before evaluating.</span>}
-              </p>
-            )}
-
-            <button
               onClick={evaluateAnswer}
               disabled={evaluating || transcript.trim().length < 5}
-              className="inline-flex items-center gap-1.5 px-3 py-2 bg-accent-500 text-white rounded-lg text-xs font-semibold hover:bg-accent-400 active:scale-[0.98] transition-all disabled:opacity-60"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-accent-500 text-white rounded-lg text-xs font-semibold hover:bg-accent-400 active:scale-[0.98] transition-all disabled:opacity-60"
             >
               {evaluating ? (
                 <>
@@ -1076,74 +1105,211 @@ function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
                 </>
               ) : (
                 <>
-                  <PaperPlaneRight size={12} weight="fill" /> Submit for AI evaluation
+                  <PaperPlaneRight size={12} weight="fill" /> Submit answer
                 </>
               )}
             </button>
-
-            <AnimatePresence>
-              {evaluation && (
-                <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  className="bg-zinc-950 text-white rounded-xl p-4 space-y-3"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Sparkle size={14} weight="fill" className="text-accent-400" />
-                      <span className="text-sm font-semibold">AI feedback</span>
-                    </div>
-                    <div className={`px-2.5 py-0.5 rounded-md text-xs font-bold ${
-                      evaluation.score >= 70 ? "bg-accent-500/20 text-accent-300"
-                      : evaluation.score >= 40 ? "bg-amber-500/20 text-amber-300"
-                      : "bg-red-500/20 text-red-300"
-                    }`}>
-                      {evaluation.score} / 100
-                    </div>
-                  </div>
-                  <p className="text-xs text-white/85 leading-relaxed">{evaluation.verdict}</p>
-
-                  {evaluation.strengths?.length > 0 && (
-                    <div>
-                      <div className="text-[10px] font-semibold text-accent-300 uppercase tracking-wider mb-1">Strengths</div>
-                      <ul className="space-y-1">
-                        {evaluation.strengths.map((s, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[12px] text-white/80">
-                            <CheckCircle size={11} weight="fill" className="text-accent-400 mt-0.5 shrink-0" />
-                            <span>{s}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {evaluation.improvements?.length > 0 && (
-                    <div>
-                      <div className="text-[10px] font-semibold text-amber-300 uppercase tracking-wider mb-1">Improvements</div>
-                      <ul className="space-y-1">
-                        {evaluation.improvements.map((s, i) => (
-                          <li key={i} className="flex items-start gap-2 text-[12px] text-white/80">
-                            <Lightbulb size={11} weight="fill" className="text-amber-400 mt-0.5 shrink-0" />
-                            <span>{s}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-
-                  {evaluation.modelAnswer && (
-                    <div className="bg-white/5 rounded-lg p-3">
-                      <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mb-1">Sample strong answer</div>
-                      <p className="text-[12px] text-white/85 leading-relaxed italic">{evaluation.modelAnswer}</p>
-                    </div>
-                  )}
-                </motion.div>
-              )}
-            </AnimatePresence>
+            <button
+              onClick={() => nextQuestion(1)}
+              className="inline-flex items-center justify-center gap-1 px-3 py-2 rounded-lg bg-zinc-950 text-white text-xs font-semibold hover:bg-zinc-800 transition-colors"
+            >
+              Next <CaretRight size={12} weight="bold" />
+            </button>
           </div>
-        )}
+        </div>
+
+        <div className="px-5 py-3 border-t border-zinc-100 bg-zinc-50/60 flex items-center justify-between text-[11px] text-zinc-500">
+          <span className="flex items-center gap-1.5">
+            <Lightbulb size={12} weight="fill" className="text-amber-500" />
+            Recordings stay in your browser
+          </span>
+          <button onClick={endInterview} className="font-medium text-red-500 hover:underline">
+            End interview
+          </button>
+        </div>
       </div>
+
+      {/* ── Right: Copilot Answers feed ────────────────────────────────────── */}
+      <div className="bg-white rounded-2xl border border-zinc-200 flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 py-3.5 border-b border-zinc-100">
+          <h3 className="text-sm font-semibold text-zinc-950 flex items-center gap-2">
+            <Sparkle size={15} weight="fill" className="text-accent-500" />
+            Copilot Answers
+          </h3>
+          <div className="inline-flex items-center gap-1.5 text-[11px] text-accent-700 font-semibold">
+            <span className="w-1.5 h-1.5 rounded-full bg-accent-500 animate-pulse" />
+            {hasAnyAnswered ? "Live" : "Ready"}
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-5 space-y-5 max-h-[calc(100vh-220px)]">
+          {!hasAnyAnswered && !evaluating ? (
+            <div className="text-center py-10">
+              <ChatTeardropDots size={28} className="text-zinc-300 mx-auto mb-3" />
+              <div className="text-sm font-semibold text-zinc-700">Aria is ready</div>
+              <p className="text-xs text-zinc-500 mt-1 max-w-sm mx-auto leading-relaxed">
+                Click <span className="font-semibold text-zinc-700">Record answer</span> on the left, speak your reply,
+                then submit. Aria's evaluations and your transcript will appear here, turn by turn.
+              </p>
+            </div>
+          ) : (
+            turns.map((turn, i) => {
+              if (!turn.answer && i !== questionIndex) return null;
+              if (!turn.answer && !turn.evaluation && !evaluating) return null;
+              return (
+                <FeedTurn
+                  key={turn.id}
+                  index={i + 1}
+                  turn={turn}
+                  portraitSrc={portraitSrc}
+                  fallbackSrc={INTERVIEWER_PORTRAIT_FALLBACK}
+                  fmtOffset={fmtOffset}
+                  isCurrent={i === questionIndex}
+                  evaluating={evaluating && i === questionIndex}
+                />
+              );
+            })
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Feed turn (chat-bubble row in Copilot Answers) ─────────────────────────
+
+function FeedTurn({
+  index,
+  turn,
+  portraitSrc,
+  fallbackSrc,
+  fmtOffset,
+  isCurrent,
+  evaluating,
+}: {
+  index: number;
+  turn: InterviewTurn;
+  portraitSrc: string;
+  fallbackSrc: string;
+  fmtOffset: (ms: number) => string;
+  isCurrent: boolean;
+  evaluating: boolean;
+}) {
+  const ev = turn.evaluation;
+  return (
+    <div className={`space-y-2 ${isCurrent ? "" : "opacity-90"}`}>
+      {/* Aria's question bubble */}
+      <div className="flex items-start gap-2">
+        <div className="w-7 h-7 rounded-full overflow-hidden shrink-0 ring-1 ring-zinc-200">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={portraitSrc}
+            onError={(e) => {
+              const img = e.currentTarget;
+              if (img.dataset.fallback !== "1") {
+                img.dataset.fallback = "1";
+                img.src = fallbackSrc;
+              }
+            }}
+            alt=""
+            className="w-full h-full object-cover"
+            style={{ objectPosition: "center 18%" }}
+          />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 text-[10px] text-zinc-500 mb-1">
+            <span className="font-semibold text-zinc-700">Aria</span>
+            <span>·</span>
+            <span>Q{index}</span>
+            <span>·</span>
+            <span className="tabular-nums">{fmtOffset(turn.askedAt)}</span>
+          </div>
+          <div className="bg-zinc-50 border border-zinc-100 rounded-2xl rounded-tl-sm px-4 py-2.5">
+            <p className="text-[13px] text-zinc-800 leading-relaxed">{turn.question}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* User answer bubble */}
+      {turn.answer && (
+        <div className="flex items-start gap-2 justify-end">
+          <div className="flex-1 min-w-0 max-w-[88%]">
+            <div className="flex items-center gap-2 text-[10px] text-zinc-500 mb-1 justify-end">
+              <span>You</span>
+            </div>
+            <div className="bg-accent-500 text-white rounded-2xl rounded-tr-sm px-4 py-2.5">
+              <p className="text-[13px] leading-relaxed whitespace-pre-wrap">{turn.answer}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Evaluation card */}
+      {ev && (
+        <div className="bg-zinc-950 text-white rounded-xl p-4 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkle size={13} weight="fill" className="text-accent-400" />
+              <span className="text-xs font-semibold">Aria's feedback</span>
+            </div>
+            <div
+              className={`px-2.5 py-0.5 rounded-md text-xs font-bold ${
+                ev.score >= 70
+                  ? "bg-accent-500/20 text-accent-300"
+                  : ev.score >= 40
+                  ? "bg-amber-500/20 text-amber-300"
+                  : "bg-red-500/20 text-red-300"
+              }`}
+            >
+              {ev.score} / 100
+            </div>
+          </div>
+          <p className="text-[12px] text-white/85 leading-relaxed">{ev.verdict}</p>
+
+          {ev.strengths?.length > 0 && (
+            <div>
+              <div className="text-[10px] font-semibold text-accent-300 uppercase tracking-wider mb-1">Strengths</div>
+              <ul className="space-y-1">
+                {ev.strengths.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[11px] text-white/80">
+                    <CheckCircle size={11} weight="fill" className="text-accent-400 mt-0.5 shrink-0" />
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {ev.improvements?.length > 0 && (
+            <div>
+              <div className="text-[10px] font-semibold text-amber-300 uppercase tracking-wider mb-1">Improvements</div>
+              <ul className="space-y-1">
+                {ev.improvements.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2 text-[11px] text-white/80">
+                    <Lightbulb size={11} weight="fill" className="text-amber-400 mt-0.5 shrink-0" />
+                    <span>{s}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {ev.modelAnswer && (
+            <div className="bg-white/5 rounded-lg p-3">
+              <div className="text-[10px] font-semibold text-white/60 uppercase tracking-wider mb-1">Sample strong answer</div>
+              <p className="text-[11px] text-white/85 leading-relaxed italic">{ev.modelAnswer}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Evaluating placeholder */}
+      {evaluating && !ev && (
+        <div className="bg-zinc-50 border border-dashed border-zinc-300 rounded-xl p-4 flex items-center gap-3">
+          <div className="w-4 h-4 border-2 border-zinc-300 border-t-accent-500 rounded-full animate-spin" />
+          <span className="text-xs text-zinc-600">Aria is evaluating your answer…</span>
+        </div>
+      )}
     </div>
   );
 }
