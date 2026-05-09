@@ -52,7 +52,7 @@ const TOPIC_SUGGESTIONS: { label: string; topic: string }[] = [
 
 type Tab = "qa" | "video";
 
-export function MockInterview() {
+export function MockInterview({ isAdmin = false }: { isAdmin?: boolean }) {
   const [tab, setTab] = useState<Tab>("qa");
 
   return (
@@ -89,7 +89,7 @@ export function MockInterview() {
       </div>
 
       {tab === "qa" && <AIQuizPanel />}
-      {tab === "video" && <VideoInterviewPanel />}
+      {tab === "video" && <VideoInterviewPanel isAdmin={isAdmin} />}
     </div>
   );
 }
@@ -457,8 +457,12 @@ type SpeechRecognitionLike = {
   onend: (() => void) | null;
 };
 
-function VideoInterviewPanel() {
+function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
   const [topic, setTopic] = useState("Behavioural interview questions using STAR framework");
+  const [portraitVersion, setPortraitVersion] = useState<number>(0); // cache-buster for the local photo
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const portraitSrc = `${INTERVIEWER_PORTRAIT_URL}${portraitVersion ? `?v=${portraitVersion}` : ""}`;
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [count, setCount] = useState(5);
   const [generating, setGenerating] = useState(false);
@@ -719,6 +723,33 @@ function VideoInterviewPanel() {
     return () => window.speechSynthesis.removeEventListener?.("voiceschanged", handler);
   }, []);
 
+  async function handlePortraitFile(file: File) {
+    if (file.size > 10 * 1024 * 1024) {
+      toast.error("File too large (max 10 MB)");
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      toast.error("Use JPG, PNG, or WebP");
+      return;
+    }
+    setUploadingPhoto(true);
+    const id = toast.loading("Uploading Aria's photo…");
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await axios.post("/api/admin/interviewer-photo", fd);
+      const v = (res.data?.v as number) ?? Date.now();
+      setPortraitVersion(v);
+      toast.success("Aria's photo updated", { id });
+    } catch (err) {
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Upload failed";
+      toast.error(msg, { id });
+    } finally {
+      setUploadingPhoto(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  }
+
   // Auto-speak the question when it changes (after a small delay so voices load)
   useEffect(() => {
     if (!hasInterview) return;
@@ -787,7 +818,7 @@ function VideoInterviewPanel() {
             <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-accent-500/20">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={INTERVIEWER_PORTRAIT_URL}
+                src={portraitSrc}
                 onError={(e) => {
                   const img = e.currentTarget;
                   if (img.dataset.fallback !== "1") {
@@ -806,13 +837,41 @@ function VideoInterviewPanel() {
                 Question {questionIndex + 1} of {questions.length}
               </div>
             </div>
-            <button
-              onClick={speakQuestion}
-              title="Hear the question again"
-              className="ml-auto w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 hover:text-accent-700 transition-colors"
-            >
-              <SpeakerHigh size={14} weight={speakingQuestion ? "fill" : "regular"} />
-            </button>
+            <div className="ml-auto flex items-center gap-1.5">
+              {isAdmin && (
+                <>
+                  <button
+                    onClick={() => photoInputRef.current?.click()}
+                    title="Replace Aria's photo"
+                    disabled={uploadingPhoto}
+                    className="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 hover:text-accent-700 transition-colors disabled:opacity-60"
+                  >
+                    {uploadingPhoto ? (
+                      <div className="w-3 h-3 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+                    ) : (
+                      <Pencil size={13} />
+                    )}
+                  </button>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="hidden"
+                    onChange={(e) => {
+                      const f = e.target.files?.[0];
+                      if (f) handlePortraitFile(f);
+                    }}
+                  />
+                </>
+              )}
+              <button
+                onClick={speakQuestion}
+                title="Hear the question again"
+                className="w-8 h-8 rounded-lg border border-zinc-200 flex items-center justify-center text-zinc-500 hover:bg-zinc-50 hover:text-accent-700 transition-colors"
+              >
+                <SpeakerHigh size={14} weight={speakingQuestion ? "fill" : "regular"} />
+              </button>
+            </div>
           </div>
 
           {/* Question text — speech-bubble style */}
