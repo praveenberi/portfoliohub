@@ -38,6 +38,8 @@ interface JobSearchProps {
   userSkillCount?: number;
   /** Auto-generated keyword string used by the Matching tab to fetch external matches. */
   matchingQuery?: string;
+  /** Top profile skills, used to fan out external lookups beyond a single query. */
+  userTopSkills?: string[];
 }
 
 const WORK_MODE_LABELS: Record<string, string> = {
@@ -127,6 +129,7 @@ function InternalJobsTab({
   userSkillCount = 0,
   matchingQuery = "",
   defaultLocation = "",
+  userTopSkills = [],
 }: JobSearchProps & { onSavedChange?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -156,37 +159,81 @@ function InternalJobsTab({
 
   // ── External (live) jobs that match the user's profile keywords ──
   // Posted-job inventory in the local DB is small, so without this the
-  // Matching tab feels empty even when the user has 20+ skills. We hit the
-  // same external aggregator the Live tab uses, with a query auto-built from
-  // the user's headline / top skills server-side.
+  // Matching tab feels empty even when the user has 20+ skills. Fan out to
+  // multiple external queries (headline + each top skill) so the user gets
+  // the full breadth of relevant listings instead of a single source's first
+  // page.
   const [extJobs, setExtJobs] = useState<ExternalJob[]>([]);
   const [extLoading, setExtLoading] = useState(false);
-  const [extSource, setExtSource] = useState("");
+  const [extSources, setExtSources] = useState<string[]>([]);
+  const [extQueriesUsed, setExtQueriesUsed] = useState(0);
+
+  // Stable list of queries: headline (if any) + each top skill, deduped, capped.
+  const queries = (() => {
+    const out: string[] = [];
+    const seen = new Set<string>();
+    const add = (q: string) => {
+      const k = q.trim().toLowerCase();
+      if (!k) return;
+      if (seen.has(k)) return;
+      seen.add(k);
+      out.push(q.trim());
+    };
+    if (matchingQuery) add(matchingQuery);
+    for (const s of userTopSkills) add(s);
+    return out.slice(0, 6);
+  })();
+  // Reduce to a stable string so the effect re-runs only when the actual list changes.
+  const queriesKey = queries.join("|");
+
   useEffect(() => {
     let cancelled = false;
-    if (!matchingQuery.trim()) {
+    if (queries.length === 0) {
       setExtJobs([]);
+      setExtSources([]);
+      setExtQueriesUsed(0);
       return;
     }
     setExtLoading(true);
     (async () => {
       try {
-        const params = new URLSearchParams({ q: matchingQuery });
-        if (defaultLocation) params.set("location", defaultLocation);
-        const r = await fetch(`/api/jobs/external?${params}`, { cache: "no-store" });
+        const results = await Promise.all(
+          queries.map(async (q) => {
+            const params = new URLSearchParams({ q });
+            if (defaultLocation) params.set("location", defaultLocation);
+            try {
+              const r = await fetch(`/api/jobs/external?${params}`, { cache: "no-store" });
+              if (!r.ok) return { jobs: [] as ExternalJob[], source: "" };
+              const data = await r.json();
+              return { jobs: (data?.data ?? []) as ExternalJob[], source: (data?.source as string) ?? "" };
+            } catch {
+              return { jobs: [] as ExternalJob[], source: "" };
+            }
+          })
+        );
         if (cancelled) return;
-        if (!r.ok) { setExtJobs([]); return; }
-        const data = await r.json();
-        setExtJobs((data?.data ?? []).slice(0, 9));
-        setExtSource(data?.source ?? "");
-      } catch {
-        if (!cancelled) setExtJobs([]);
+        const seen = new Set<string>();
+        const merged: ExternalJob[] = [];
+        const sources = new Set<string>();
+        for (const r of results) {
+          if (r.source) sources.add(r.source);
+          for (const j of r.jobs) {
+            const key = `${j.source}::${j.id}`;
+            if (seen.has(key)) continue;
+            seen.add(key);
+            merged.push(j);
+          }
+        }
+        setExtJobs(merged);
+        setExtSources(Array.from(sources));
+        setExtQueriesUsed(queries.length);
       } finally {
         if (!cancelled) setExtLoading(false);
       }
     })();
     return () => { cancelled = true; };
-  }, [matchingQuery, defaultLocation]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [queriesKey, defaultLocation]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -327,16 +374,18 @@ function InternalJobsTab({
         </div>
       )}
 
-      {/* Live external matches — same query the Live tab uses, scoped to the
-          user's headline / top skills */}
-      {matchingQuery && (
+      {/* Live external matches — fanned out across headline + each top skill */}
+      {queries.length > 0 && (
         <div className="space-y-3 pt-2">
           <div className="flex items-center justify-between gap-3 border-t border-zinc-100 pt-5">
             <div>
-              <h2 className="text-sm font-semibold text-zinc-950">Live matches</h2>
+              <h2 className="text-sm font-semibold text-zinc-950">
+                Live matches{!extLoading ? <span className="ml-2 text-xs font-normal text-zinc-400">{extJobs.length}</span> : null}
+              </h2>
               <p className="text-[11px] text-zinc-400 mt-0.5">
-                Searched {extSource ? <>via <span className="font-medium text-zinc-600">{extSource}</span></> : "live job sources"} for{" "}
-                <span className="font-medium text-zinc-600">"{matchingQuery}"</span>
+                Searched{" "}
+                {extSources.length > 0 ? <>via <span className="font-medium text-zinc-600">{extSources.join(" · ")}</span></> : "live job sources"}
+                {extQueriesUsed > 0 ? <> across <span className="font-medium text-zinc-600">{extQueriesUsed} keyword{extQueriesUsed === 1 ? "" : "s"}</span></> : null}
                 {defaultLocation ? <> in <span className="font-medium text-zinc-600">{defaultLocation}</span></> : null}.
               </p>
             </div>

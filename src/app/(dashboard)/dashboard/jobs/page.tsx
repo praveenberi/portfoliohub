@@ -119,6 +119,7 @@ export default async function JobsPage({
       defaultLocation={profile?.location ?? ""}
       userSkillCount={userSkills.length}
       matchingQuery={matchingQuery}
+      userTopSkills={userSkills.slice(0, 6)}
     />
   );
 }
