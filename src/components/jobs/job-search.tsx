@@ -13,7 +13,9 @@ import {
   SlidersHorizontal,
   ArrowSquareOut,
   Globe,
+  CheckCircle,
 } from "@phosphor-icons/react";
+import { externalJobId } from "@/lib/external-job";
 import type { Job } from "@prisma/client";
 import { formatSalaryRange, timeAgo } from "@/lib/utils";
 import axios from "axios";
@@ -271,13 +273,10 @@ const SG_QUICK_FILTERS = [
   { label: "Remote", location: "Remote" },
 ];
 
-function externalJobKey(source: string, id: string) {
-  const slug = source.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "ext";
-  const safeId = id.replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 80);
-  return `ext-${slug}-${safeId}`;
-}
-
-function LiveJobsTab({ onSavedChange }: { onSavedChange?: () => void } = {}) {
+function LiveJobsTab({
+  onSavedChange,
+  onAppliedChange,
+}: { onSavedChange?: () => void; onAppliedChange?: () => void } = {}) {
   const [q, setQ] = useState("");
   const [location, setLocation] = useState("Singapore");
   const [page, setPage] = useState(1);
@@ -289,21 +288,33 @@ function LiveJobsTab({ onSavedChange }: { onSavedChange?: () => void } = {}) {
   const [searched, setSearched] = useState(false);
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [appliedKeys, setAppliedKeys] = useState<Set<string>>(new Set());
+  const [applyingKey, setApplyingKey] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Seed the bookmark state once on mount from the saved-jobs API
+  // Seed the bookmark + applied state once on mount from the saved + applications APIs
   useEffect(() => {
     let cancelled = false;
     (async () => {
       try {
-        const r = await fetch("/api/jobs/saved", { cache: "no-store" });
-        if (!r.ok) return;
-        const data = await r.json();
-        if (cancelled) return;
-        const ids = (data?.data ?? [])
-          .map((j: { id: string }) => j.id)
-          .filter((id: string) => id.startsWith("ext-"));
-        setSavedKeys(new Set(ids));
+        const [savedRes, appliedRes] = await Promise.all([
+          fetch("/api/jobs/saved", { cache: "no-store" }),
+          fetch("/api/applications", { cache: "no-store" }),
+        ]);
+        if (!cancelled && savedRes.ok) {
+          const data = await savedRes.json();
+          const ids = (data?.data ?? [])
+            .map((j: { id: string }) => j.id)
+            .filter((id: string) => id.startsWith("ext-"));
+          setSavedKeys(new Set(ids));
+        }
+        if (!cancelled && appliedRes.ok) {
+          const data = await appliedRes.json();
+          const ids = (data?.data ?? [])
+            .map((a: { jobId: string }) => a.jobId)
+            .filter((id: string) => id.startsWith("ext-"));
+          setAppliedKeys(new Set(ids));
+        }
       } catch {
         // ignore
       }
@@ -312,7 +323,7 @@ function LiveJobsTab({ onSavedChange }: { onSavedChange?: () => void } = {}) {
   }, []);
 
   async function toggleSave(job: ExternalJob) {
-    const key = externalJobKey(job.source, job.id);
+    const key = externalJobId(job.source, job.id);
     const wasSaved = savedKeys.has(key);
     setSavingKey(key);
     setSavedKeys((prev) => {
@@ -339,6 +350,48 @@ function LiveJobsTab({ onSavedChange }: { onSavedChange?: () => void } = {}) {
       toast.error(msg);
     } finally {
       setSavingKey(null);
+    }
+  }
+
+  async function markApplied(job: ExternalJob) {
+    const key = externalJobId(job.source, job.id);
+    if (appliedKeys.has(key)) return;
+    setApplyingKey(key);
+    // Optimistic — flip the badge instantly
+    setAppliedKeys((prev) => { const next = new Set(prev); next.add(key); return next; });
+    try {
+      const { data } = await axios.post("/api/applications/external", job);
+      if (data?.alreadyApplied) {
+        toast("Already applied to this job");
+      } else {
+        toast.success("Marked as applied");
+      }
+      onAppliedChange?.();
+    } catch (err) {
+      // Roll back on failure
+      setAppliedKeys((prev) => { const next = new Set(prev); next.delete(key); return next; });
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Couldn't mark as applied";
+      toast.error(msg);
+    } finally {
+      setApplyingKey(null);
+    }
+  }
+
+  async function unmarkApplied(job: ExternalJob) {
+    const key = externalJobId(job.source, job.id);
+    if (!appliedKeys.has(key)) return;
+    setApplyingKey(key);
+    setAppliedKeys((prev) => { const next = new Set(prev); next.delete(key); return next; });
+    try {
+      await axios.delete(`/api/applications/external?source=${encodeURIComponent(job.source)}&externalId=${encodeURIComponent(job.id)}`);
+      onAppliedChange?.();
+    } catch (err) {
+      // Roll back on failure
+      setAppliedKeys((prev) => { const next = new Set(prev); next.add(key); return next; });
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Couldn't unmark";
+      toast.error(msg);
+    } finally {
+      setApplyingKey(null);
     }
   }
 
@@ -499,31 +552,53 @@ function LiveJobsTab({ onSavedChange }: { onSavedChange?: () => void } = {}) {
                 <span className="text-[11px] text-zinc-400">{job.postedAt ? timeAgo(job.postedAt) : ""}</span>
                 <div className="flex items-center gap-3">
                   {(() => {
-                    const key = externalJobKey(job.source, job.id);
+                    const key = externalJobId(job.source, job.id);
                     const isSaved = savedKeys.has(key);
-                    const busy = savingKey === key;
+                    const isApplied = appliedKeys.has(key);
+                    const saveBusy = savingKey === key;
+                    const applyBusy = applyingKey === key;
                     return (
-                      <button
-                        onClick={() => toggleSave(job)}
-                        disabled={busy}
-                        title={isSaved ? "Saved — click to unsave" : "Save this job"}
-                        className={`inline-flex items-center gap-1 text-xs font-medium transition-colors ${
-                          isSaved ? "text-green-600 hover:text-green-700" : "text-zinc-500 hover:text-zinc-950"
-                        } disabled:opacity-50`}
-                      >
-                        {isSaved ? (
-                          <BookmarkSimple size={13} weight="fill" />
-                        ) : (
-                          <Bookmark size={13} />
+                      <>
+                        <button
+                          onClick={() => toggleSave(job)}
+                          disabled={saveBusy}
+                          title={isSaved ? "Saved — click to unsave" : "Save this job"}
+                          className={`inline-flex items-center gap-1 text-xs font-medium transition-colors ${
+                            isSaved ? "text-green-600 hover:text-green-700" : "text-zinc-500 hover:text-zinc-950"
+                          } disabled:opacity-50`}
+                        >
+                          {isSaved ? <BookmarkSimple size={13} weight="fill" /> : <Bookmark size={13} />}
+                          {isSaved ? "Saved" : "Save"}
+                        </button>
+                        <button
+                          onClick={() => (isApplied ? unmarkApplied(job) : markApplied(job))}
+                          disabled={applyBusy}
+                          title={isApplied ? "Marked as applied — click to undo" : "Mark this job as applied"}
+                          className={`inline-flex items-center gap-1 text-xs font-medium transition-colors ${
+                            isApplied ? "text-green-600 hover:text-zinc-700" : "text-zinc-500 hover:text-zinc-950"
+                          } disabled:opacity-50`}
+                        >
+                          {isApplied ? <CheckCircle size={13} weight="fill" /> : <CheckCircle size={13} />}
+                          {isApplied ? "Applied" : "Mark applied"}
+                        </button>
+                        {job.applyUrl && (
+                          <a
+                            href={job.applyUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => {
+                              // Best-effort: also flag as applied when opening the external page,
+                              // matching the user's intent that "Apply now" implies they applied.
+                              if (!isApplied) markApplied(job);
+                            }}
+                            className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-950 hover:text-green-600 transition-colors"
+                          >
+                            Apply now <ArrowSquareOut size={11} weight="bold" />
+                          </a>
                         )}
-                        {isSaved ? "Saved" : "Save"}
-                      </button>
+                      </>
                     );
                   })()}
-                  <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-950 hover:text-green-600 transition-colors">
-                    Apply now <ArrowSquareOut size={11} weight="bold" />
-                  </a>
                 </div>
               </div>
             </motion.div>
@@ -775,7 +850,7 @@ export function JobSearch(props: JobSearchProps) {
       </div>
 
       {activeTab === "live" ? (
-        <LiveJobsTab onSavedChange={bumpSaved} />
+        <LiveJobsTab onSavedChange={bumpSaved} onAppliedChange={bumpSaved} />
       ) : activeTab === "saved" ? (
         <SavedJobsTab refreshKey={savedRefreshKey} onChange={bumpSaved} />
       ) : (
