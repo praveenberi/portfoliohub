@@ -2,8 +2,10 @@ export const dynamic = "force-dynamic";
 
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { parseArr } from "@/lib/utils";
 import { JobSearch } from "@/components/jobs/job-search";
 import type { Metadata } from "next";
+import type { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Browse Jobs" };
 
@@ -14,6 +16,7 @@ interface SearchParams {
   type?: string;
   minSalary?: string;
   page?: string;
+  tab?: string;
 }
 
 export default async function JobsPage({
@@ -26,18 +29,51 @@ export default async function JobsPage({
   const page = Number(searchParams.page ?? 1);
   const limit = 12;
 
-  const where = {
+  // Pull the user's profile so we can default the location and filter the
+  // Matching Jobs tab by their skills + technologies.
+  const profile = await prisma.profile.findUnique({
+    where: { userId },
+    select: { location: true, skills: true, technologies: true },
+  });
+
+  const userSkills = Array.from(
+    new Set(
+      [...parseArr(profile?.skills), ...parseArr(profile?.technologies)]
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  );
+
+  const skillsFilter: Prisma.JobWhereInput | null =
+    userSkills.length === 0
+      ? null
+      : {
+          OR: userSkills.flatMap((skill) => {
+            const lower = skill.toLowerCase();
+            return [
+              { skills: { contains: skill } },
+              { skills: { contains: lower } },
+              { title: { contains: skill } },
+              { title: { contains: lower } },
+              { description: { contains: skill } },
+              { description: { contains: lower } },
+            ];
+          }),
+        };
+
+  const where: Prisma.JobWhereInput = {
     isApproved: true,
     isActive: true,
+    ...(skillsFilter ? { AND: [skillsFilter] } : {}),
     ...(searchParams.q && {
       OR: [
-        { title: { contains: searchParams.q, mode: "insensitive" as const } },
-        { company: { contains: searchParams.q, mode: "insensitive" as const } },
-        { description: { contains: searchParams.q, mode: "insensitive" as const } },
+        { title: { contains: searchParams.q } },
+        { company: { contains: searchParams.q } },
+        { description: { contains: searchParams.q } },
       ],
     }),
     ...(searchParams.location && {
-      location: { contains: searchParams.location, mode: "insensitive" as const },
+      location: { contains: searchParams.location },
     }),
     ...(searchParams.workMode && {
       workMode: searchParams.workMode as "REMOTE" | "HYBRID" | "ON_SITE",
@@ -72,6 +108,8 @@ export default async function JobsPage({
       limit={limit}
       savedJobIds={savedJobIds.map((s) => s.jobId)}
       searchParams={searchParams as Record<string, string | undefined>}
+      defaultLocation={profile?.location ?? ""}
+      userSkillCount={userSkills.length}
     />
   );
 }

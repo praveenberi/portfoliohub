@@ -32,6 +32,10 @@ interface JobSearchProps {
   limit: number;
   savedJobIds: string[];
   searchParams: Record<string, string | undefined>;
+  /** User's profile.location, used to seed the live-jobs location field. */
+  defaultLocation?: string;
+  /** Number of skills + technologies on the user's profile (powers the Matching Jobs empty state). */
+  userSkillCount?: number;
 }
 
 const WORK_MODE_LABELS: Record<string, string> = {
@@ -118,6 +122,7 @@ function SearchBar({
 function InternalJobsTab({
   jobs, total, page, limit, savedJobIds, searchParams,
   onSavedChange,
+  userSkillCount = 0,
 }: JobSearchProps & { onSavedChange?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -193,12 +198,35 @@ function InternalJobsTab({
           ))}
         </div>
       ) : jobs.length === 0 ? (
-        <div className="bg-white rounded-2xl border border-zinc-200 p-16 text-center">
-          <MagnifyingGlass size={32} className="text-zinc-200 mx-auto mb-3" />
-          <p className="text-sm font-medium text-zinc-500">No jobs found</p>
-          <p className="text-xs text-zinc-400 mt-1">Try adjusting your filters</p>
-        </div>
+        userSkillCount === 0 ? (
+          <div className="bg-white rounded-2xl border border-zinc-200 p-16 text-center">
+            <MagnifyingGlass size={32} className="text-zinc-200 mx-auto mb-3" />
+            <p className="text-sm font-medium text-zinc-500">Add skills to see matching jobs</p>
+            <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
+              Matching Jobs filters by your profile skills + technologies. Add a few in your profile and check back.
+            </p>
+            <Link
+              href="/dashboard/profile"
+              className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 active:scale-[0.98] transition-all"
+            >
+              Edit profile skills <ArrowRight size={11} weight="bold" />
+            </Link>
+          </div>
+        ) : (
+          <div className="bg-white rounded-2xl border border-zinc-200 p-16 text-center">
+            <MagnifyingGlass size={32} className="text-zinc-200 mx-auto mb-3" />
+            <p className="text-sm font-medium text-zinc-500">No matching jobs yet</p>
+            <p className="text-xs text-zinc-400 mt-1">No posted job matches your {userSkillCount} skill{userSkillCount === 1 ? "" : "s"} right now. Try the Live Jobs tab for external listings.</p>
+          </div>
+        )
       ) : (
+        <>
+          {userSkillCount > 0 && (
+            <div className="rounded-xl border border-accent-200 bg-accent-50/60 px-4 py-3 text-xs text-accent-900 flex items-center gap-2">
+              <span className="w-1.5 h-1.5 rounded-full bg-accent-500" />
+              Showing posted jobs matched to your <span className="font-semibold">{userSkillCount} profile skill{userSkillCount === 1 ? "" : "s"}</span>.
+            </div>
+          )}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
           {jobs.map((job, i) => (
             <motion.div key={job.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -244,6 +272,7 @@ function InternalJobsTab({
             </motion.div>
           ))}
         </motion.div>
+        </>
       )}
 
       {totalPages > 1 && (
@@ -276,9 +305,17 @@ const SG_QUICK_FILTERS = [
 function LiveJobsTab({
   onSavedChange,
   onAppliedChange,
-}: { onSavedChange?: () => void; onAppliedChange?: () => void } = {}) {
+  defaultLocation,
+}: {
+  onSavedChange?: () => void;
+  onAppliedChange?: () => void;
+  defaultLocation?: string;
+} = {}) {
   const [q, setQ] = useState("");
-  const [location, setLocation] = useState("Singapore");
+  // Seed from the user's profile.location when available; fall back to "" so we
+  // search worldwide instead of forcing a region. The user can still type
+  // anything in the search bar to override.
+  const [location, setLocation] = useState((defaultLocation ?? "").trim() || "");
   const [page, setPage] = useState(1);
   const [jobs, setJobs] = useState<ExternalJob[]>([]);
   const [source, setSource] = useState("");
@@ -837,8 +874,10 @@ export function JobSearch(props: JobSearchProps) {
         </button>
         <button onClick={() => switchTab("posted")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "posted" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
-          Posted Jobs
-          {props.total > 0 && <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] bg-zinc-200 text-zinc-600 font-semibold">{props.total}</span>}
+          Matching Jobs
+          {(props.userSkillCount ?? 0) > 0 && (
+            <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] bg-zinc-200 text-zinc-600 font-semibold">{props.total}</span>
+          )}
         </button>
         <button onClick={() => switchTab("saved")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "saved" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
@@ -850,7 +889,11 @@ export function JobSearch(props: JobSearchProps) {
       </div>
 
       {activeTab === "live" ? (
-        <LiveJobsTab onSavedChange={bumpSaved} onAppliedChange={bumpSaved} />
+        <LiveJobsTab
+          onSavedChange={bumpSaved}
+          onAppliedChange={bumpSaved}
+          defaultLocation={props.defaultLocation}
+        />
       ) : activeTab === "saved" ? (
         <SavedJobsTab refreshKey={savedRefreshKey} onChange={bumpSaved} />
       ) : (
