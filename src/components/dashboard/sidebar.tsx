@@ -18,6 +18,7 @@ import {
   X,
   List,
   Article,
+  Microphone,
 } from "@phosphor-icons/react";
 import { cn, getInitials } from "@/lib/utils";
 import type { UserRole } from "@/lib/enums";
@@ -41,6 +42,7 @@ const navItems = [
   { href: "/dashboard/resume", icon: Article, label: "Resume" },
   { href: "/dashboard/jobs", icon: Briefcase, label: "Browse Jobs" },
   { href: "/dashboard/tracker", icon: ChartBar, label: "Applications" },
+  { href: "/dashboard/mock-interview", icon: Microphone, label: "Mock Interview" },
   { href: "/dashboard/messages", icon: EnvelopeSimple, label: "Messages" },
   { href: "/dashboard/profile", icon: User, label: "Profile" },
   { href: "/dashboard/settings", icon: Gear, label: "Settings" },
