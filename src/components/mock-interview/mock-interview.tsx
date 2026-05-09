@@ -28,8 +28,8 @@ import toast from "react-hot-toast";
 // a Pollinations fallback so the avatar still renders if the file is missing.
 const INTERVIEWER_PORTRAIT_URL = "/aria-interviewer.jpg";
 const INTERVIEWER_PORTRAIT_FALLBACK = (() => {
-  const prompt = "young south asian indian woman interviewer, long dark wavy hair, warm friendly smile, black blazer over white shirt, gold pendant, modern office interior, photorealistic portrait, looking at camera";
-  const params = new URLSearchParams({ width: "768", height: "768", seed: "12451", nologo: "true", enhance: "true" });
+  const prompt = "young south asian indian woman interviewer in her late twenties, long loose voluminous dark wavy hair, warm friendly soft smile, black blazer over crisp white shirt, delicate gold pendant necklace, modern high-rise office with floor-to-ceiling window showing city skyscrapers in daylight, warm desk lamp, photorealistic dslr portrait, sharp focus on face, looking directly at camera, professional headshot";
+  const params = new URLSearchParams({ width: "768", height: "1024", seed: "27914", nologo: "true", enhance: "true" });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
 })();
 
@@ -797,6 +797,7 @@ function VideoInterviewPanel() {
                 }}
                 alt="Aria"
                 className="w-full h-full object-cover"
+                style={{ objectPosition: "center 18%" }}
               />
             </div>
             <div className="min-w-0">
@@ -838,6 +839,7 @@ function VideoInterviewPanel() {
               }}
               alt="Aria the AI interviewer"
               className="absolute inset-0 w-full h-full object-cover"
+              style={{ objectPosition: "center 25%" }}
             />
 
             {/* Bottom label + equalizer (only audio-level cue, no face motion) */}
