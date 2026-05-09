@@ -115,7 +115,8 @@ function SearchBar({
 
 function InternalJobsTab({
   jobs, total, page, limit, savedJobIds, searchParams,
-}: JobSearchProps) {
+  onSavedChange,
+}: JobSearchProps & { onSavedChange?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -135,6 +136,7 @@ function InternalJobsTab({
     try {
       if (isSaved) await axios.delete(`/api/jobs/${jobId}/save`);
       else await axios.post(`/api/jobs/${jobId}/save`);
+      onSavedChange?.();
     } catch {
       setSaved((prev) => { const n = new Set(prev); isSaved ? n.add(jobId) : n.delete(jobId); return n; });
       toast.error("Failed to save job");
@@ -269,7 +271,13 @@ const SG_QUICK_FILTERS = [
   { label: "Remote", location: "Remote" },
 ];
 
-function LiveJobsTab() {
+function externalJobKey(source: string, id: string) {
+  const slug = source.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "ext";
+  const safeId = id.replace(/[^A-Za-z0-9._-]/g, "-").slice(0, 80);
+  return `ext-${slug}-${safeId}`;
+}
+
+function LiveJobsTab({ onSavedChange }: { onSavedChange?: () => void } = {}) {
   const [q, setQ] = useState("");
   const [location, setLocation] = useState("Singapore");
   const [page, setPage] = useState(1);
@@ -279,7 +287,60 @@ function LiveJobsTab() {
   const [error, setError] = useState("");
   const [notFound, setNotFound] = useState(false);
   const [searched, setSearched] = useState(false);
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
+  const [savingKey, setSavingKey] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Seed the bookmark state once on mount from the saved-jobs API
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const r = await fetch("/api/jobs/saved", { cache: "no-store" });
+        if (!r.ok) return;
+        const data = await r.json();
+        if (cancelled) return;
+        const ids = (data?.data ?? [])
+          .map((j: { id: string }) => j.id)
+          .filter((id: string) => id.startsWith("ext-"));
+        setSavedKeys(new Set(ids));
+      } catch {
+        // ignore
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  async function toggleSave(job: ExternalJob) {
+    const key = externalJobKey(job.source, job.id);
+    const wasSaved = savedKeys.has(key);
+    setSavingKey(key);
+    setSavedKeys((prev) => {
+      const next = new Set(prev);
+      wasSaved ? next.delete(key) : next.add(key);
+      return next;
+    });
+    try {
+      if (wasSaved) {
+        await axios.delete(`/api/jobs/save-external?source=${encodeURIComponent(job.source)}&externalId=${encodeURIComponent(job.id)}`);
+      } else {
+        await axios.post("/api/jobs/save-external", job);
+        toast.success("Saved");
+      }
+      onSavedChange?.();
+    } catch (err) {
+      // revert on failure
+      setSavedKeys((prev) => {
+        const next = new Set(prev);
+        wasSaved ? next.add(key) : next.delete(key);
+        return next;
+      });
+      const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error || "Couldn't save";
+      toast.error(msg);
+    } finally {
+      setSavingKey(null);
+    }
+  }
 
   const fetchJobs = useCallback(async (query: string, loc: string, pg: number) => {
     setLoading(true);
@@ -436,10 +497,34 @@ function LiveJobsTab() {
 
               <div className="mt-auto flex items-center justify-between pt-3 border-t border-zinc-100">
                 <span className="text-[11px] text-zinc-400">{job.postedAt ? timeAgo(job.postedAt) : ""}</span>
-                <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-950 hover:text-green-600 transition-colors">
-                  Apply now <ArrowSquareOut size={11} weight="bold" />
-                </a>
+                <div className="flex items-center gap-3">
+                  {(() => {
+                    const key = externalJobKey(job.source, job.id);
+                    const isSaved = savedKeys.has(key);
+                    const busy = savingKey === key;
+                    return (
+                      <button
+                        onClick={() => toggleSave(job)}
+                        disabled={busy}
+                        title={isSaved ? "Saved — click to unsave" : "Save this job"}
+                        className={`inline-flex items-center gap-1 text-xs font-medium transition-colors ${
+                          isSaved ? "text-green-600 hover:text-green-700" : "text-zinc-500 hover:text-zinc-950"
+                        } disabled:opacity-50`}
+                      >
+                        {isSaved ? (
+                          <BookmarkSimple size={13} weight="fill" />
+                        ) : (
+                          <Bookmark size={13} />
+                        )}
+                        {isSaved ? "Saved" : "Save"}
+                      </button>
+                    );
+                  })()}
+                  <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-950 hover:text-green-600 transition-colors">
+                    Apply now <ArrowSquareOut size={11} weight="bold" />
+                  </a>
+                </div>
               </div>
             </motion.div>
           ))}
@@ -459,12 +544,200 @@ function LiveJobsTab() {
   );
 }
 
+// ─── Saved Jobs Tab ────────────────────────────────────────────────────────────
+
+type SavedJobItem = {
+  id: string;
+  title: string;
+  company: string;
+  companyLogo?: string;
+  location: string;
+  workMode: "REMOTE" | "HYBRID" | "ON_SITE";
+  type: string;
+  description: string;
+  skills: string[];
+  applyUrl: string;
+  externalUrl: string | null;
+  source: string;
+  savedAt: string;
+  salary: string | null;
+  postedAt: string;
+};
+
+function SavedJobsTab({ refreshKey, onChange }: { refreshKey: number; onChange?: () => void }) {
+  const [items, setItems] = useState<SavedJobItem[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = useCallback(async () => {
+    try {
+      const r = await fetch("/api/jobs/saved", { cache: "no-store" });
+      const data = await r.json();
+      if (!r.ok) throw new Error(data?.error ?? "Failed");
+      setItems(data?.data ?? []);
+      setError(null);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  }, []);
+
+  useEffect(() => { load(); }, [load, refreshKey]);
+
+  async function unsave(item: SavedJobItem) {
+    const isExternal = item.id.startsWith("ext-");
+    const prevItems = items ?? [];
+    setItems((curr) => (curr ? curr.filter((j) => j.id !== item.id) : curr));
+    try {
+      if (isExternal) {
+        // id format: ext-<source-slug>-<externalId>; recover the trailing externalId
+        const trimmed = item.id.replace(/^ext-[^-]+-/, "");
+        await axios.delete(`/api/jobs/save-external?source=${encodeURIComponent(item.source)}&externalId=${encodeURIComponent(trimmed)}`);
+      } else {
+        await axios.delete(`/api/jobs/${item.id}/save`);
+      }
+      onChange?.();
+    } catch {
+      // revert
+      setItems(prevItems);
+      toast.error("Couldn't unsave");
+    }
+  }
+
+  if (error) {
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-2xl p-8 text-center">
+        <p className="text-sm font-medium text-red-700">{error}</p>
+      </div>
+    );
+  }
+  if (items === null) {
+    return (
+      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {[...Array(3)].map((_, i) => (
+          <div key={i} className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-3">
+            <div className="h-3 w-32 skeleton rounded-full" />
+            <div className="h-3 w-3/4 skeleton rounded-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (items.length === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-zinc-200 p-16 text-center">
+        <BookmarkSimple size={32} className="text-zinc-200 mx-auto mb-3" />
+        <p className="text-sm font-medium text-zinc-500">No saved jobs yet</p>
+        <p className="text-xs text-zinc-400 mt-1">Hit the bookmark icon on any Live Job to save it here.</p>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+      {items.map((job, i) => (
+        <motion.div
+          key={job.id}
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: i * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col"
+        >
+          <div className="flex items-start gap-3 mb-3">
+            {job.companyLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={job.companyLogo} alt={job.company} className="w-10 h-10 rounded-xl object-contain border border-zinc-100 flex-shrink-0" />
+            ) : (
+              <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-500 flex-shrink-0">
+                {job.company[0]}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-semibold text-zinc-950 leading-tight truncate">{job.title}</div>
+              <div className="text-xs text-zinc-400 mt-0.5 truncate">{job.company}</div>
+            </div>
+            <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-500 flex-shrink-0">{job.source}</span>
+          </div>
+
+          <div className="flex flex-wrap gap-1.5 mb-3">
+            <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${WORK_MODE_COLORS[job.workMode] ?? "bg-zinc-50 text-zinc-600"}`}>
+              {WORK_MODE_LABELS[job.workMode] ?? job.workMode}
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-50 text-zinc-600 border border-zinc-100">
+              {JOB_TYPE_LABELS[job.type] ?? job.type}
+            </span>
+          </div>
+
+          {job.location && (
+            <div className="flex items-center gap-1.5 text-xs text-zinc-400 mb-2">
+              <MapPin size={12} />{job.location}
+            </div>
+          )}
+
+          {job.salary && <div className="text-xs font-medium text-zinc-700 mb-2">{job.salary}</div>}
+
+          {job.skills.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-4">
+              {job.skills.slice(0, 4).map((skill) => (
+                <span key={skill} className="px-2 py-0.5 bg-zinc-50 text-zinc-500 text-[11px] rounded-full border border-zinc-100">{skill}</span>
+              ))}
+              {job.skills.length > 4 && (
+                <span className="px-2 py-0.5 bg-zinc-50 text-zinc-400 text-[11px] rounded-full border border-zinc-100">+{job.skills.length - 4}</span>
+              )}
+            </div>
+          )}
+
+          <div className="mt-auto flex items-center justify-between pt-3 border-t border-zinc-100">
+            <span className="text-[11px] text-zinc-400">Saved {timeAgo(job.savedAt)}</span>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => unsave(job)}
+                title="Unsave"
+                className="inline-flex items-center gap-1 text-xs font-medium text-green-600 hover:text-red-600 transition-colors"
+              >
+                <BookmarkSimple size={13} weight="fill" /> Saved
+              </button>
+              {job.applyUrl && (
+                <a
+                  href={job.applyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-950 hover:text-green-600 transition-colors"
+                >
+                  Apply now <ArrowSquareOut size={11} weight="bold" />
+                </a>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+}
+
 // ─── Main component ────────────────────────────────────────────────────────────
 
 export function JobSearch(props: JobSearchProps) {
   const activeTab = (props.searchParams.tab as string) ?? "live";
   const router = useRouter();
   const pathname = usePathname();
+  const [savedRefreshKey, setSavedRefreshKey] = useState(0);
+  const [savedCount, setSavedCount] = useState<number | null>(null);
+
+  // Pull the initial saved count on mount and whenever the user toggles a save
+  // anywhere — keeps the tab badge accurate without a full router refresh.
+  const refreshSavedCount = useCallback(async () => {
+    try {
+      const r = await fetch("/api/jobs/saved", { cache: "no-store" });
+      if (!r.ok) return;
+      const data = await r.json();
+      setSavedCount(Array.isArray(data?.data) ? data.data.length : 0);
+    } catch {}
+  }, []);
+  useEffect(() => { refreshSavedCount(); }, [refreshSavedCount]);
+
+  function bumpSaved() {
+    setSavedRefreshKey((k) => k + 1);
+    refreshSavedCount();
+  }
 
   function switchTab(tab: string) {
     const params = new URLSearchParams(props.searchParams as Record<string, string>);
@@ -492,12 +765,21 @@ export function JobSearch(props: JobSearchProps) {
           Posted Jobs
           {props.total > 0 && <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] bg-zinc-200 text-zinc-600 font-semibold">{props.total}</span>}
         </button>
+        <button onClick={() => switchTab("saved")}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "saved" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+          Saved Jobs
+          {(savedCount ?? 0) > 0 && (
+            <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] bg-orange-100 text-orange-700 font-semibold">{savedCount}</span>
+          )}
+        </button>
       </div>
 
       {activeTab === "live" ? (
-        <LiveJobsTab />
+        <LiveJobsTab onSavedChange={bumpSaved} />
+      ) : activeTab === "saved" ? (
+        <SavedJobsTab refreshKey={savedRefreshKey} onChange={bumpSaved} />
       ) : (
-        <InternalJobsTab {...props} />
+        <InternalJobsTab {...props} onSavedChange={bumpSaved} />
       )}
     </div>
   );

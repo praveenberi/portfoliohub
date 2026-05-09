@@ -4,13 +4,10 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Briefcase,
-  ChartBar,
   Eye,
   BookmarkSimple,
   Layout,
   ArrowRight,
-  Calendar,
-  CheckCircle,
   Clock,
 } from "@phosphor-icons/react";
 import { STATUS_COLORS, STATUS_LABELS, timeAgo } from "@/lib/utils";
@@ -44,13 +41,6 @@ const item = {
 export function DashboardOverview({ stats, portfolio, recentApplications, user }: OverviewProps) {
   const statCards = [
     {
-      label: "Total Applications",
-      value: stats.totalApplications,
-      icon: Briefcase,
-      href: "/dashboard/tracker",
-      color: "bg-blue-50 text-blue-600",
-    },
-    {
       label: "Portfolio Views",
       value: stats.portfolioViews,
       icon: Eye,
@@ -58,17 +48,10 @@ export function DashboardOverview({ stats, portfolio, recentApplications, user }
       color: "bg-accent-50 text-accent-600",
     },
     {
-      label: "Active Pipeline",
-      value: stats.activeApplications,
-      icon: ChartBar,
-      href: "/dashboard/tracker",
-      color: "bg-violet-50 text-violet-600",
-    },
-    {
       label: "Saved Jobs",
       value: stats.savedJobs,
       icon: BookmarkSimple,
-      href: "/dashboard/jobs",
+      href: "/dashboard/jobs?tab=saved",
       color: "bg-orange-50 text-orange-600",
     },
   ];
@@ -110,7 +93,7 @@ export function DashboardOverview({ stats, portfolio, recentApplications, user }
       )}
 
       {/* Stat cards */}
-      <motion.div variants={item} className="grid grid-cols-2 xl:grid-cols-4 gap-4">
+      <motion.div variants={item} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {statCards.map((card) => (
           <Link
             key={card.label}
@@ -164,35 +147,24 @@ export function DashboardOverview({ stats, portfolio, recentApplications, user }
           </div>
         </motion.div>
 
-        {/* Quick stats */}
+        {/* Side column: Saved jobs + Portfolio live */}
         <motion.div variants={item} className="space-y-4">
-          {/* Interviews */}
-          <div className="bg-white rounded-2xl border border-zinc-200 p-5">
+          {/* Saved jobs quick link */}
+          <Link
+            href="/dashboard/jobs?tab=saved"
+            className="block bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200"
+          >
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-violet-50 flex items-center justify-center">
-                <Calendar size={16} className="text-violet-600" />
+              <div className="w-8 h-8 rounded-xl bg-orange-50 flex items-center justify-center">
+                <BookmarkSimple size={16} className="text-orange-600" weight="fill" />
               </div>
-              <div className="text-sm font-semibold text-zinc-950">Interviews</div>
+              <div className="text-sm font-semibold text-zinc-950">Saved Jobs</div>
             </div>
-            <div className="text-3xl font-bold tracking-tight text-zinc-950">
-              {stats.interviewsScheduled}
+            <div className="text-3xl font-bold tracking-tight text-zinc-950">{stats.savedJobs}</div>
+            <div className="text-xs text-zinc-400 mt-1 flex items-center gap-1">
+              View saved listings <ArrowRight size={10} />
             </div>
-            <div className="text-xs text-zinc-400 mt-1">scheduled</div>
-          </div>
-
-          {/* Offers */}
-          <div className="bg-white rounded-2xl border border-zinc-200 p-5">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-xl bg-accent-50 flex items-center justify-center">
-                <CheckCircle size={16} className="text-accent-600" />
-              </div>
-              <div className="text-sm font-semibold text-zinc-950">Offers</div>
-            </div>
-            <div className="text-3xl font-bold tracking-tight text-zinc-950">
-              {stats.offersReceived}
-            </div>
-            <div className="text-xs text-zinc-400 mt-1">received</div>
-          </div>
+          </Link>
 
           {/* Portfolio live */}
           {portfolio?.isPublished && (
