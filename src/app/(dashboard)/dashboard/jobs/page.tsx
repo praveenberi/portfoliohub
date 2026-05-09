@@ -33,7 +33,7 @@ export default async function JobsPage({
   // Matching Jobs tab by their skills + technologies.
   const profile = await prisma.profile.findUnique({
     where: { userId },
-    select: { location: true, skills: true, technologies: true },
+    select: { location: true, skills: true, technologies: true, headline: true },
   });
 
   const userSkills = Array.from(
@@ -43,6 +43,14 @@ export default async function JobsPage({
         .filter(Boolean),
     ),
   );
+
+  // Build a query string the Matching tab can hand to the external jobs API
+  // so live results stay relevant. Prefers profile.headline, falls back to the
+  // first few skills joined.
+  const matchingQuery = (
+    profile?.headline?.trim() ||
+    userSkills.slice(0, 3).join(" ")
+  ).slice(0, 120);
 
   const skillsFilter: Prisma.JobWhereInput | null =
     userSkills.length === 0
@@ -110,6 +118,7 @@ export default async function JobsPage({
       searchParams={searchParams as Record<string, string | undefined>}
       defaultLocation={profile?.location ?? ""}
       userSkillCount={userSkills.length}
+      matchingQuery={matchingQuery}
     />
   );
 }

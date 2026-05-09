@@ -36,6 +36,8 @@ interface JobSearchProps {
   defaultLocation?: string;
   /** Number of skills + technologies on the user's profile (powers the Matching Jobs empty state). */
   userSkillCount?: number;
+  /** Auto-generated keyword string used by the Matching tab to fetch external matches. */
+  matchingQuery?: string;
 }
 
 const WORK_MODE_LABELS: Record<string, string> = {
@@ -123,6 +125,8 @@ function InternalJobsTab({
   jobs, total, page, limit, savedJobIds, searchParams,
   onSavedChange,
   userSkillCount = 0,
+  matchingQuery = "",
+  defaultLocation = "",
 }: JobSearchProps & { onSavedChange?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -149,6 +153,40 @@ function InternalJobsTab({
       toast.error("Failed to save job");
     }
   };
+
+  // ── External (live) jobs that match the user's profile keywords ──
+  // Posted-job inventory in the local DB is small, so without this the
+  // Matching tab feels empty even when the user has 20+ skills. We hit the
+  // same external aggregator the Live tab uses, with a query auto-built from
+  // the user's headline / top skills server-side.
+  const [extJobs, setExtJobs] = useState<ExternalJob[]>([]);
+  const [extLoading, setExtLoading] = useState(false);
+  const [extSource, setExtSource] = useState("");
+  useEffect(() => {
+    let cancelled = false;
+    if (!matchingQuery.trim()) {
+      setExtJobs([]);
+      return;
+    }
+    setExtLoading(true);
+    (async () => {
+      try {
+        const params = new URLSearchParams({ q: matchingQuery });
+        if (defaultLocation) params.set("location", defaultLocation);
+        const r = await fetch(`/api/jobs/external?${params}`, { cache: "no-store" });
+        if (cancelled) return;
+        if (!r.ok) { setExtJobs([]); return; }
+        const data = await r.json();
+        setExtJobs((data?.data ?? []).slice(0, 9));
+        setExtSource(data?.source ?? "");
+      } catch {
+        if (!cancelled) setExtJobs([]);
+      } finally {
+        if (!cancelled) setExtLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [matchingQuery, defaultLocation]);
 
   const totalPages = Math.ceil(total / limit);
 
@@ -286,6 +324,107 @@ function InternalJobsTab({
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {/* Live external matches — same query the Live tab uses, scoped to the
+          user's headline / top skills */}
+      {matchingQuery && (
+        <div className="space-y-3 pt-2">
+          <div className="flex items-center justify-between gap-3 border-t border-zinc-100 pt-5">
+            <div>
+              <h2 className="text-sm font-semibold text-zinc-950">Live matches</h2>
+              <p className="text-[11px] text-zinc-400 mt-0.5">
+                Searched {extSource ? <>via <span className="font-medium text-zinc-600">{extSource}</span></> : "live job sources"} for{" "}
+                <span className="font-medium text-zinc-600">"{matchingQuery}"</span>
+                {defaultLocation ? <> in <span className="font-medium text-zinc-600">{defaultLocation}</span></> : null}.
+              </p>
+            </div>
+            <Link
+              href={`/dashboard/jobs?tab=live`}
+              className="text-[11px] font-medium text-zinc-500 hover:text-zinc-950 inline-flex items-center gap-1 shrink-0"
+            >
+              See all live <ArrowRight size={11} />
+            </Link>
+          </div>
+
+          {extLoading ? (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl skeleton" />
+                    <div className="space-y-1.5"><div className="h-3 w-32 skeleton rounded-full" /><div className="h-2.5 w-20 skeleton rounded-full" /></div>
+                  </div>
+                  <div className="h-3 w-full skeleton rounded-full" />
+                  <div className="h-3 w-3/4 skeleton rounded-full" />
+                </div>
+              ))}
+            </div>
+          ) : extJobs.length === 0 ? (
+            <div className="bg-white rounded-2xl border border-zinc-200 p-8 text-center text-xs text-zinc-500">
+              No live matches right now — try the <Link href="?tab=live" className="text-accent-700 font-medium underline">Live Jobs</Link> tab to broaden the search.
+            </div>
+          ) : (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {extJobs.map((job, i) => (
+                <motion.div
+                  key={job.id}
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                  className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col"
+                >
+                  <div className="flex items-start gap-3 mb-3">
+                    {job.companyLogo ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={job.companyLogo} alt={job.company} className="w-10 h-10 rounded-xl object-contain border border-zinc-100 flex-shrink-0" />
+                    ) : (
+                      <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-500 flex-shrink-0">
+                        {job.company[0]}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-semibold text-zinc-950 leading-tight truncate">{job.title}</div>
+                      <div className="text-xs text-zinc-400 mt-0.5 truncate">{job.company}</div>
+                    </div>
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100 text-zinc-500 flex-shrink-0">{job.source}</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    <span className={`px-2 py-0.5 rounded-full text-[11px] font-medium ${WORK_MODE_COLORS[job.workMode] ?? "bg-zinc-50 text-zinc-600"}`}>
+                      {WORK_MODE_LABELS[job.workMode] ?? job.workMode}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[11px] font-medium bg-zinc-50 text-zinc-600 border border-zinc-100">
+                      {JOB_TYPE_LABELS[job.type] ?? job.type}
+                    </span>
+                  </div>
+                  {job.location && (
+                    <div className="flex items-center gap-1.5 text-xs text-zinc-400 mb-2"><MapPin size={12} />{job.location}</div>
+                  )}
+                  {job.salary && <div className="text-xs font-medium text-zinc-700 mb-2">{job.salary}</div>}
+                  {job.skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mb-4">
+                      {job.skills.slice(0, 4).map((skill) => (
+                        <span key={skill} className="px-2 py-0.5 bg-zinc-50 text-zinc-500 text-[11px] rounded-full border border-zinc-100">{skill}</span>
+                      ))}
+                      {job.skills.length > 4 && (
+                        <span className="px-2 py-0.5 bg-zinc-50 text-zinc-400 text-[11px] rounded-full border border-zinc-100">+{job.skills.length - 4}</span>
+                      )}
+                    </div>
+                  )}
+                  <div className="mt-auto flex items-center justify-between pt-3 border-t border-zinc-100">
+                    <span className="text-[11px] text-zinc-400">{job.postedAt ? timeAgo(job.postedAt) : ""}</span>
+                    {job.applyUrl && (
+                      <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-950 hover:text-green-600 transition-colors">
+                        Apply now <ArrowSquareOut size={11} weight="bold" />
+                      </a>
+                    )}
+                  </div>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
         </div>
       )}
     </div>
