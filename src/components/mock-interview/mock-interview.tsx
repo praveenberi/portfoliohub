@@ -28,8 +28,8 @@ import toast from "react-hot-toast";
 // a Pollinations fallback so the avatar still renders if the file is missing.
 const INTERVIEWER_PORTRAIT_URL = "/aria-interviewer.jpg";
 const INTERVIEWER_PORTRAIT_FALLBACK = (() => {
-  const prompt = "young south asian indian woman interviewer in her late twenties, long loose voluminous dark wavy hair, warm friendly soft smile, black blazer over crisp white shirt, delicate gold pendant necklace, modern high-rise office with floor-to-ceiling window showing city skyscrapers in daylight, warm desk lamp, photorealistic dslr portrait, sharp focus on face, looking directly at camera, professional headshot";
-  const params = new URLSearchParams({ width: "768", height: "1024", seed: "27914", nologo: "true", enhance: "true" });
+  const prompt = "young professional woman interviewer in her early twenties, fresh youthful face, bright friendly smile, sleek silky long dark hair, modern slim-fit navy blazer over white shirt, simple delicate jewellery, clean bright modern office with soft natural daylight, minimal background, photorealistic dslr headshot, sharp focus on face, looking directly at camera, magazine quality portrait";
+  const params = new URLSearchParams({ width: "768", height: "1024", seed: "30621", nologo: "true", enhance: "true" });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
 })();
 
