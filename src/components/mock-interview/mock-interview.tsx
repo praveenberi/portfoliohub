@@ -24,6 +24,14 @@ import {
 import axios from "axios";
 import toast from "react-hot-toast";
 
+// Stable AI-rendered portrait of "Aria" the virtual interviewer. Pollinations
+// is keyed by prompt + seed, so this URL always resolves to the same image.
+const INTERVIEWER_PORTRAIT_URL = (() => {
+  const prompt = "professional friendly woman interviewer in her early thirties, warm subtle smile, business casual blazer, soft studio lighting, clean neutral background, photorealistic, sharp focus, eye contact with camera";
+  const params = new URLSearchParams({ width: "640", height: "640", seed: "8401", nologo: "true", enhance: "true" });
+  return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
+})();
+
 const TOPIC_SUGGESTIONS: { label: string; topic: string }[] = [
   { label: "React", topic: "React (hooks, performance, state management)" },
   { label: "Node.js", topic: "Node.js backend (Express, async patterns, performance)" },
@@ -735,14 +743,15 @@ function VideoInterviewPanel() {
       {/* Virtual interviewer + question */}
       <div className="lg:col-span-1 space-y-4">
         <div className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-4">
-          {/* Avatar */}
+          {/* Header: small portrait + name */}
           <div className="flex items-center gap-3">
-            <div className="relative w-12 h-12 rounded-full bg-gradient-to-br from-accent-500 to-emerald-600 flex items-center justify-center shrink-0 shadow-md">
-              <Robot size={22} weight="fill" className="text-white" />
+            <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-accent-500/20">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={INTERVIEWER_PORTRAIT_URL} alt="Aria" className="w-full h-full object-cover" />
               {speakingQuestion && (
                 <motion.span
-                  className="absolute inset-0 rounded-full border-2 border-accent-400"
-                  animate={{ scale: [1, 1.2, 1], opacity: [0.8, 0, 0.8] }}
+                  className="absolute inset-0 rounded-full ring-2 ring-accent-400"
+                  animate={{ scale: [1, 1.18, 1], opacity: [0.8, 0, 0.8] }}
                   transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
                 />
               )}
@@ -762,7 +771,66 @@ function VideoInterviewPanel() {
             </button>
           </div>
 
-          <p className="text-base font-semibold text-zinc-950 leading-snug">"{currentQuestion}"</p>
+          {/* Question text — speech-bubble style */}
+          <div className="relative bg-zinc-50 border border-zinc-100 rounded-xl px-4 py-3">
+            <p className="text-sm font-semibold text-zinc-950 leading-snug">"{currentQuestion}"</p>
+          </div>
+
+          {/* Big portrait of the virtual interviewer, animated while speaking */}
+          <button
+            type="button"
+            onClick={speakQuestion}
+            title={speakingQuestion ? "Aria is speaking" : "Tap to hear the question"}
+            className="relative block w-full aspect-square rounded-xl overflow-hidden bg-zinc-100 group"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={INTERVIEWER_PORTRAIT_URL}
+              alt="Aria the AI interviewer"
+              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+            />
+            {/* Speaking pulse ring */}
+            {speakingQuestion && (
+              <>
+                <motion.span
+                  aria-hidden
+                  className="absolute inset-0 ring-4 ring-accent-400 rounded-xl pointer-events-none"
+                  animate={{ opacity: [0.7, 0.2, 0.7] }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
+                />
+                <motion.span
+                  aria-hidden
+                  className="absolute -inset-1 rounded-2xl pointer-events-none"
+                  style={{ boxShadow: "0 0 0 0 rgba(34,197,94,0.45)" }}
+                  animate={{ boxShadow: ["0 0 0 0 rgba(34,197,94,0.45)", "0 0 0 14px rgba(34,197,94,0)"] }}
+                  transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
+                />
+              </>
+            )}
+            {/* Speaking equalizer at the bottom */}
+            <div className="absolute inset-x-0 bottom-0 px-3 py-2.5 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-2">
+              <div className="flex items-end gap-0.5 h-4">
+                {[0, 1, 2, 3, 4].map((i) => (
+                  <motion.span
+                    key={i}
+                    className="w-0.5 bg-accent-400 rounded-full"
+                    initial={{ height: 4 }}
+                    animate={{ height: speakingQuestion ? [4, 14, 6, 12, 4] : 4 }}
+                    transition={{
+                      duration: 0.9,
+                      repeat: speakingQuestion ? Infinity : 0,
+                      ease: "easeInOut",
+                      delay: i * 0.08,
+                    }}
+                    style={{ height: 4 }}
+                  />
+                ))}
+              </div>
+              <span className="text-[11px] font-medium text-white/85">
+                {speakingQuestion ? "Aria is asking…" : "Tap to replay"}
+              </span>
+            </div>
+          </button>
 
           <div className="flex items-center gap-1.5">
             <button
