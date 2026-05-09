@@ -27,8 +27,8 @@ import toast from "react-hot-toast";
 // Stable AI-rendered portrait of "Aria" the virtual interviewer. Pollinations
 // is keyed by prompt + seed, so this URL always resolves to the same image.
 const INTERVIEWER_PORTRAIT_URL = (() => {
-  const prompt = "professional friendly woman interviewer in her early thirties, warm subtle smile, business casual blazer, soft studio lighting, clean neutral background, photorealistic, sharp focus, eye contact with camera";
-  const params = new URLSearchParams({ width: "640", height: "640", seed: "8401", nologo: "true", enhance: "true" });
+  const prompt = "young south asian indian woman interviewer in her late twenties, long flowing dark wavy hair, warm friendly soft smile, black blazer over crisp white shirt, delicate gold pendant necklace, modern office interior with soft warm lamp light and framed art on wall, photorealistic dslr portrait, sharp focus on face, looking directly at camera, professional headshot";
+  const params = new URLSearchParams({ width: "768", height: "768", seed: "12451", nologo: "true", enhance: "true" });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
 })();
 
@@ -783,12 +783,71 @@ function VideoInterviewPanel() {
             title={speakingQuestion ? "Aria is speaking" : "Tap to hear the question"}
             className="relative block w-full aspect-square rounded-xl overflow-hidden bg-zinc-100 group"
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={INTERVIEWER_PORTRAIT_URL}
-              alt="Aria the AI interviewer"
-              className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.02]"
+            {/* Portrait — breathes & sways while speaking to fake liveness */}
+            <motion.div
+              className="absolute inset-0"
+              animate={
+                speakingQuestion
+                  ? { scale: [1, 1.012, 0.998, 1.01, 1], rotate: [-0.25, 0.3, -0.2, 0.25, -0.25] }
+                  : { scale: [1, 1.004, 1], rotate: 0 }
+              }
+              transition={{
+                duration: speakingQuestion ? 2.4 : 4.5,
+                repeat: Infinity,
+                ease: "easeInOut",
+              }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={INTERVIEWER_PORTRAIT_URL}
+                alt="Aria the AI interviewer"
+                className="w-full h-full object-cover"
+              />
+            </motion.div>
+
+            {/* Mouth-area indicator — a soft jaw shadow that opens/closes on the
+                lower-third of the face. Roughly aligned to portrait composition;
+                positioned just above the chin and centred horizontally. */}
+            {speakingQuestion && (
+              <motion.span
+                aria-hidden
+                className="absolute pointer-events-none rounded-full"
+                style={{
+                  left: "50%",
+                  top: "62%",
+                  width: "11%",
+                  background: "rgba(20,10,8,0.32)",
+                  filter: "blur(1.5px)",
+                  transformOrigin: "center",
+                }}
+                animate={{
+                  height: ["1.8%", "3.4%", "1.4%", "3.0%", "1.8%"],
+                  opacity: [0.5, 0.85, 0.45, 0.8, 0.5],
+                  x: "-50%",
+                  y: "-50%",
+                }}
+                transition={{ duration: 0.55, repeat: Infinity, ease: "easeInOut" }}
+              />
+            )}
+
+            {/* Periodic blink — eye-area dim every ~4 seconds */}
+            <motion.span
+              aria-hidden
+              className="absolute pointer-events-none"
+              style={{
+                left: "50%",
+                top: "38%",
+                width: "44%",
+                height: "3.2%",
+                background: "rgba(0,0,0,0.55)",
+                filter: "blur(2px)",
+                borderRadius: "999px",
+                transform: "translate(-50%, -50%) scaleY(0)",
+              }}
+              animate={{ scaleY: [0, 0, 1, 0, 0] }}
+              transition={{ duration: 4.4, repeat: Infinity, times: [0, 0.92, 0.96, 0.99, 1], ease: "easeInOut" }}
             />
+
             {/* Speaking pulse ring */}
             {speakingQuestion && (
               <>
@@ -807,6 +866,7 @@ function VideoInterviewPanel() {
                 />
               </>
             )}
+
             {/* Speaking equalizer at the bottom */}
             <div className="absolute inset-x-0 bottom-0 px-3 py-2.5 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-2">
               <div className="flex items-end gap-0.5 h-4">
