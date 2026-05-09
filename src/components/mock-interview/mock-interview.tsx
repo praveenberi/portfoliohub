@@ -24,10 +24,11 @@ import {
 import axios from "axios";
 import toast from "react-hot-toast";
 
-// Stable AI-rendered portrait of "Aria" the virtual interviewer. Pollinations
-// is keyed by prompt + seed, so this URL always resolves to the same image.
-const INTERVIEWER_PORTRAIT_URL = (() => {
-  const prompt = "young south asian indian woman interviewer in her late twenties, long flowing dark wavy hair, warm friendly soft smile, black blazer over crisp white shirt, delicate gold pendant necklace, modern office interior with soft warm lamp light and framed art on wall, photorealistic dslr portrait, sharp focus on face, looking directly at camera, professional headshot";
+// Aria the virtual interviewer. Loads /public/aria-interviewer.jpg first, with
+// a Pollinations fallback so the avatar still renders if the file is missing.
+const INTERVIEWER_PORTRAIT_URL = "/aria-interviewer.jpg";
+const INTERVIEWER_PORTRAIT_FALLBACK = (() => {
+  const prompt = "young south asian indian woman interviewer, long dark wavy hair, warm friendly smile, black blazer over white shirt, gold pendant, modern office interior, photorealistic portrait, looking at camera";
   const params = new URLSearchParams({ width: "768", height: "768", seed: "12451", nologo: "true", enhance: "true" });
   return `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?${params}`;
 })();
@@ -661,6 +662,33 @@ function VideoInterviewPanel() {
     setElapsed(0);
   }
 
+  // Pick a clearly female English voice from the browser's installed set.
+  // Voice availability varies by OS/browser, so we walk a ranked list of
+  // names and fall back through known female voices before settling for the
+  // first English voice (or any voice as a last resort).
+  function pickFemaleVoice(): SpeechSynthesisVoice | null {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) return null;
+    const en = voices.filter((v) => /en[-_]/i.test(v.lang));
+    const pool = en.length > 0 ? en : voices;
+    // Voices known to be female across major platforms
+    const ranked = [
+      "samantha", "victoria", "karen", "tessa", "fiona", "moira", "kate", "serena",
+      "google uk english female", "google us english", "microsoft zira", "microsoft aria",
+      "microsoft jenny", "microsoft michelle", "microsoft sonia", "microsoft heera",
+      "microsoft hazel", "microsoft eva", "ava", "allison", "susan", "linda",
+    ];
+    for (const name of ranked) {
+      const v = pool.find((v) => v.name.toLowerCase().includes(name));
+      if (v) return v;
+    }
+    // Some platforms expose `gender` (non-standard). Try that next.
+    const explicit = pool.find((v) => (v as unknown as { gender?: string }).gender === "female");
+    if (explicit) return explicit;
+    // Fall back to any English voice, then any voice
+    return pool[0] ?? voices[0] ?? null;
+  }
+
   function speakQuestion() {
     if (typeof window === "undefined" || !window.speechSynthesis) {
       toast.error("Text-to-speech not supported in this browser");
@@ -669,16 +697,27 @@ function VideoInterviewPanel() {
     window.speechSynthesis.cancel();
     const utter = new SpeechSynthesisUtterance(currentQuestion);
     utter.rate = 0.95;
-    utter.pitch = 1;
-    // Prefer an English voice if available
-    const voices = window.speechSynthesis.getVoices();
-    const enVoice = voices.find((v) => /en-(US|GB)/i.test(v.lang)) ?? voices[0];
-    if (enVoice) utter.voice = enVoice;
+    utter.pitch = 1.05; // slightly higher than default reads more clearly female
+    const voice = pickFemaleVoice();
+    if (voice) {
+      utter.voice = voice;
+      utter.lang = voice.lang;
+    }
     utter.onstart = () => setSpeakingQuestion(true);
     utter.onend = () => setSpeakingQuestion(false);
     utter.onerror = () => setSpeakingQuestion(false);
     window.speechSynthesis.speak(utter);
   }
+
+  // Voice list often loads asynchronously — make sure it's primed so the very
+  // first speakQuestion call already has a female voice to pick from.
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.speechSynthesis) return;
+    window.speechSynthesis.getVoices(); // triggers async load on some browsers
+    const handler = () => { /* no-op — getVoices() will return the populated list next call */ };
+    window.speechSynthesis.addEventListener?.("voiceschanged", handler);
+    return () => window.speechSynthesis.removeEventListener?.("voiceschanged", handler);
+  }, []);
 
   // Auto-speak the question when it changes (after a small delay so voices load)
   useEffect(() => {
@@ -747,14 +786,18 @@ function VideoInterviewPanel() {
           <div className="flex items-center gap-3">
             <div className="relative w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-accent-500/20">
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={INTERVIEWER_PORTRAIT_URL} alt="Aria" className="w-full h-full object-cover" />
-              {speakingQuestion && (
-                <motion.span
-                  className="absolute inset-0 rounded-full ring-2 ring-accent-400"
-                  animate={{ scale: [1, 1.18, 1], opacity: [0.8, 0, 0.8] }}
-                  transition={{ duration: 1.4, repeat: Infinity, ease: "easeOut" }}
-                />
-              )}
+              <img
+                src={INTERVIEWER_PORTRAIT_URL}
+                onError={(e) => {
+                  const img = e.currentTarget;
+                  if (img.dataset.fallback !== "1") {
+                    img.dataset.fallback = "1";
+                    img.src = INTERVIEWER_PORTRAIT_FALLBACK;
+                  }
+                }}
+                alt="Aria"
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="min-w-0">
               <div className="text-sm font-semibold text-zinc-950">Aria · AI Interviewer</div>
@@ -776,98 +819,28 @@ function VideoInterviewPanel() {
             <p className="text-sm font-semibold text-zinc-950 leading-snug">"{currentQuestion}"</p>
           </div>
 
-          {/* Big portrait of the virtual interviewer, animated while speaking */}
+          {/* Big portrait of the virtual interviewer — static image */}
           <button
             type="button"
             onClick={speakQuestion}
             title={speakingQuestion ? "Aria is speaking" : "Tap to hear the question"}
-            className="relative block w-full aspect-square rounded-xl overflow-hidden bg-zinc-100 group"
+            className="relative block w-full aspect-square rounded-xl overflow-hidden bg-zinc-100"
           >
-            {/* Portrait — breathes & sways while speaking to fake liveness */}
-            <motion.div
-              className="absolute inset-0"
-              animate={
-                speakingQuestion
-                  ? { scale: [1, 1.012, 0.998, 1.01, 1], rotate: [-0.25, 0.3, -0.2, 0.25, -0.25] }
-                  : { scale: [1, 1.004, 1], rotate: 0 }
-              }
-              transition={{
-                duration: speakingQuestion ? 2.4 : 4.5,
-                repeat: Infinity,
-                ease: "easeInOut",
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={INTERVIEWER_PORTRAIT_URL}
+              onError={(e) => {
+                const img = e.currentTarget;
+                if (img.dataset.fallback !== "1") {
+                  img.dataset.fallback = "1";
+                  img.src = INTERVIEWER_PORTRAIT_FALLBACK;
+                }
               }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={INTERVIEWER_PORTRAIT_URL}
-                alt="Aria the AI interviewer"
-                className="w-full h-full object-cover"
-              />
-            </motion.div>
-
-            {/* Mouth-area indicator — a soft jaw shadow that opens/closes on the
-                lower-third of the face. Roughly aligned to portrait composition;
-                positioned just above the chin and centred horizontally. */}
-            {speakingQuestion && (
-              <motion.span
-                aria-hidden
-                className="absolute pointer-events-none rounded-full"
-                style={{
-                  left: "50%",
-                  top: "62%",
-                  width: "11%",
-                  background: "rgba(20,10,8,0.32)",
-                  filter: "blur(1.5px)",
-                  transformOrigin: "center",
-                }}
-                animate={{
-                  height: ["1.8%", "3.4%", "1.4%", "3.0%", "1.8%"],
-                  opacity: [0.5, 0.85, 0.45, 0.8, 0.5],
-                  x: "-50%",
-                  y: "-50%",
-                }}
-                transition={{ duration: 0.55, repeat: Infinity, ease: "easeInOut" }}
-              />
-            )}
-
-            {/* Periodic blink — eye-area dim every ~4 seconds */}
-            <motion.span
-              aria-hidden
-              className="absolute pointer-events-none"
-              style={{
-                left: "50%",
-                top: "38%",
-                width: "44%",
-                height: "3.2%",
-                background: "rgba(0,0,0,0.55)",
-                filter: "blur(2px)",
-                borderRadius: "999px",
-                transform: "translate(-50%, -50%) scaleY(0)",
-              }}
-              animate={{ scaleY: [0, 0, 1, 0, 0] }}
-              transition={{ duration: 4.4, repeat: Infinity, times: [0, 0.92, 0.96, 0.99, 1], ease: "easeInOut" }}
+              alt="Aria the AI interviewer"
+              className="absolute inset-0 w-full h-full object-cover"
             />
 
-            {/* Speaking pulse ring */}
-            {speakingQuestion && (
-              <>
-                <motion.span
-                  aria-hidden
-                  className="absolute inset-0 ring-4 ring-accent-400 rounded-xl pointer-events-none"
-                  animate={{ opacity: [0.7, 0.2, 0.7] }}
-                  transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-                />
-                <motion.span
-                  aria-hidden
-                  className="absolute -inset-1 rounded-2xl pointer-events-none"
-                  style={{ boxShadow: "0 0 0 0 rgba(34,197,94,0.45)" }}
-                  animate={{ boxShadow: ["0 0 0 0 rgba(34,197,94,0.45)", "0 0 0 14px rgba(34,197,94,0)"] }}
-                  transition={{ duration: 1.6, repeat: Infinity, ease: "easeOut" }}
-                />
-              </>
-            )}
-
-            {/* Speaking equalizer at the bottom */}
+            {/* Bottom label + equalizer (only audio-level cue, no face motion) */}
             <div className="absolute inset-x-0 bottom-0 px-3 py-2.5 bg-gradient-to-t from-black/70 to-transparent flex items-center gap-2">
               <div className="flex items-end gap-0.5 h-4">
                 {[0, 1, 2, 3, 4].map((i) => (
