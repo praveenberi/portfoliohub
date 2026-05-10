@@ -131,13 +131,19 @@ function SearchBar({
 function InternalJobsTab({
   jobs, total, page, limit, savedJobIds, searchParams,
   onSavedChange,
+  onLiveMatchCount,
   userSkillCount = 0,
   matchingQuery = "",
   defaultLocation = "",
   userTopSkills = [],
   userSkills = [],
   minMatchSkills = 3,
-}: JobSearchProps & { onSavedChange?: () => void }) {
+}: JobSearchProps & {
+  onSavedChange?: () => void;
+  /** Bubble the live external match count up to the parent so the tab badge
+   * reflects internal + external instead of just internal. */
+  onLiveMatchCount?: (n: number) => void;
+}) {
   const router = useRouter();
   const pathname = usePathname();
   const [isPending, startTransition] = useTransition();
@@ -203,6 +209,7 @@ function InternalJobsTab({
       setExtJobs([]);
       setExtSources([]);
       setExtQueriesUsed(0);
+      onLiveMatchCount?.(0);
       return;
     }
     setExtLoading(true);
@@ -262,6 +269,7 @@ function InternalJobsTab({
         setExtJobs(scored.map((s) => s.job));
         setExtSources(Array.from(sources));
         setExtQueriesUsed(queries.length);
+        onLiveMatchCount?.(scored.length);
       } finally {
         if (!cancelled) setExtLoading(false);
       }
@@ -1064,6 +1072,9 @@ export function JobSearch(props: JobSearchProps) {
   const pathname = usePathname();
   const [savedRefreshKey, setSavedRefreshKey] = useState(0);
   const [savedCount, setSavedCount] = useState<number | null>(null);
+  // Live external matches counted by the InternalJobsTab so the tab badge can
+  // reflect internal + live, not just the internal posted count.
+  const [liveMatchCount, setLiveMatchCount] = useState<number | null>(null);
 
   // Pull the initial saved count on mount and whenever the user toggles a save
   // anywhere — keeps the tab badge accurate without a full router refresh.
@@ -1106,9 +1117,14 @@ export function JobSearch(props: JobSearchProps) {
         <button onClick={() => switchTab("posted")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "posted" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
           Matching Jobs
-          {(props.userSkillCount ?? 0) > 0 && (
-            <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] bg-zinc-200 text-zinc-600 font-semibold">{props.total}</span>
-          )}
+          {(props.userSkillCount ?? 0) > 0 && (() => {
+            const combined = props.total + (liveMatchCount ?? 0);
+            return (
+              <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] bg-zinc-200 text-zinc-600 font-semibold">
+                {liveMatchCount === null ? props.total : combined}
+              </span>
+            );
+          })()}
         </button>
         <button onClick={() => switchTab("saved")}
           className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "saved" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
@@ -1128,7 +1144,11 @@ export function JobSearch(props: JobSearchProps) {
       ) : activeTab === "saved" ? (
         <SavedJobsTab refreshKey={savedRefreshKey} onChange={bumpSaved} />
       ) : (
-        <InternalJobsTab {...props} onSavedChange={bumpSaved} />
+        <InternalJobsTab
+          {...props}
+          onSavedChange={bumpSaved}
+          onLiveMatchCount={setLiveMatchCount}
+        />
       )}
     </div>
   );
