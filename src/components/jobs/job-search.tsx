@@ -40,6 +40,11 @@ interface JobSearchProps {
   matchingQuery?: string;
   /** Top profile skills, used to fan out external lookups beyond a single query. */
   userTopSkills?: string[];
+  /** Full list of profile skills + technologies — the source of truth for the
+   * client-side >= N matching filter applied to live external listings. */
+  userSkills?: string[];
+  /** How many distinct user skills a job must mention to count as a match. */
+  minMatchSkills?: number;
 }
 
 const WORK_MODE_LABELS: Record<string, string> = {
@@ -130,6 +135,8 @@ function InternalJobsTab({
   matchingQuery = "",
   defaultLocation = "",
   userTopSkills = [],
+  userSkills = [],
+  minMatchSkills = 3,
 }: JobSearchProps & { onSavedChange?: () => void }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -224,7 +231,26 @@ function InternalJobsTab({
             merged.push(j);
           }
         }
-        setExtJobs(merged);
+        // Apply the same N-skill threshold the server uses for internal matches.
+        const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const lowerSkills = userSkills.map((s) => s.toLowerCase().trim()).filter(Boolean);
+        const countMatches = (j: ExternalJob): number => {
+          if (lowerSkills.length === 0) return 0;
+          const haystack = (
+            (j.skills ?? []).join(" ") + " " + (j.title ?? "") + " " + (j.description ?? "")
+          ).toLowerCase();
+          let n = 0;
+          for (const s of lowerSkills) {
+            if (new RegExp(`\\b${escapeRe(s)}\\b`, "i").test(haystack)) n++;
+          }
+          return n;
+        };
+        const threshold = Math.min(minMatchSkills, Math.max(1, lowerSkills.length));
+        const scored = merged
+          .map((j) => ({ job: j, matches: countMatches(j) }))
+          .filter((s) => s.matches >= threshold)
+          .sort((a, b) => b.matches - a.matches);
+        setExtJobs(scored.map((s) => s.job));
         setExtSources(Array.from(sources));
         setExtQueriesUsed(queries.length);
       } finally {
@@ -309,7 +335,8 @@ function InternalJobsTab({
           {userSkillCount > 0 && (
             <div className="rounded-xl border border-accent-200 bg-accent-50/60 px-4 py-3 text-xs text-accent-900 flex items-center gap-2">
               <span className="w-1.5 h-1.5 rounded-full bg-accent-500" />
-              Showing posted jobs matched to your <span className="font-semibold">{userSkillCount} profile skill{userSkillCount === 1 ? "" : "s"}</span>.
+              Showing jobs that mention at least{" "}
+              <span className="font-semibold">{minMatchSkills} of your {userSkillCount} profile skill{userSkillCount === 1 ? "" : "s"}</span>.
             </div>
           )}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">

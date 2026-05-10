@@ -94,19 +94,58 @@ export default async function JobsPage({
     }),
   };
 
-  const [jobs, total, savedJobIds] = await Promise.all([
+  // The skillsFilter is intentionally permissive — it just ensures the job
+  // has at least *some* overlap with the user's profile so we don't pull the
+  // entire jobs table. The real "matching" rule is applied below: a job has
+  // to mention >=3 distinct user skills to qualify (a single shared keyword
+  // like "team" or "API" isn't enough). We adapt the threshold down for
+  // users who haven't filled in many skills yet so the tab isn't dead.
+  const MIN_MATCH_SKILLS = Math.min(3, Math.max(1, userSkills.length));
+
+  // Pull a generous candidate pool then score + paginate in memory.
+  const [candidatesRaw, savedJobIds] = await Promise.all([
     prisma.job.findMany({
       where,
       orderBy: [{ isFeatured: "desc" }, { postedAt: "desc" }],
-      skip: (page - 1) * limit,
-      take: limit,
+      take: 500,
     }),
-    prisma.job.count({ where }),
     prisma.savedJob.findMany({
       where: { userId },
       select: { jobId: true },
     }),
   ]);
+
+  // Word-boundary match keeps "React" out of "interaction" / "team" out of
+  // "teamspeak". Falls back to plain substring when the skill itself contains
+  // regex-special chars (e.g. "C++").
+  const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  function countSkillMatches(job: { skills: string; title: string; description: string | null }): number {
+    if (userSkills.length === 0) return 0;
+    const haystack = (
+      parseArr(job.skills).join(" ") + " " +
+      job.title + " " +
+      (job.description ?? "")
+    ).toLowerCase();
+    let count = 0;
+    for (const skill of userSkills) {
+      const lower = skill.toLowerCase().trim();
+      if (!lower) continue;
+      const re = new RegExp(`\\b${escapeRe(lower)}\\b`, "i");
+      if (re.test(haystack)) count++;
+    }
+    return count;
+  }
+
+  type Scored = { job: typeof candidatesRaw[number]; matches: number };
+  const scored: Scored[] = userSkills.length === 0
+    ? candidatesRaw.map((j) => ({ job: j, matches: 0 }))
+    : candidatesRaw
+        .map((j) => ({ job: j, matches: countSkillMatches(j) }))
+        .filter((s) => s.matches >= MIN_MATCH_SKILLS)
+        .sort((a, b) => b.matches - a.matches);
+
+  const total = scored.length;
+  const jobs = scored.slice((page - 1) * limit, page * limit).map((s) => s.job);
 
   return (
     <JobSearch
@@ -120,6 +159,8 @@ export default async function JobsPage({
       userSkillCount={userSkills.length}
       matchingQuery={matchingQuery}
       userTopSkills={userSkills.slice(0, 6)}
+      userSkills={userSkills}
+      minMatchSkills={MIN_MATCH_SKILLS}
     />
   );
 }
