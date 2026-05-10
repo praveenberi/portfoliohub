@@ -295,6 +295,29 @@ function InternalJobsTab({
         }
       />
 
+      {/* Top banner — always visible while the user has skills, so the rule is
+          obvious whether internal matches are zero or many. */}
+      {userSkillCount === 0 ? (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-xs text-amber-900 flex items-center gap-3">
+          <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+          <span className="flex-1">
+            Add skills to your profile so we can match you with relevant jobs from posted listings and Live sources.
+          </span>
+          <Link
+            href="/dashboard/profile"
+            className="shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-md bg-zinc-950 text-white text-[11px] font-semibold hover:bg-zinc-800"
+          >
+            Edit profile <ArrowRight size={11} weight="bold" />
+          </Link>
+        </div>
+      ) : (
+        <div className="rounded-xl border border-accent-200 bg-accent-50/60 px-4 py-3 text-xs text-accent-900 flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-accent-500" />
+          Showing jobs that mention at least{" "}
+          <span className="font-semibold">{minMatchSkills} of your {userSkillCount} profile skill{userSkillCount === 1 ? "" : "s"}</span>.
+        </div>
+      )}
+
       {isPending ? (
         <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
           {[...Array(6)].map((_, i) => (
@@ -309,36 +332,12 @@ function InternalJobsTab({
           ))}
         </div>
       ) : jobs.length === 0 ? (
-        userSkillCount === 0 ? (
-          <div className="bg-white rounded-2xl border border-zinc-200 p-16 text-center">
-            <MagnifyingGlass size={32} className="text-zinc-200 mx-auto mb-3" />
-            <p className="text-sm font-medium text-zinc-500">Add skills to see matching jobs</p>
-            <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
-              Matching Jobs filters by your profile skills + technologies. Add a few in your profile and check back.
-            </p>
-            <Link
-              href="/dashboard/profile"
-              className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 bg-zinc-950 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 active:scale-[0.98] transition-all"
-            >
-              Edit profile skills <ArrowRight size={11} weight="bold" />
-            </Link>
-          </div>
-        ) : (
-          <div className="bg-white rounded-2xl border border-zinc-200 p-16 text-center">
-            <MagnifyingGlass size={32} className="text-zinc-200 mx-auto mb-3" />
-            <p className="text-sm font-medium text-zinc-500">No matching jobs yet</p>
-            <p className="text-xs text-zinc-400 mt-1">No posted job matches your {userSkillCount} skill{userSkillCount === 1 ? "" : "s"} right now. Try the Live Jobs tab for external listings.</p>
-          </div>
-        )
+        // Internal posted-jobs inventory is empty for this profile — quietly
+        // skip the big empty-state card so the Live matches section below
+        // takes over as the primary content.
+        null
       ) : (
         <>
-          {userSkillCount > 0 && (
-            <div className="rounded-xl border border-accent-200 bg-accent-50/60 px-4 py-3 text-xs text-accent-900 flex items-center gap-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-accent-500" />
-              Showing jobs that mention at least{" "}
-              <span className="font-semibold">{minMatchSkills} of your {userSkillCount} profile skill{userSkillCount === 1 ? "" : "s"}</span>.
-            </div>
-          )}
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
           {jobs.map((job, i) => (
             <motion.div key={job.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -404,10 +403,14 @@ function InternalJobsTab({
       {/* Live external matches — fanned out across headline + each top skill */}
       {queries.length > 0 && (
         <div className="space-y-3 pt-2">
-          <div className="flex items-center justify-between gap-3 border-t border-zinc-100 pt-5">
+          <div className={`flex items-center justify-between gap-3 ${jobs.length > 0 ? "border-t border-zinc-100 pt-5" : ""}`}>
             <div>
-              <h2 className="text-sm font-semibold text-zinc-950">
-                Live matches{!extLoading ? <span className="ml-2 text-xs font-normal text-zinc-400">{extJobs.length}</span> : null}
+              <h2 className="text-sm font-semibold text-zinc-950 flex items-center gap-2">
+                <Globe size={14} className="text-accent-500" />
+                {jobs.length > 0 ? "Live matches" : "Matched live jobs"}
+                {!extLoading && (
+                  <span className="px-1.5 py-0.5 rounded-md text-[10px] bg-accent-50 text-accent-700 font-semibold">{extJobs.length}</span>
+                )}
               </h2>
               <p className="text-[11px] text-zinc-400 mt-0.5">
                 Searched{" "}
