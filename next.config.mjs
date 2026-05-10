@@ -1,5 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Required for the multi-stage Dockerfile (it copies .next/standalone into
+  // the runtime image). Vercel ignores this; only matters for self-hosted /
+  // Docker production deploys.
+  output: "standalone",
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "res.cloudinary.com" },
