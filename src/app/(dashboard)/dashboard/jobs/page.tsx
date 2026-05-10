@@ -158,7 +158,7 @@ export default async function JobsPage({
       defaultLocation={profile?.location ?? ""}
       userSkillCount={userSkills.length}
       matchingQuery={matchingQuery}
-      userTopSkills={userSkills.slice(0, 6)}
+      userTopSkills={userSkills.slice(0, 12)}
       userSkills={userSkills}
       minMatchSkills={MIN_MATCH_SKILLS}
     />

@@ -175,7 +175,10 @@ function InternalJobsTab({
   const [extSources, setExtSources] = useState<string[]>([]);
   const [extQueriesUsed, setExtQueriesUsed] = useState(0);
 
-  // Stable list of queries: headline (if any) + each top skill, deduped, capped.
+  // Stable list of queries: typed q (priority) + headline + each top skill,
+  // deduped, capped. Wider cap than before so users with broad profiles get
+  // wider coverage in a single load.
+  const typedQuery = (searchParams.q ?? "").trim();
   const queries = (() => {
     const out: string[] = [];
     const seen = new Set<string>();
@@ -186,9 +189,10 @@ function InternalJobsTab({
       seen.add(k);
       out.push(q.trim());
     };
+    if (typedQuery) add(typedQuery);
     if (matchingQuery) add(matchingQuery);
     for (const s of userTopSkills) add(s);
-    return out.slice(0, 6);
+    return out.slice(0, 12);
   })();
   // Reduce to a stable string so the effect re-runs only when the actual list changes.
   const queriesKey = queries.join("|");
@@ -245,7 +249,12 @@ function InternalJobsTab({
           }
           return n;
         };
-        const threshold = Math.min(minMatchSkills, Math.max(1, lowerSkills.length));
+        // When the user explicitly typed a search, honour it: drop the
+        // skill threshold to 1 so the typed query isn't filtered out by an
+        // unrelated profile (e.g. "Full Stack Developer" search against a
+        // Business-Analyst-heavy profile).
+        const baseThreshold = Math.min(minMatchSkills, Math.max(1, lowerSkills.length));
+        const threshold = typedQuery ? Math.min(1, baseThreshold) : baseThreshold;
         const scored = merged
           .map((j) => ({ job: j, matches: countMatches(j) }))
           .filter((s) => s.matches >= threshold)
@@ -415,7 +424,11 @@ function InternalJobsTab({
               <p className="text-[11px] text-zinc-400 mt-0.5">
                 Searched{" "}
                 {extSources.length > 0 ? <>via <span className="font-medium text-zinc-600">{extSources.join(" · ")}</span></> : "live job sources"}
-                {extQueriesUsed > 0 ? <> across <span className="font-medium text-zinc-600">{extQueriesUsed} keyword{extQueriesUsed === 1 ? "" : "s"}</span></> : null}
+                {typedQuery ? (
+                  <> for <span className="font-medium text-zinc-600">"{typedQuery}"</span></>
+                ) : extQueriesUsed > 0 ? (
+                  <> across <span className="font-medium text-zinc-600">{extQueriesUsed} keyword{extQueriesUsed === 1 ? "" : "s"}</span> from your profile</>
+                ) : null}
                 {defaultLocation ? <> in <span className="font-medium text-zinc-600">{defaultLocation}</span></> : null}.
               </p>
             </div>
