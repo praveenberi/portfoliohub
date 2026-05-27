@@ -21,9 +21,11 @@ import {
   PaperPlaneRight,
   Pencil,
   X,
+  Wrench,
 } from "@phosphor-icons/react";
 import axios from "axios";
 import toast from "react-hot-toast";
+import { parseArr } from "@/lib/utils";
 
 // Aria the virtual interviewer. Loads /public/aria-interviewer.jpg first, with
 // a Pollinations fallback so the avatar still renders if the file is missing.
@@ -51,10 +53,17 @@ const TOPIC_SUGGESTIONS: { label: string; topic: string }[] = [
   { label: "Product", topic: "Product management (prioritisation, metrics, discovery)" },
 ];
 
-type Tab = "qa" | "video";
+type Tab = "qa" | "video" | "mine";
+type LaunchTarget = Exclude<Tab, "mine">;
 
 export function MockInterview({ isAdmin = false }: { isAdmin?: boolean }) {
   const [tab, setTab] = useState<Tab>("qa");
+  const [presetTopic, setPresetTopic] = useState<string | null>(null);
+
+  function launchWithTopic(target: LaunchTarget, topic: string) {
+    setPresetTopic(topic);
+    setTab(target);
+  }
 
   return (
     <div className="space-y-6">
@@ -75,6 +84,7 @@ export function MockInterview({ isAdmin = false }: { isAdmin?: boolean }) {
         {([
           { id: "qa", label: "AI Quiz", icon: ChatTeardropDots },
           { id: "video", label: "Video Interview", icon: VideoCamera },
+          { id: "mine", label: "My Skills", icon: Wrench },
         ] as const).map(({ id, label, icon: Icon }) => (
           <button
             key={id}
@@ -89,8 +99,9 @@ export function MockInterview({ isAdmin = false }: { isAdmin?: boolean }) {
         ))}
       </div>
 
-      {tab === "qa" && <AIQuizPanel />}
-      {tab === "video" && <VideoInterviewPanel isAdmin={isAdmin} />}
+      {tab === "qa" && <AIQuizPanel initialTopic={presetTopic} />}
+      {tab === "video" && <VideoInterviewPanel isAdmin={isAdmin} initialTopic={presetTopic} />}
+      {tab === "mine" && <MySkillsPanel onLaunch={launchWithTopic} />}
     </div>
   );
 }
@@ -232,8 +243,8 @@ type Quiz = {
   questions: QuizQuestion[];
 };
 
-function AIQuizPanel() {
-  const [topic, setTopic] = useState("React (hooks, performance, state management)");
+function AIQuizPanel({ initialTopic }: { initialTopic?: string | null }) {
+  const [topic, setTopic] = useState(initialTopic?.trim() || "React (hooks, performance, state management)");
   const [difficulty, setDifficulty] = useState<Difficulty>("medium");
   const [count, setCount] = useState(5);
   const [generating, setGenerating] = useState(false);
@@ -467,8 +478,8 @@ type SpeechRecognitionLike = {
   onend: (() => void) | null;
 };
 
-function VideoInterviewPanel({ isAdmin = false }: { isAdmin?: boolean }) {
-  const [topic, setTopic] = useState("Behavioural interview questions using STAR framework");
+function VideoInterviewPanel({ isAdmin = false, initialTopic }: { isAdmin?: boolean; initialTopic?: string | null }) {
+  const [topic, setTopic] = useState(initialTopic?.trim() || "Behavioural interview questions using STAR framework");
   const [portraitVersion, setPortraitVersion] = useState<number>(0); // cache-buster for the local photo
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
@@ -1310,6 +1321,127 @@ function FeedTurn({
           <span className="text-xs text-zinc-600">Aria is evaluating your answer…</span>
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── My Skills panel ────────────────────────────────────────────────────────
+
+function MySkillsPanel({ onLaunch }: { onLaunch: (target: LaunchTarget, topic: string) => void }) {
+  const [loading, setLoading] = useState(true);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [technologies, setTechnologies] = useState<string[]>([]);
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data } = await axios.get("/api/profile");
+        if (!alive) return;
+        const p = data?.data ?? {};
+        setSkills(parseArr(p.skills));
+        setTechnologies(parseArr(p.technologies));
+      } catch {
+        // Silent — empty state below covers the failure case
+      } finally {
+        if (alive) setLoading(false);
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="bg-white rounded-2xl border border-zinc-200 p-10 flex items-center justify-center gap-2 text-sm text-zinc-500">
+        <div className="w-4 h-4 border-2 border-zinc-300 border-t-zinc-600 rounded-full animate-spin" />
+        Loading your skills…
+      </div>
+    );
+  }
+
+  const total = skills.length + technologies.length;
+
+  if (total === 0) {
+    return (
+      <div className="bg-white rounded-2xl border border-zinc-200 p-10 text-center">
+        <Wrench size={28} className="text-zinc-300 mx-auto mb-3" />
+        <h3 className="text-sm font-semibold text-zinc-950">No skills on your profile yet</h3>
+        <p className="text-xs text-zinc-500 mt-1.5 max-w-md mx-auto leading-relaxed">
+          Add skills and technologies to your profile, then come back here to drill into each one with an AI quiz or
+          video interview.
+        </p>
+        <a
+          href="/dashboard/profile"
+          className="inline-flex items-center gap-1.5 mt-4 px-4 py-2 rounded-lg bg-zinc-950 text-white text-xs font-semibold hover:bg-zinc-800 transition-colors"
+        >
+          <Pencil size={12} weight="fill" /> Edit profile
+        </a>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-5">
+      <div className="flex items-start gap-2">
+        <Sparkle size={16} weight="fill" className="text-accent-500 mt-0.5 shrink-0" />
+        <p className="text-xs text-zinc-600 leading-relaxed">
+          These topics come from your profile. Pick any one to launch a quiz on it, or jump straight into a video
+          interview where Aria will ask you about it.
+        </p>
+      </div>
+
+      {skills.length > 0 && <SkillSection title="Skills" items={skills} onLaunch={onLaunch} />}
+      {technologies.length > 0 && (
+        <SkillSection title="Technologies" items={technologies} onLaunch={onLaunch} />
+      )}
+    </div>
+  );
+}
+
+function SkillSection({
+  title,
+  items,
+  onLaunch,
+}: {
+  title: string;
+  items: string[];
+  onLaunch: (target: LaunchTarget, topic: string) => void;
+}) {
+  return (
+    <div className="space-y-2">
+      <div className="text-[11px] font-semibold text-zinc-500 uppercase tracking-wider">{title}</div>
+      <div className="grid sm:grid-cols-2 gap-2">
+        {items.map((skill) => (
+          <div
+            key={skill}
+            className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-zinc-200 hover:border-zinc-300 hover:bg-zinc-50 transition-colors"
+          >
+            <span className="text-sm font-medium text-zinc-800 truncate" title={skill}>
+              {skill}
+            </span>
+            <div className="flex items-center gap-1 shrink-0">
+              <button
+                type="button"
+                onClick={() => onLaunch("qa", skill)}
+                title={`Start an AI quiz on ${skill}`}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-accent-700 bg-accent-50 hover:bg-accent-100 transition-colors"
+              >
+                <ChatTeardropDots size={11} weight="fill" /> Quiz
+              </button>
+              <button
+                type="button"
+                onClick={() => onLaunch("video", skill)}
+                title={`Start a video interview on ${skill}`}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-semibold text-zinc-700 bg-zinc-100 hover:bg-zinc-200 transition-colors"
+              >
+                <VideoCamera size={11} weight="fill" /> Interview
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
