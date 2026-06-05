@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080c14"/>
+      <stop offset="100%" stop-color="#0f1624"/>
+    </linearGradient>
+    <linearGradient id="brand" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00d4ff"/>
+      <stop offset="100%" stop-color="#e040fb"/>
+    </linearGradient>
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="1.5" result="blur"/>
+      <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+  <!-- Dark rounded square background -->
+  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+  <!-- Subtle border -->
+  <rect width="32" height="32" rx="7" fill="none" stroke="url(#brand)" stroke-width="1" opacity="0.4"/>
+  <!-- Lightning bolt icon centered -->
+  <polygon
+    points="18,4 10,17 15,17 14,28 22,15 17,15"
+    fill="url(#brand)"
+    filter="url(#glow)"
+  />
+</svg>

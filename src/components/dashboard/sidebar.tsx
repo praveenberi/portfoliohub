@@ -6,20 +6,8 @@ import { signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import {
-  SquaresFour,
-  Layout,
-  Briefcase,
-  ChartBar,
-  User,
-  Gear,
-  SignOut,
-  ShieldCheck,
-  EnvelopeSimple,
-  X,
-  List,
-  Article,
-  Microphone,
-  Trophy,
+  SquaresFour, Layout, Briefcase, ChartBar, User, Gear, SignOut,
+  ShieldCheck, EnvelopeSimple, X, List, Article, Microphone, Trophy,
 } from "@phosphor-icons/react";
 import { cn, getInitials } from "@/lib/utils";
 import type { UserRole } from "@/lib/enums";
@@ -38,31 +26,31 @@ interface SidebarProps {
 }
 
 const navItems = [
-  { href: "/dashboard", icon: SquaresFour, label: "Overview" },
-  { href: "/dashboard/portfolio", icon: Layout, label: "Portfolio" },
-  { href: "/dashboard/resume", icon: Article, label: "Resume" },
-  { href: "/dashboard/jobs", icon: Briefcase, label: "Browse Jobs" },
-  { href: "/dashboard/tracker", icon: ChartBar, label: "Applications" },
-  { href: "/dashboard/mock-interview", icon: Microphone, label: "Mock Interview" },
-  { href: "/dashboard/messages", icon: EnvelopeSimple, label: "Messages" },
-  { href: "/dashboard/profile", icon: User, label: "Profile" },
-  { href: "/dashboard/leaderboard", icon: Trophy, label: "Leaderboard" },
-  { href: "/dashboard/settings", icon: Gear, label: "Settings" },
+  { href: "/dashboard",               icon: SquaresFour,    label: "Overview"      },
+  { href: "/dashboard/portfolio",     icon: Layout,         label: "Portfolio"     },
+  { href: "/dashboard/resume",        icon: Article,        label: "Resume"        },
+  { href: "/dashboard/jobs",          icon: Briefcase,      label: "Browse Jobs"   },
+  { href: "/dashboard/tracker",       icon: ChartBar,       label: "Applications"  },
+  { href: "/dashboard/mock-interview",icon: Microphone,     label: "Mock Interview"},
+  { href: "/dashboard/messages",      icon: EnvelopeSimple, label: "Messages"      },
+  { href: "/dashboard/profile",       icon: User,           label: "Profile"       },
+  { href: "/dashboard/leaderboard",   icon: Trophy,         label: "Leaderboard"   },
+  { href: "/dashboard/settings",      icon: Gear,           label: "Settings"      },
 ];
 
 const mobileTabItems = [
-  { href: "/dashboard", icon: SquaresFour, label: "Home" },
-  { href: "/dashboard/portfolio", icon: Layout, label: "Portfolio" },
-  { href: "/dashboard/jobs", icon: Briefcase, label: "Jobs" },
-  { href: "/dashboard/messages", icon: EnvelopeSimple, label: "Messages" },
-  { href: "/dashboard/profile", icon: User, label: "Profile" },
-  { href: "/dashboard/leaderboard", icon: Trophy, label: "Ranks" },
+  { href: "/dashboard",           icon: SquaresFour,    label: "Home"      },
+  { href: "/dashboard/portfolio", icon: Layout,         label: "Portfolio" },
+  { href: "/dashboard/jobs",      icon: Briefcase,      label: "Jobs"      },
+  { href: "/dashboard/messages",  icon: EnvelopeSimple, label: "Messages"  },
+  { href: "/dashboard/profile",   icon: User,           label: "Profile"   },
+  { href: "/dashboard/leaderboard",icon: Trophy,        label: "Ranks"     },
 ];
 
 export function DashboardSidebar({ user }: SidebarProps) {
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
-  const [mobileOpen, setMobileOpen] = useState(false);
+  const [mobileOpen, setMobileOpen]   = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +64,7 @@ export function DashboardSidebar({ user }: SidebarProps) {
     }
     fetchCount();
     const interval = setInterval(fetchCount, 30000);
-    const onFocus = () => fetchCount();
+    const onFocus   = () => fetchCount();
     const onRefresh = () => fetchCount();
     window.addEventListener("focus", onFocus);
     window.addEventListener("unread-count:refresh", onRefresh);
@@ -88,54 +76,55 @@ export function DashboardSidebar({ user }: SidebarProps) {
     };
   }, [pathname]);
 
-  // Close drawer on navigation
   useEffect(() => { setMobileOpen(false); }, [pathname]);
 
   const SidebarContent = () => (
     <>
-      {/* Logo */}
-      <div className="px-5 h-16 flex items-center justify-between border-b border-zinc-100">
+      {/* Logo header */}
+      <div className="px-5 h-16 flex items-center justify-between border-b border-[var(--border)]">
         <Link href="/">
-          <Logo size={30} withText textSize="lg" />
+          <Logo size={28} withText textSize="base" />
         </Link>
-        <button onClick={() => setMobileOpen(false)} className="md:hidden p-1 rounded-lg hover:bg-zinc-100">
-          <X size={18} className="text-zinc-500" />
+        <button onClick={() => setMobileOpen(false)} className="md:hidden p-1.5 rounded-lg hover:bg-[var(--hover-bg)] transition-colors">
+          <X size={16} className="text-[var(--text-muted)]" />
         </button>
       </div>
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {navItems.map((item) => {
-          const isActive =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
-          const isMessages = item.href === "/dashboard/messages";
+        {navItems.map((navItem) => {
+          const isActive   = navItem.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(navItem.href);
+          const isMessages = navItem.href === "/dashboard/messages";
 
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={navItem.href}
+              href={navItem.href}
               className={cn(
-                "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
+                "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group",
                 isActive
-                  ? "bg-zinc-950 text-white"
-                  : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"
+                  ? "text-[#080c14]"
+                  : "text-[var(--text-muted)] hover:bg-[var(--hover-bg)] hover:text-[var(--text)]"
               )}
             >
-              <item.icon size={18} weight={isActive ? "fill" : "regular"} />
-              {item.label}
-              {isMessages && unreadCount > 0 && (
-                <span className="ml-auto text-[10px] font-semibold bg-green-500 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
-                  {unreadCount > 99 ? "99+" : unreadCount}
-                </span>
-              )}
               {isActive && (
                 <motion.div
                   layoutId="sidebar-active"
-                  className="absolute inset-0 rounded-xl bg-zinc-950 -z-10"
+                  className="absolute inset-0 rounded-xl"
+                  style={{ background: "linear-gradient(135deg, #00d4ff 0%, #e040fb 100%)" }}
                   transition={{ type: "spring", stiffness: 300, damping: 30 }}
                 />
+              )}
+              <navItem.icon
+                size={18}
+                weight={isActive ? "fill" : "regular"}
+                className={cn("relative z-10 transition-colors", isActive ? "text-[#080c14]" : "group-hover:text-cyan-500")}
+              />
+              <span className="relative z-10">{navItem.label}</span>
+              {isMessages && unreadCount > 0 && (
+                <span className="relative z-10 ml-auto text-[10px] font-bold bg-cyan-500 text-dark-bg rounded-full px-1.5 py-0.5 min-w-[18px] text-center leading-none">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
               )}
             </Link>
           );
@@ -147,8 +136,8 @@ export function DashboardSidebar({ user }: SidebarProps) {
             className={cn(
               "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150",
               pathname.startsWith("/admin")
-                ? "bg-zinc-950 text-white"
-                : "text-zinc-600 hover:bg-zinc-50 hover:text-zinc-950"
+                ? "bg-gradient-to-r from-cyan-500 to-magenta-500 text-dark-bg"
+                : "text-[var(--text-muted)] hover:bg-[var(--hover-bg)] hover:text-[var(--text)]"
             )}
           >
             <ShieldCheck size={18} />
@@ -158,27 +147,27 @@ export function DashboardSidebar({ user }: SidebarProps) {
       </nav>
 
       {/* User footer */}
-      <div className="px-3 py-4 border-t border-zinc-100">
-        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-zinc-50 transition-colors group">
-          <div className="w-8 h-8 rounded-full bg-zinc-200 overflow-hidden flex-shrink-0">
+      <div className="px-3 py-4 border-t border-[var(--border)]">
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--hover-bg)] transition-colors group cursor-default">
+          <div className="w-8 h-8 rounded-full overflow-hidden flex-shrink-0 ring-2 ring-cyan-500/20">
             {user.image ? (
-              <Image src={user.image} alt={user.name ?? ""} width={32} height={32} />
+              <Image src={user.image} alt={user.name ?? ""} width={32} height={32} className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-xs font-semibold text-zinc-600">
+              <div className="w-full h-full flex items-center justify-center text-[10px] font-bold bg-gradient-to-br from-cyan-500 to-magenta-500 text-dark-bg">
                 {getInitials(user.name ?? user.email)}
               </div>
             )}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-semibold text-zinc-950 truncate">{user.name}</div>
-            <div className="text-[10px] text-zinc-400 truncate">{user.email}</div>
+            <div className="text-xs font-semibold text-[var(--text)] truncate">{user.name}</div>
+            <div className="text-[10px] text-[var(--text-subtle)] truncate">{user.email}</div>
           </div>
           <button
             onClick={() => signOut({ callbackUrl: "/" })}
-            className="opacity-0 group-hover:opacity-100 transition-opacity p-1 rounded-lg hover:bg-zinc-100"
+            className="opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-lg hover:bg-[var(--muted)] text-[var(--text-muted)] hover:text-red-400"
             title="Sign out"
           >
-            <SignOut size={14} className="text-zinc-500" />
+            <SignOut size={14} />
           </button>
         </div>
       </div>
@@ -188,35 +177,31 @@ export function DashboardSidebar({ user }: SidebarProps) {
   return (
     <>
       {/* Desktop sidebar */}
-      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-white border-r border-zinc-200 flex-col z-40 hidden md:flex print:hidden">
+      <aside className="fixed left-0 top-0 bottom-0 w-64 bg-[var(--surface)] border-r border-[var(--border)] flex-col z-40 hidden md:flex print:hidden">
         <SidebarContent />
       </aside>
 
-      {/* Mobile hamburger button (in top-left of page) */}
+      {/* Mobile hamburger */}
       <button
         onClick={() => setMobileOpen(true)}
-        className="md:hidden print:hidden fixed top-4 left-4 z-50 w-9 h-9 flex items-center justify-center rounded-xl bg-white border border-zinc-200 shadow-sm"
+        className="md:hidden print:hidden fixed top-4 left-4 z-50 w-9 h-9 flex items-center justify-center rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-dark-card"
       >
-        <List size={18} className="text-zinc-700" />
+        <List size={18} className="text-[var(--text-muted)]" />
       </button>
 
-      {/* Mobile drawer overlay */}
+      {/* Mobile drawer */}
       <AnimatePresence>
         {mobileOpen && (
           <>
             <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               onClick={() => setMobileOpen(false)}
-              className="md:hidden fixed inset-0 bg-black/40 z-40"
+              className="md:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
             />
             <motion.aside
-              initial={{ x: -280 }}
-              animate={{ x: 0 }}
-              exit={{ x: -280 }}
+              initial={{ x: -280 }} animate={{ x: 0 }} exit={{ x: -280 }}
               transition={{ type: "spring", stiffness: 300, damping: 30 }}
-              className="md:hidden fixed left-0 top-0 bottom-0 w-72 bg-white flex flex-col z-50 shadow-xl"
+              className="md:hidden fixed left-0 top-0 bottom-0 w-72 bg-[var(--surface)] border-r border-[var(--border)] flex flex-col z-50 shadow-dark-card"
             >
               <SidebarContent />
             </motion.aside>
@@ -225,27 +210,24 @@ export function DashboardSidebar({ user }: SidebarProps) {
       </AnimatePresence>
 
       {/* Mobile bottom tab bar */}
-      <nav className="md:hidden print:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-zinc-200 z-40 flex items-center justify-around px-2 pb-safe">
-        {mobileTabItems.map((item) => {
-          const isActive =
-            item.href === "/dashboard"
-              ? pathname === "/dashboard"
-              : pathname.startsWith(item.href);
-          const isMessages = item.href === "/dashboard/messages";
+      <nav className="md:hidden print:hidden fixed bottom-0 left-0 right-0 bg-[var(--surface)] border-t border-[var(--border)] z-40 flex items-center justify-around px-2 pb-safe">
+        {mobileTabItems.map((tabItem) => {
+          const isActive   = tabItem.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(tabItem.href);
+          const isMessages = tabItem.href === "/dashboard/messages";
 
           return (
             <Link
-              key={item.href}
-              href={item.href}
+              key={tabItem.href}
+              href={tabItem.href}
               className={cn(
                 "relative flex flex-col items-center gap-0.5 py-2.5 px-3 rounded-xl transition-colors",
-                isActive ? "text-zinc-950" : "text-zinc-400"
+                isActive ? "text-cyan-400" : "text-[var(--text-subtle)]"
               )}
             >
-              <item.icon size={22} weight={isActive ? "fill" : "regular"} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <tabItem.icon size={22} weight={isActive ? "fill" : "regular"} />
+              <span className="text-[10px] font-medium">{tabItem.label}</span>
               {isMessages && unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 w-4 h-4 text-[9px] font-bold bg-green-500 text-white rounded-full flex items-center justify-center">
+                <span className="absolute top-1.5 right-1.5 w-4 h-4 text-[9px] font-bold bg-cyan-500 text-dark-bg rounded-full flex items-center justify-center">
                   {unreadCount > 9 ? "9+" : unreadCount}
                 </span>
               )}

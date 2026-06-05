@@ -18,7 +18,7 @@ export default async function LandingPage() {
   ]).catch(() => [5, 2400, 847]);
 
   return (
-    <main className="min-h-[100dvh] bg-zinc-50">
+    <main className="min-h-[100dvh] bg-[var(--bg)]">
       <LandingNav />
       <HeroSection stats={{ templates: templateCount, users: userCount, jobs: jobCount }} />
       <FeaturesSection />

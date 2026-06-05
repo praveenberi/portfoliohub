@@ -6,31 +6,18 @@ import { DashboardHeader } from "@/components/dashboard/header";
 
 export const dynamic = "force-dynamic";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
   if (!session?.user) redirect("/login?callbackUrl=/dashboard");
 
-  // Read fresh username + portfolio publish status from DB (JWT may be stale)
   const [dbUser, portfolio, unreadCount] = await Promise.all([
-    prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { username: true },
-    }),
-    prisma.portfolio.findUnique({
-      where: { userId: session.user.id },
-      select: { isPublished: true },
-    }),
-    prisma.contactRequest.count({
-      where: { userId: session.user.id, isRead: false },
-    }),
+    prisma.user.findUnique({ where: { id: session.user.id }, select: { username: true } }),
+    prisma.portfolio.findUnique({ where: { userId: session.user.id }, select: { isPublished: true } }),
+    prisma.contactRequest.count({ where: { userId: session.user.id, isRead: false } }),
   ]);
 
   return (
-    <div className="min-h-[100dvh] bg-zinc-50 flex print:block print:bg-white">
+    <div className="min-h-[100dvh] bg-[var(--bg)] flex print:block print:bg-white">
       <DashboardSidebar user={session.user} />
       <div className="flex-1 flex flex-col min-w-0 md:ml-64 print:ml-0">
         <DashboardHeader
