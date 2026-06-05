@@ -19,6 +19,7 @@ import {
   List,
   Article,
   Microphone,
+  Trophy,
 } from "@phosphor-icons/react";
 import { cn, getInitials } from "@/lib/utils";
 import type { UserRole } from "@/lib/enums";
@@ -45,6 +46,7 @@ const navItems = [
   { href: "/dashboard/mock-interview", icon: Microphone, label: "Mock Interview" },
   { href: "/dashboard/messages", icon: EnvelopeSimple, label: "Messages" },
   { href: "/dashboard/profile", icon: User, label: "Profile" },
+  { href: "/dashboard/leaderboard", icon: Trophy, label: "Leaderboard" },
   { href: "/dashboard/settings", icon: Gear, label: "Settings" },
 ];
 
@@ -54,6 +56,7 @@ const mobileTabItems = [
   { href: "/dashboard/jobs", icon: Briefcase, label: "Jobs" },
   { href: "/dashboard/messages", icon: EnvelopeSimple, label: "Messages" },
   { href: "/dashboard/profile", icon: User, label: "Profile" },
+  { href: "/dashboard/leaderboard", icon: Trophy, label: "Ranks" },
 ];
 
 export function DashboardSidebar({ user }: SidebarProps) {

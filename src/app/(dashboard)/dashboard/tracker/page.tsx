@@ -28,6 +28,7 @@ export default async function TrackerPage() {
     interviews: applications.filter((a) => a.status === "INTERVIEW_SCHEDULED").length,
     offers: applications.filter((a) => a.status === "OFFER_RECEIVED").length,
     rejected: applications.filter((a) => a.status === "REJECTED").length,
+    points: applications.length * 10,
   };
 
   return <ApplicationTracker applications={applications as Parameters<typeof ApplicationTracker>[0]["applications"]} stats={stats} />;

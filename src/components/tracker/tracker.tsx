@@ -12,6 +12,7 @@ import {
   Note,
   Clock,
   ArrowRight,
+  Trophy,
 } from "@phosphor-icons/react";
 import type { Application, Job, ApplicationTimeline, ApplicationReminder } from "@prisma/client";
 import { STATUS_COLORS, STATUS_LABELS, timeAgo, formatSalaryRange } from "@/lib/utils";
@@ -35,6 +36,7 @@ interface TrackerProps {
     interviews: number;
     offers: number;
     rejected: number;
+    points: number;
   };
 }
 
@@ -78,7 +80,7 @@ export function ApplicationTracker({ applications, stats }: TrackerProps) {
       </div>
 
       {/* Pipeline overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         {STATUS_PIPELINE.map((stage) => {
           const count = applications.filter((a) => a.status === stage.key).length;
           return (
@@ -100,6 +102,17 @@ export function ApplicationTracker({ applications, stats }: TrackerProps) {
             </motion.button>
           );
         })}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-2xl border border-zinc-200 p-5 text-left"
+        >
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3 text-amber-600 bg-amber-50">
+            <Trophy size={18} weight="duotone" />
+          </div>
+          <div className="text-2xl font-bold tracking-tight text-zinc-950">{stats.points}</div>
+          <div className="text-xs text-zinc-500 mt-0.5">Points</div>
+        </motion.div>
       </div>
 
       {/* Summary stats row */}

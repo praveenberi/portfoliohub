@@ -88,8 +88,8 @@ function SearchBar({
 }) {
   return (
     <div className="bg-white rounded-2xl border border-zinc-200 p-4 space-y-3">
-      <div className="flex gap-3">
-        <div className="flex-1">
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="min-w-0 flex-1">
           <AutocompleteInput
             value={q}
             onChange={onQ}
@@ -99,7 +99,7 @@ function SearchBar({
             leftIcon={<MagnifyingGlass size={16} />}
           />
         </div>
-        <div className="w-52">
+        <div className="w-full sm:w-52">
           <AutocompleteInput
             value={location}
             onChange={onLocation}
@@ -112,7 +112,7 @@ function SearchBar({
         {filterSlot && (
           <button
             onClick={onToggleFilters}
-            className={`h-10 px-4 rounded-lg border text-sm font-medium flex items-center gap-2 transition-all ${
+            className={`h-10 w-full justify-center px-4 rounded-lg border text-sm font-medium flex items-center gap-2 transition-all sm:w-auto ${
               showFilters ? "border-green-500 bg-green-50 text-green-700" : "border-zinc-200 text-zinc-600 hover:border-zinc-300"
             }`}
           >
@@ -290,19 +290,19 @@ function InternalJobsTab({
         showFilters={showFilters}
         onToggleFilters={() => setShowFilters(!showFilters)}
         filterSlot={
-          <div className="flex flex-wrap gap-3 pt-2 border-t border-zinc-100">
+          <div className="grid gap-3 pt-2 border-t border-zinc-100 sm:flex sm:flex-wrap">
             <select defaultValue={searchParams.workMode ?? ""} onChange={(e) => updateSearch("workMode", e.target.value)}
-              className="h-9 px-3 rounded-lg border border-zinc-200 text-sm text-zinc-700 focus:outline-none focus:border-green-500">
+              className="h-9 w-full px-3 rounded-lg border border-zinc-200 text-sm text-zinc-700 focus:outline-none focus:border-green-500 sm:w-auto">
               <option value="">Work mode</option>
               {Object.entries(WORK_MODE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <select defaultValue={searchParams.type ?? ""} onChange={(e) => updateSearch("type", e.target.value)}
-              className="h-9 px-3 rounded-lg border border-zinc-200 text-sm text-zinc-700 focus:outline-none focus:border-green-500">
+              className="h-9 w-full px-3 rounded-lg border border-zinc-200 text-sm text-zinc-700 focus:outline-none focus:border-green-500 sm:w-auto">
               <option value="">Job type</option>
               {Object.entries(JOB_TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
             </select>
             <select defaultValue={searchParams.minSalary ?? ""} onChange={(e) => updateSearch("minSalary", e.target.value)}
-              className="h-9 px-3 rounded-lg border border-zinc-200 text-sm text-zinc-700 focus:outline-none focus:border-green-500">
+              className="h-9 w-full px-3 rounded-lg border border-zinc-200 text-sm text-zinc-700 focus:outline-none focus:border-green-500 sm:w-auto">
               <option value="">Min salary</option>
               {[50000, 80000, 100000, 120000, 150000, 180000, 200000].map((s) => (
                 <option key={s} value={s}>${(s / 1000).toFixed(0)}k+</option>
@@ -315,7 +315,7 @@ function InternalJobsTab({
       {/* Top banner — always visible while the user has skills, so the rule is
           obvious whether internal matches are zero or many. */}
       {userSkillCount === 0 ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-xs text-amber-900 flex items-center gap-3">
+        <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50/60 px-4 py-3 text-xs text-amber-900 sm:flex-row sm:items-center">
           <span className="w-1.5 h-1.5 rounded-full bg-amber-500" />
           <span className="flex-1">
             Add skills to your profile so we can match you with relevant jobs from posted listings and Live sources.
@@ -336,7 +336,7 @@ function InternalJobsTab({
       )}
 
       {isPending ? (
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-3">
               <div className="flex items-center gap-3">
@@ -355,19 +355,19 @@ function InternalJobsTab({
         null
       ) : (
         <>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {jobs.map((job, i) => (
             <motion.div key={job.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col">
+              className="min-w-0 bg-white rounded-2xl border border-zinc-200 p-4 sm:p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col">
               <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="flex items-center gap-3">
+                <div className="flex min-w-0 items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-zinc-100 flex items-center justify-center text-xs font-bold text-zinc-500 flex-shrink-0">
                     {job.company[0]}
                   </div>
-                  <div>
-                    <div className="text-sm font-semibold text-zinc-950 leading-tight">{job.title}</div>
-                    <div className="text-xs text-zinc-400 mt-0.5">{job.company}</div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-zinc-950 leading-tight break-words">{job.title}</div>
+                    <div className="text-xs text-zinc-400 mt-0.5 truncate">{job.company}</div>
                   </div>
                 </div>
                 <button onClick={() => handleSaveToggle(job.id)} className="p-1.5 rounded-lg hover:bg-zinc-50 transition-colors flex-shrink-0">
@@ -391,7 +391,7 @@ function InternalJobsTab({
                   )}
                 </div>
               )}
-              <div className="mt-auto flex items-center justify-between pt-3 border-t border-zinc-100">
+              <div className="mt-auto flex flex-col gap-2 pt-3 border-t border-zinc-100 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-[11px] text-zinc-400">{timeAgo(job.postedAt)}</span>
                 <Link href={`/dashboard/jobs/${job.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-zinc-950 hover:text-green-600 transition-colors">
                   View & apply <ArrowRight size={11} weight="bold" />
@@ -420,7 +420,7 @@ function InternalJobsTab({
       {/* Live external matches — fanned out across headline + each top skill */}
       {queries.length > 0 && (
         <div className="space-y-3 pt-2">
-          <div className={`flex items-center justify-between gap-3 ${jobs.length > 0 ? "border-t border-zinc-100 pt-5" : ""}`}>
+          <div className={`flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between ${jobs.length > 0 ? "border-t border-zinc-100 pt-5" : ""}`}>
             <div>
               <h2 className="text-sm font-semibold text-zinc-950 flex items-center gap-2">
                 <Globe size={14} className="text-accent-500" />
@@ -449,7 +449,7 @@ function InternalJobsTab({
           </div>
 
           {extLoading ? (
-            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-3">
                   <div className="flex items-center gap-3">
@@ -466,14 +466,14 @@ function InternalJobsTab({
               No live matches right now — try the <Link href="?tab=live" className="text-accent-700 font-medium underline">Live Jobs</Link> tab to broaden the search.
             </div>
           ) : (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
               {extJobs.map((job, i) => (
                 <motion.div
                   key={job.id}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                  className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col"
+                  className="min-w-0 bg-white rounded-2xl border border-zinc-200 p-4 sm:p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col"
                 >
                   <div className="flex items-start gap-3 mb-3">
                     {job.companyLogo ? (
@@ -512,7 +512,7 @@ function InternalJobsTab({
                       )}
                     </div>
                   )}
-                  <div className="mt-auto flex items-center justify-between pt-3 border-t border-zinc-100">
+                  <div className="mt-auto flex flex-col gap-2 pt-3 border-t border-zinc-100 sm:flex-row sm:items-center sm:justify-between">
                     <span className="text-[11px] text-zinc-400">{job.postedAt ? timeAgo(job.postedAt) : ""}</span>
                     {job.applyUrl && (
                       <a href={job.applyUrl} target="_blank" rel="noopener noreferrer"
@@ -740,7 +740,7 @@ function LiveJobsTab({
       )}
 
       {loading ? (
-        <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {[...Array(9)].map((_, i) => (
             <div key={i} className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-3">
               <div className="flex items-center gap-3">
@@ -770,11 +770,11 @@ function LiveJobsTab({
           <p className="text-xs text-zinc-400 mt-1">Try different keywords or location</p>
         </div>
       ) : (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
           {jobs.map((job, i) => (
             <motion.div key={job.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
               transition={{ delay: i * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col">
+              className="min-w-0 bg-white rounded-2xl border border-zinc-200 p-4 sm:p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col">
               <div className="flex items-start gap-3 mb-3">
                 {job.companyLogo ? (
                   <img src={job.companyLogo} alt={job.company} className="w-10 h-10 rounded-xl object-contain border border-zinc-100 flex-shrink-0" />
@@ -824,9 +824,9 @@ function LiveJobsTab({
                 </div>
               )}
 
-              <div className="mt-auto flex items-center justify-between pt-3 border-t border-zinc-100">
+              <div className="mt-auto flex flex-col gap-3 pt-3 border-t border-zinc-100 sm:flex-row sm:items-center sm:justify-between">
                 <span className="text-[11px] text-zinc-400">{job.postedAt ? timeAgo(job.postedAt) : ""}</span>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
                   {(() => {
                     const key = externalJobId(job.source, job.id);
                     const isSaved = savedKeys.has(key);
@@ -962,7 +962,7 @@ function SavedJobsTab({ refreshKey, onChange }: { refreshKey: number; onChange?:
   }
   if (items === null) {
     return (
-      <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {[...Array(3)].map((_, i) => (
           <div key={i} className="bg-white rounded-2xl border border-zinc-200 p-5 space-y-3">
             <div className="h-3 w-32 skeleton rounded-full" />
@@ -983,14 +983,14 @@ function SavedJobsTab({ refreshKey, onChange }: { refreshKey: number; onChange?:
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
       {items.map((job, i) => (
         <motion.div
           key={job.id}
           initial={{ opacity: 0, y: 12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: i * 0.04, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="bg-white rounded-2xl border border-zinc-200 p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col"
+          className="min-w-0 bg-white rounded-2xl border border-zinc-200 p-4 sm:p-5 hover:border-zinc-300 hover:shadow-card transition-all duration-200 flex flex-col"
         >
           <div className="flex items-start gap-3 mb-3">
             {job.companyLogo ? (
@@ -1036,9 +1036,9 @@ function SavedJobsTab({ refreshKey, onChange }: { refreshKey: number; onChange?:
             </div>
           )}
 
-          <div className="mt-auto flex items-center justify-between pt-3 border-t border-zinc-100">
+          <div className="mt-auto flex flex-col gap-3 pt-3 border-t border-zinc-100 sm:flex-row sm:items-center sm:justify-between">
             <span className="text-[11px] text-zinc-400">Saved {timeAgo(job.savedAt)}</span>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
               <button
                 onClick={() => unsave(job)}
                 title="Unsave"
@@ -1108,14 +1108,14 @@ export function JobSearch(props: JobSearchProps) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 bg-zinc-100 rounded-xl p-1 w-fit">
+      <div className="flex w-full gap-1 overflow-x-auto rounded-xl bg-zinc-100 p-1 sm:w-fit">
         <button onClick={() => switchTab("live")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "live" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+          className={`shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-all sm:px-4 ${activeTab === "live" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
           Live Jobs
           <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] bg-green-100 text-green-700 font-semibold">NEW</span>
         </button>
         <button onClick={() => switchTab("posted")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "posted" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+          className={`shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-all sm:px-4 ${activeTab === "posted" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
           Matching Jobs
           {(props.userSkillCount ?? 0) > 0 && (() => {
             const combined = props.total + (liveMatchCount ?? 0);
@@ -1127,7 +1127,7 @@ export function JobSearch(props: JobSearchProps) {
           })()}
         </button>
         <button onClick={() => switchTab("saved")}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === "saved" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
+          className={`shrink-0 px-3 py-2 rounded-lg text-sm font-medium transition-all sm:px-4 ${activeTab === "saved" ? "bg-white text-zinc-950 shadow-sm" : "text-zinc-500 hover:text-zinc-700"}`}>
           Saved Jobs
           {(savedCount ?? 0) > 0 && (
             <span className="ml-2 px-1.5 py-0.5 rounded-md text-[10px] bg-orange-100 text-orange-700 font-semibold">{savedCount}</span>

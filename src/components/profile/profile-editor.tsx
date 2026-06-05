@@ -60,7 +60,7 @@ interface Props {
 }
 
 const inputCls =
-  "w-full px-3 py-2 text-sm bg-zinc-950 border border-zinc-800 rounded-lg text-zinc-100 placeholder:text-zinc-600 focus:outline-none focus:border-zinc-600 transition-colors";
+  "w-full px-3 py-2 text-sm bg-white border border-zinc-200 rounded-lg text-zinc-950 placeholder:text-zinc-500 focus:outline-none focus:border-zinc-300 transition-colors";
 
 const TABS = [
   { id: "basic", label: "Basic Info", icon: User },
@@ -78,10 +78,10 @@ export function ProfileEditor({ profile, user }: Props) {
   const [activeTab, setActiveTab] = useState("basic");
 
   return (
-    <div className="min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="min-h-screen bg-zinc-50 text-zinc-950">
       <div className="max-w-4xl mx-auto px-4 py-10">
         <div className="mb-8">
-          <h1 className="text-2xl font-bold tracking-tight text-zinc-100">Edit Profile</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-zinc-950">Edit Profile</h1>
           <p className="text-sm text-zinc-500 mt-1">Keep your information up to date</p>
         </div>
 
@@ -96,8 +96,8 @@ export function ProfileEditor({ profile, user }: Props) {
               onClick={() => setActiveTab(id)}
               className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium rounded-lg whitespace-nowrap transition-colors ${
                 activeTab === id
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900"
+                  ? "bg-zinc-950 text-white"
+                  : "text-zinc-500 hover:text-zinc-700 hover:bg-zinc-100"
               }`}
             >
               <Icon size={14} />
@@ -171,18 +171,18 @@ function ResumeImport() {
   }
 
   return (
-    <div className="mb-8 rounded-xl border border-zinc-800 bg-gradient-to-br from-zinc-900 to-zinc-950 p-5">
+    <div className="mb-8 rounded-xl border border-zinc-200 bg-gradient-to-br from-white to-zinc-50 p-5">
       <div className="flex items-start gap-4">
         <div className="w-10 h-10 rounded-lg bg-green-500/10 border border-green-500/20 flex items-center justify-center shrink-0">
-          <CloudArrowUp size={18} className="text-green-400" />
+          <CloudArrowUp size={18} className="text-green-600" />
         </div>
         <div className="flex-1 min-w-0">
-          <h3 className="text-sm font-semibold text-zinc-100">Import from resume</h3>
+          <h3 className="text-sm font-semibold text-zinc-950">Import from resume</h3>
           <p className="text-xs text-zinc-500 mt-0.5">
             Upload your PDF resume — we&apos;ll auto-fill your profile sections (experience, education, skills, projects, certifications).
           </p>
           <div className="mt-3">
-            <label className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors cursor-pointer ${uploading ? "bg-zinc-800 text-zinc-500 cursor-wait" : "bg-green-500 text-white hover:bg-green-600"}`}>
+            <label className={`inline-flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-lg transition-colors cursor-pointer ${uploading ? "bg-zinc-100 text-zinc-500 cursor-wait" : "bg-green-500 text-white hover:bg-green-600"}`}>
               {uploading ? (
                 <>
                   <div className="w-3 h-3 border-2 border-white/40 border-t-white rounded-full animate-spin" />
@@ -203,7 +203,7 @@ function ResumeImport() {
                 onChange={handleFile}
               />
             </label>
-            <p className="text-[10px] text-zinc-600 mt-2">
+            <p className="text-[10px] text-zinc-500 mt-2">
               Existing experience, education, projects, and certifications will be replaced.
             </p>
           </div>
@@ -262,7 +262,7 @@ function BasicInfoEditor({ profile }: { profile: FullProfile | null }) {
         <div>
           <label className="text-xs text-zinc-500 mb-1 block">First name</label>
           <input {...register("firstName")} className={inputCls} placeholder="Alex" />
-          {errors.firstName && <p className="text-xs text-red-400 mt-1">{errors.firstName.message}</p>}
+          {errors.firstName && <p className="text-xs text-red-500 mt-1">{errors.firstName.message}</p>}
         </div>
         <div>
           <label className="text-xs text-zinc-500 mb-1 block">Last name</label>
@@ -305,12 +305,12 @@ function BasicInfoEditor({ profile }: { profile: FullProfile | null }) {
       </div>
       <label className="flex items-center gap-2 cursor-pointer">
         <input type="checkbox" {...register("openToWork")} className="accent-green-500" />
-        <span className="text-sm text-zinc-300">Open to work</span>
+        <span className="text-sm text-zinc-700">Open to work</span>
       </label>
       <button
         type="submit"
         disabled={saving}
-        className="flex items-center gap-1.5 px-4 py-2 bg-zinc-100 text-zinc-950 text-xs font-semibold rounded-lg hover:bg-white disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors"
       >
         <FloppyDisk size={14} /> {saving ? "Saving..." : "Save changes"}
       </button>
@@ -355,12 +355,12 @@ function SocialLinksEditor({ profile, username }: { profile: FullProfile | null;
             <button
               type="button"
               onClick={() => { navigator.clipboard.writeText(portfolioUrl); toast.success("Copied!"); }}
-              className="shrink-0 px-3 py-2 text-xs font-medium bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors"
+              className="shrink-0 px-3 py-2 text-xs font-medium bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors"
             >
               Copy
             </button>
           </div>
-          <p className="text-[11px] text-zinc-600 mt-1">This is your public myskillspage portfolio link.</p>
+          <p className="text-[11px] text-zinc-500 mt-1">This is your public myskillspage portfolio link.</p>
         </div>
       )}
       <div>
@@ -390,7 +390,7 @@ function SocialLinksEditor({ profile, username }: { profile: FullProfile | null;
       <button
         onClick={save}
         disabled={saving}
-        className="flex items-center gap-1.5 px-4 py-2 bg-zinc-100 text-zinc-950 text-xs font-semibold rounded-lg hover:bg-white disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors"
       >
         <FloppyDisk size={14} /> {saving ? "Saving..." : "Save changes"}
       </button>
@@ -446,13 +446,13 @@ function SkillsEditor({ profile }: { profile: FullProfile | null }) {
             placeholder="Add a skill and press Enter"
             className={inputCls}
           />
-          <button onClick={addSkill} className="px-3 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors flex-shrink-0">
+          <button onClick={addSkill} className="px-3 py-2 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors flex-shrink-0">
             <Plus size={14} />
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
           {skills.map((s) => (
-            <span key={s} className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-zinc-800 rounded-full text-zinc-300">
+            <span key={s} className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-zinc-100 rounded-full text-zinc-700">
               {s}
               <button onClick={() => setSkills(skills.filter((x) => x !== s))} className="hover:text-white">
                 <X size={10} />
@@ -475,13 +475,13 @@ function SkillsEditor({ profile }: { profile: FullProfile | null }) {
             placeholder="Add a technology and press Enter"
             className={inputCls}
           />
-          <button onClick={addTech} className="px-3 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors flex-shrink-0">
+          <button onClick={addTech} className="px-3 py-2 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors flex-shrink-0">
             <Plus size={14} />
           </button>
         </div>
         <div className="flex flex-wrap gap-2">
           {technologies.map((t) => (
-            <span key={t} className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-zinc-800 rounded-full text-zinc-300">
+            <span key={t} className="flex items-center gap-1.5 px-2.5 py-1 text-xs bg-zinc-100 rounded-full text-zinc-700">
               {t}
               <button onClick={() => setTechnologies(technologies.filter((x) => x !== t))} className="hover:text-white">
                 <X size={10} />
@@ -494,7 +494,7 @@ function SkillsEditor({ profile }: { profile: FullProfile | null }) {
       <button
         onClick={save}
         disabled={saving}
-        className="flex items-center gap-1.5 px-4 py-2 bg-zinc-100 text-zinc-950 text-xs font-semibold rounded-lg hover:bg-white disabled:opacity-50 transition-colors"
+        className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors"
       >
         <FloppyDisk size={14} /> {saving ? "Saving..." : "Save changes"}
       </button>
@@ -575,35 +575,35 @@ function ExperienceEditor({ experiences: initial, profileId }: { experiences: Ex
   return (
     <div className="space-y-4">
       {items.map((exp) => (
-        <div key={exp.id} className="p-4 border border-zinc-800 rounded-xl">
+        <div key={exp.id} className="p-4 border border-zinc-200 rounded-xl">
           {editing === exp.id ? (
             <ExperienceForm form={form} setForm={setForm} onSave={save} onCancel={() => setEditing(null)} saving={saving} />
           ) : (
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-medium text-zinc-100">{exp.title}</p>
-                <p className="text-sm text-zinc-400">{exp.company}{exp.location ? ` · ${exp.location}` : ""}</p>
-                <p className="text-xs text-zinc-600 mt-0.5">
+                <p className="font-medium text-zinc-950">{exp.title}</p>
+                <p className="text-sm text-zinc-500">{exp.company}{exp.location ? ` · ${exp.location}` : ""}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   {new Date(exp.startDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                   {" — "}
                   {exp.isCurrent ? "Present" : exp.endDate ? new Date(exp.endDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : ""}
                 </p>
               </div>
               <div className="flex gap-2 flex-shrink-0">
-                <button onClick={() => startEdit(exp)} className="p-1.5 text-zinc-500 hover:text-zinc-100 transition-colors"><Pencil size={14} /></button>
-                <button onClick={() => remove(exp.id)} className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"><Trash size={14} /></button>
+                <button onClick={() => startEdit(exp)} className="p-1.5 text-zinc-500 hover:text-zinc-950 transition-colors"><Pencil size={14} /></button>
+                <button onClick={() => remove(exp.id)} className="p-1.5 text-zinc-500 hover:text-red-500 transition-colors"><Trash size={14} /></button>
               </div>
             </div>
           )}
         </div>
       ))}
       {editing === "new" && (
-        <div className="p-4 border border-zinc-700 rounded-xl">
+        <div className="p-4 border border-zinc-300 rounded-xl">
           <ExperienceForm form={form} setForm={setForm} onSave={save} onCancel={() => setEditing(null)} saving={saving} />
         </div>
       )}
       {editing === null && (
-        <button onClick={startNew} className="flex items-center gap-1.5 px-4 py-2 border border-zinc-800 text-zinc-400 text-xs font-medium rounded-lg hover:border-zinc-600 hover:text-zinc-200 transition-colors">
+        <button onClick={startNew} className="flex items-center gap-1.5 px-4 py-2 border border-zinc-200 text-zinc-500 text-xs font-medium rounded-lg hover:border-zinc-300 hover:text-zinc-950 transition-colors">
           <Plus size={14} /> Add experience
         </button>
       )}
@@ -632,15 +632,15 @@ function ExperienceForm({ form, setForm, onSave, onCancel, saving }: { form: Rec
       </div>
       <label className="flex items-center gap-2 cursor-pointer">
         <input type="checkbox" checked={form.isCurrent === "true"} onChange={(e) => setForm({ ...form, isCurrent: e.target.checked ? "true" : "false", endDate: e.target.checked ? "" : form.endDate })} className="accent-green-500" />
-        <span className="text-sm text-zinc-400">Currently working here</span>
+        <span className="text-sm text-zinc-500">Currently working here</span>
       </label>
       <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputCls} h-20 resize-none`} placeholder="Describe your role and achievements..." />
       <input value={form.skills} onChange={(e) => setForm({ ...form, skills: e.target.value })} className={inputCls} placeholder="Skills used (comma-separated): React, TypeScript" />
       <div className="flex items-center gap-2">
-        <button onClick={onSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white border border-zinc-700 text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors">
+        <button onClick={onSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white border border-zinc-950 text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors">
           <CheckCircle size={14} /> {saving ? "Saving..." : "Save"}
         </button>
-        <button onClick={onCancel} className="px-4 py-2 text-xs text-zinc-600 hover:text-zinc-300 transition-colors">Cancel</button>
+        <button onClick={onCancel} className="px-4 py-2 text-xs text-zinc-500 hover:text-zinc-700 transition-colors">Cancel</button>
       </div>
     </div>
   );
@@ -719,15 +719,15 @@ function EducationEditor({ education: initial, profileId }: { education: Educati
   return (
     <div className="space-y-4">
       {items.map((edu) => (
-        <div key={edu.id} className="p-4 border border-zinc-800 rounded-xl">
+        <div key={edu.id} className="p-4 border border-zinc-200 rounded-xl">
           {editing === edu.id ? (
             <EducationForm form={form} setForm={setForm} onSave={save} onCancel={() => setEditing(null)} saving={saving} />
           ) : (
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-medium text-zinc-100">{edu.degree}{edu.field ? ` in ${edu.field}` : ""}</p>
-                <p className="text-sm text-zinc-400">{edu.institution}</p>
-                <p className="text-xs text-zinc-600 mt-0.5">
+                <p className="font-medium text-zinc-950">{edu.degree}{edu.field ? ` in ${edu.field}` : ""}</p>
+                <p className="text-sm text-zinc-500">{edu.institution}</p>
+                <p className="text-xs text-zinc-500 mt-0.5">
                   {new Date(edu.startDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                   {" — "}
                   {edu.isCurrent ? "Present" : edu.endDate ? new Date(edu.endDate).toLocaleDateString("en-US", { month: "short", year: "numeric" }) : ""}
@@ -735,20 +735,20 @@ function EducationEditor({ education: initial, profileId }: { education: Educati
                 </p>
               </div>
               <div className="flex gap-2 flex-shrink-0">
-                <button onClick={() => startEdit(edu)} className="p-1.5 text-zinc-500 hover:text-zinc-100 transition-colors"><Pencil size={14} /></button>
-                <button onClick={() => remove(edu.id)} className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"><Trash size={14} /></button>
+                <button onClick={() => startEdit(edu)} className="p-1.5 text-zinc-500 hover:text-zinc-950 transition-colors"><Pencil size={14} /></button>
+                <button onClick={() => remove(edu.id)} className="p-1.5 text-zinc-500 hover:text-red-500 transition-colors"><Trash size={14} /></button>
               </div>
             </div>
           )}
         </div>
       ))}
       {editing === "new" && (
-        <div className="p-4 border border-zinc-700 rounded-xl">
+        <div className="p-4 border border-zinc-300 rounded-xl">
           <EducationForm form={form} setForm={setForm} onSave={save} onCancel={() => setEditing(null)} saving={saving} />
         </div>
       )}
       {editing === null && (
-        <button onClick={startNew} className="flex items-center gap-1.5 px-4 py-2 border border-zinc-800 text-zinc-400 text-xs font-medium rounded-lg hover:border-zinc-600 hover:text-zinc-200 transition-colors">
+        <button onClick={startNew} className="flex items-center gap-1.5 px-4 py-2 border border-zinc-200 text-zinc-500 text-xs font-medium rounded-lg hover:border-zinc-300 hover:text-zinc-950 transition-colors">
           <Plus size={14} /> Add education
         </button>
       )}
@@ -777,15 +777,15 @@ function EducationForm({ form, setForm, onSave, onCancel, saving }: { form: Reco
       </div>
       <label className="flex items-center gap-2 cursor-pointer">
         <input type="checkbox" checked={form.isCurrent === "true"} onChange={(e) => setForm({ ...form, isCurrent: e.target.checked ? "true" : "false", endDate: e.target.checked ? "" : form.endDate })} className="accent-green-500" />
-        <span className="text-sm text-zinc-400">Currently studying here</span>
+        <span className="text-sm text-zinc-500">Currently studying here</span>
       </label>
       <input value={form.gpa} onChange={(e) => setForm({ ...form, gpa: e.target.value })} className={inputCls} placeholder="GPA (optional)" />
       <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={`${inputCls} h-16 resize-none`} placeholder="Activities, achievements..." />
       <div className="flex items-center gap-2">
-        <button onClick={onSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white border border-zinc-700 text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors">
+        <button onClick={onSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white border border-zinc-950 text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors">
           <CheckCircle size={14} /> {saving ? "Saving..." : "Save"}
         </button>
-        <button onClick={onCancel} className="px-4 py-2 text-xs text-zinc-600 hover:text-zinc-300 transition-colors">Cancel</button>
+        <button onClick={onCancel} className="px-4 py-2 text-xs text-zinc-500 hover:text-zinc-700 transition-colors">Cancel</button>
       </div>
     </div>
   );
@@ -865,7 +865,7 @@ function ProjectsEditor({ projects: initial, profileId }: { projects: Project[];
       {items.map((p) => {
         const imgs = parseProjectImages(p.imageUrl);
         return (
-          <div key={p.id} className="p-4 border border-zinc-800 rounded-xl">
+          <div key={p.id} className="p-4 border border-zinc-200 rounded-xl">
             {editing === p.id ? (
               <ProjectForm form={form} setForm={setForm} onSave={save} onCancel={() => setEditing(null)} saving={saving} />
             ) : (
@@ -876,27 +876,27 @@ function ProjectsEditor({ projects: initial, profileId }: { projects: Project[];
                     <div className={`grid gap-2 ${imgs.length === 1 ? "grid-cols-1" : imgs.length === 2 ? "grid-cols-2" : "grid-cols-3"}`}>
                       {imgs.map((url, i) => (
                         // eslint-disable-next-line @next/next/no-img-element
-                        <img key={i} src={url} alt={`${p.title} ${i + 1}`} className="w-full aspect-video object-cover rounded-lg border border-zinc-800" />
+                        <img key={i} src={url} alt={`${p.title} ${i + 1}`} className="w-full aspect-video object-cover rounded-lg border border-zinc-200" />
                       ))}
                     </div>
                     {imgs.length > 9 && (
-                      <p className="text-center text-xs text-zinc-600 mt-1">{imgs.length} photos · scroll to see all</p>
+                      <p className="text-center text-xs text-zinc-500 mt-1">{imgs.length} photos · scroll to see all</p>
                     )}
                   </div>
                 )}
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-medium text-zinc-100">{p.title}</p>
+                    <p className="font-medium text-zinc-950">{p.title}</p>
                     {p.description && <p className="text-sm text-zinc-500 mt-0.5 line-clamp-1">{p.description}</p>}
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {parseArr(p.technologies).slice(0, 4).map((t) => (
-                        <span key={t} className="px-1.5 py-0.5 text-xs bg-zinc-800 text-zinc-400 rounded">{t}</span>
+                        <span key={t} className="px-1.5 py-0.5 text-xs bg-zinc-100 text-zinc-500 rounded">{t}</span>
                       ))}
                     </div>
                   </div>
                   <div className="flex gap-2 flex-shrink-0">
-                    <button onClick={() => startEdit(p)} className="p-1.5 text-zinc-500 hover:text-zinc-100 transition-colors"><Pencil size={14} /></button>
-                    <button onClick={() => remove(p.id)} className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"><Trash size={14} /></button>
+                    <button onClick={() => startEdit(p)} className="p-1.5 text-zinc-500 hover:text-zinc-950 transition-colors"><Pencil size={14} /></button>
+                    <button onClick={() => remove(p.id)} className="p-1.5 text-zinc-500 hover:text-red-500 transition-colors"><Trash size={14} /></button>
                   </div>
                 </div>
               </div>
@@ -905,12 +905,12 @@ function ProjectsEditor({ projects: initial, profileId }: { projects: Project[];
         );
       })}
       {editing === "new" && (
-        <div className="p-4 border border-zinc-700 rounded-xl">
+        <div className="p-4 border border-zinc-300 rounded-xl">
           <ProjectForm form={form} setForm={setForm} onSave={save} onCancel={() => setEditing(null)} saving={saving} />
         </div>
       )}
       {editing === null && (
-        <button onClick={startNew} className="flex items-center gap-1.5 px-4 py-2 border border-zinc-800 text-zinc-400 text-xs font-medium rounded-lg hover:border-zinc-600 hover:text-zinc-200 transition-colors">
+        <button onClick={startNew} className="flex items-center gap-1.5 px-4 py-2 border border-zinc-200 text-zinc-500 text-xs font-medium rounded-lg hover:border-zinc-300 hover:text-zinc-950 transition-colors">
           <Plus size={14} /> Add project
         </button>
       )}
@@ -995,7 +995,7 @@ function ProjectForm({ form, setForm, onSave, onCancel, saving }: { form: Record
               {images.map((url, i) => (
                 <div key={i} className="relative group aspect-video">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={url} alt={`Image ${i + 1}`} className="w-full h-full object-cover rounded-lg border border-zinc-800" />
+                  <img src={url} alt={`Image ${i + 1}`} className="w-full h-full object-cover rounded-lg border border-zinc-200" />
                   <button
                     type="button"
                     onClick={() => removeImage(i)}
@@ -1007,7 +1007,7 @@ function ProjectForm({ form, setForm, onSave, onCancel, saving }: { form: Record
               ))}
             </div>
             {images.length > 9 && (
-              <p className="text-center text-xs text-zinc-600 mt-1">{images.length} photos · scroll to see all</p>
+              <p className="text-center text-xs text-zinc-500 mt-1">{images.length} photos · scroll to see all</p>
             )}
           </div>
         )}
@@ -1015,7 +1015,7 @@ function ProjectForm({ form, setForm, onSave, onCancel, saving }: { form: Record
         {/* Upload button */}
         <div
           onClick={() => fileRef.current?.click()}
-          className="flex items-center justify-center gap-2 w-full px-3 py-3 border border-dashed border-zinc-700 rounded-lg text-xs text-zinc-500 hover:border-zinc-500 hover:text-zinc-300 cursor-pointer transition-colors mb-2"
+          className="flex items-center justify-center gap-2 w-full px-3 py-3 border border-dashed border-zinc-300 rounded-lg text-xs text-zinc-500 hover:border-zinc-300 hover:text-zinc-700 cursor-pointer transition-colors mb-2"
         >
           <CloudArrowUp size={15} />
           {uploading ? "Uploading..." : "Click to upload images (multiple allowed)"}
@@ -1031,17 +1031,17 @@ function ProjectForm({ form, setForm, onSave, onCancel, saving }: { form: Record
             className={inputCls}
             placeholder="Or paste image URL and press Enter"
           />
-          <button type="button" onClick={addUrl} className="px-3 py-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors flex-shrink-0 text-xs text-zinc-300">
+          <button type="button" onClick={addUrl} className="px-3 py-2 bg-zinc-100 rounded-lg hover:bg-zinc-200 transition-colors flex-shrink-0 text-xs text-zinc-700">
             Add
           </button>
         </div>
       </div>
 
       <div className="flex items-center gap-2">
-        <button onClick={onSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white border border-zinc-700 text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors">
+        <button onClick={onSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white border border-zinc-950 text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors">
           <CheckCircle size={14} /> {saving ? "Saving..." : "Save"}
         </button>
-        <button onClick={onCancel} className="px-4 py-2 text-xs text-zinc-600 hover:text-zinc-300 transition-colors">Cancel</button>
+        <button onClick={onCancel} className="px-4 py-2 text-xs text-zinc-500 hover:text-zinc-700 transition-colors">Cancel</button>
       </div>
     </div>
   );
@@ -1112,37 +1112,37 @@ function CertificationEditor({ certifications: initial, profileId }: { certifica
   return (
     <div className="space-y-4">
       {items.map((cert) => (
-        <div key={cert.id} className="p-4 border border-zinc-800 rounded-xl">
+        <div key={cert.id} className="p-4 border border-zinc-200 rounded-xl">
           {editing === cert.id ? (
             <CertificationForm form={form} setForm={setForm} onSave={save} onCancel={() => setEditing(null)} saving={saving} />
           ) : (
             <div className="flex items-start justify-between gap-4">
               <div>
-                <p className="font-medium text-zinc-100">{cert.name}</p>
-                <p className="text-sm text-zinc-400">{cert.issuer}</p>
+                <p className="font-medium text-zinc-950">{cert.name}</p>
+                <p className="text-sm text-zinc-500">{cert.issuer}</p>
                 {cert.issueDate && (
-                  <p className="text-xs text-zinc-600 mt-0.5">
+                  <p className="text-xs text-zinc-500 mt-0.5">
                     Issued {new Date(cert.issueDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}
                     {cert.expiryDate ? ` · Expires ${new Date(cert.expiryDate).toLocaleDateString("en-US", { month: "short", year: "numeric" })}` : ""}
                   </p>
                 )}
-                {cert.credentialId && <p className="text-xs text-zinc-600">ID: {cert.credentialId}</p>}
+                {cert.credentialId && <p className="text-xs text-zinc-500">ID: {cert.credentialId}</p>}
               </div>
               <div className="flex gap-2 flex-shrink-0">
-                <button onClick={() => startEdit(cert)} className="p-1.5 text-zinc-500 hover:text-zinc-100 transition-colors"><Pencil size={14} /></button>
-                <button onClick={() => remove(cert.id)} className="p-1.5 text-zinc-500 hover:text-red-400 transition-colors"><Trash size={14} /></button>
+                <button onClick={() => startEdit(cert)} className="p-1.5 text-zinc-500 hover:text-zinc-950 transition-colors"><Pencil size={14} /></button>
+                <button onClick={() => remove(cert.id)} className="p-1.5 text-zinc-500 hover:text-red-500 transition-colors"><Trash size={14} /></button>
               </div>
             </div>
           )}
         </div>
       ))}
       {editing === "new" && (
-        <div className="p-4 border border-zinc-700 rounded-xl">
+        <div className="p-4 border border-zinc-300 rounded-xl">
           <CertificationForm form={form} setForm={setForm} onSave={save} onCancel={() => setEditing(null)} saving={saving} />
         </div>
       )}
       {editing === null && (
-        <button onClick={startNew} className="flex items-center gap-1.5 px-4 py-2 border border-zinc-800 text-zinc-400 text-xs font-medium rounded-lg hover:border-zinc-600 hover:text-zinc-200 transition-colors">
+        <button onClick={startNew} className="flex items-center gap-1.5 px-4 py-2 border border-zinc-200 text-zinc-500 text-xs font-medium rounded-lg hover:border-zinc-300 hover:text-zinc-950 transition-colors">
           <Plus size={14} /> Add certification
         </button>
       )}
@@ -1169,10 +1169,10 @@ function CertificationForm({ form, setForm, onSave, onCancel, saving }: { form: 
       <input value={form.credentialId} onChange={(e) => setForm({ ...form, credentialId: e.target.value })} className={inputCls} placeholder="Credential ID (optional)" />
       <input value={form.credentialUrl} onChange={(e) => setForm({ ...form, credentialUrl: e.target.value })} className={inputCls} placeholder="Credential URL (optional)" />
       <div className="flex items-center gap-2">
-        <button onClick={onSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white border border-zinc-700 text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors">
+        <button onClick={onSave} disabled={saving} className="flex items-center gap-1.5 px-4 py-2 bg-zinc-950 text-white border border-zinc-950 text-xs font-semibold rounded-lg hover:bg-zinc-800 disabled:opacity-50 transition-colors">
           <CheckCircle size={14} /> {saving ? "Saving..." : "Save"}
         </button>
-        <button onClick={onCancel} className="px-4 py-2 text-xs text-zinc-600 hover:text-zinc-300 transition-colors">Cancel</button>
+        <button onClick={onCancel} className="px-4 py-2 text-xs text-zinc-500 hover:text-zinc-700 transition-colors">Cancel</button>
       </div>
     </div>
   );
@@ -1191,3 +1191,4 @@ function StarRating({ value, onChange }: { value: number; onChange: (v: number) 
     </div>
   );
 }
+
